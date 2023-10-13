@@ -1,0 +1,11 @@
+**/*.pyc
+**/__pycache__
+/dist/
+*.egg-info
+.ropeproject/
+.tox/
+.vscode/
+.*cache/
+config.conf
+requirements.txt
+**/.venv
