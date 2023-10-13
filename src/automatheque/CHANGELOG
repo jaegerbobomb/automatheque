@@ -1,0 +1,92 @@
+# Changelog
+
+<!-- markdownlint-disable MD024 -->
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Removed
+
+## [0.8.10] - 2023-10-13
+
+### Added
+
+* passage en monorepo sur github et début du découpage des packages pip
+* utilisation de monas pour le monorepo
+
+### Removed
+
+* tout le code associé qui sera dans des packages séparés
+
+## [0.8.9] - 2023-02-13
+
+### Added
+
+* Tests pour les Gabarits
+* tox : py310
+
+### Changed
+
+* Corrige le gabarit par défaut des séries pour gérer le cas des guillemets
+* Corrige plugin trakt suite à mise à jour upstream
+
+### Removed
+
+## [0.8.8] - 2022-08-30
+
+### Changed
+
+* Corrige l'envoi de mail avec xoauth2 (testé avec gmail), nécessite un script séparé pour générer les token
+
+## [0.8.7] - 2022-04-05
+
+### Added
+
+* Decomposable.auto_decompose() peut maintenant prendre des décomposeurs en paramètre
+* Nouveaux tests de décomposition et de détection
+
+### Changed
+
+* Utilise pytrakt.json par défaut dans TraktPlugin
+* Possibilité d'utiliser envoi_mail_simple vers plusieurs destinataires,
+  séparés par des "," sans espace
+* Amélioration de _detecteModeleVideo en limitant les premiers tests aux décomposeurs de fort poids
+* Améliore le décomposeur de film pour le cas des films étant des dates (ex: 2012)
+
+## [0.8.6] - 2022-04-05
+
+### Added
+
+* Ajoute des tests pour la décomposition de SousTitres
+
+### Changed
+
+* Modifie le gabarit par défaut pour les SousTitres, l'ordre n'était pas
+  correctement utilisé dans un des cas
+* Modifie le format du CHANGELOG pour correspondre à [Keep A Changelog](https://keepachangelog.com)
+
+## [0.6.10]
+
+Nouvel utilitaire, pour gérer les dépendances externes.
+
+### Added
+
+* Ajoute un Changelog
+* Ajout de la gestion des dépendances externes par automatheque.util.dependances_externes
+  et exemple partiel dans automatheque.dependances.exiftool
+* Ajoute media.empreinte
+
+### Changed
+
+* Corrige lien entre media et photo
+
+[Unreleased]: https://github.com/jaegerbobomb/automatheque/compare/v0.8.10...HEAD
+[0.8.10]: https://github.com/jaegerbobomb/automatheque/releases/tag/v0.8.10

@@ -1,0 +1,23 @@
+[project]
+name = "automatheque"
+version = "0.8.10"
+description = "Bibliothèque pour se faciliter le scripting !"
+authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
+license = {text = "GPLv3.0"}
+requires-python = ">=3.8"
+readme = "README.md"
+dependencies = [
+    "docopt",
+    "pytz",
+    "configparser",
+    "pyyaml",
+    "attrs>=19.2",
+]
+
+[project.urls]
+Home = "https://github.com/jaegerbobomb/automatheque/tree/main/src/automatheque/"
+Repository = "https://github.com/jaegerbobomb/automatheque.git"
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
