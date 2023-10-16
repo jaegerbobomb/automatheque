@@ -6,6 +6,6 @@
 .tox/
 .vscode/
 .*cache/
-config.conf
 requirements.txt
 **/.venv
+**/build
