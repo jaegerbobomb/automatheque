@@ -107,7 +107,7 @@ class MetaInstanceRegistre(type):
         instances = list(cls.__instances)
         if inclure_enfants:
             for child in cls.__subclasses__():
-                instances += child._recup_instances(inclure_enfants=inclure_enfants)
+                instances += child._instances(inclure_enfants=inclure_enfants)
 
         # Remove duplicates from multiple inheritance.
         return list(set(instances))
@@ -167,7 +167,7 @@ class MetaInstancePersistanteRegistre(type):
         instances = list(cls.__instances)
         if inclure_enfants:
             for child in cls.__subclasses__():
-                instances += child._recup_instances(inclure_enfants=inclure_enfants)
+                instances += child._instances(inclure_enfants=inclure_enfants)
 
         # Remove duplicates from multiple inheritance.
         return list(set(instances))
