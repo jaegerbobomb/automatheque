@@ -1,4 +1,4 @@
 [tool.monas]
 packages = ["src/"]
-version = "0.9.0"
+version = "0.9.1"
 python-version = "3.11"
