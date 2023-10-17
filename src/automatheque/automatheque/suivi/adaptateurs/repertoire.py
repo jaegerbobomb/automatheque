@@ -9,7 +9,7 @@ from automatheque.suivi.ports import StockageAbstraite
 class StockageRepertoire(StockageAbstraite):
     repertoire: Path = attr.ib(default=Path("/tmp"))
 
-    def __attr_post_init__(self):
+    def __attrs_post_init__(self):
         # TODO >= py3.5
         self.repertoire.mkdir(parents=True, exist_ok=True)
 
