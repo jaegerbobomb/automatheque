@@ -23,4 +23,4 @@ class JournalSuivi:
         pass
 
     def coche(self, reference: str, contenu: str) -> bool:
-        return self.stockage.enregistre(reference, contenu)
+        return self.stockage.sauvegarde(reference, contenu)
