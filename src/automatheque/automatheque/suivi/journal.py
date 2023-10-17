@@ -6,6 +6,21 @@ from automatheque.suivi.ports import StockageAbstraite
 
 @attr.s
 class JournalSuivi:
+    """Journal de suivi d'une action quelconque.
+
+    Exemple:
+
+    >>> from pathlib import Path
+    >>> from automatheque.suivi.journal import JournalSuivi, StockageRepertoire
+
+    >>> stockage = StockageRepertoire(Path("/chemin/vers/stockage/suivi"))
+    >>> journal = JournalSuivi(stockage)
+
+    >>> if not journal.deja_fait(identifiant_unique_action):
+    >>>     action_quelconque()
+    >>>     journal.coche(identifiant_unique_action, contenu)
+    """
+
     stockage: StockageAbstraite = attr.ib(default=StockageRepertoire())  # handler ?
 
     def deja_fait(self, reference: str) -> bool:
