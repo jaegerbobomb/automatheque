@@ -2,12 +2,12 @@ from pathlib import Path
 
 import attr
 
-from ..suivi import StockageAbstraite
+from automatheque.suivi.ports import StockageAbstraite
 
-# journal_suivi.adaptateur.StockageRepertoire
+
 @attr.s
 class StockageRepertoire(StockageAbstraite):
-    repertoire: Path = attr.ib(default=Path("/"))
+    repertoire: Path = attr.ib(default=Path("/tmp"))
 
     def __attr_post_init__(self):
         # TODO >= py3.5

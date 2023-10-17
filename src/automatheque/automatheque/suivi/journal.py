@@ -1,18 +1,7 @@
-import abc
-
 import attr
 
-from .adaptateurs.repertoire import StockageRepertoire
-
-
-class StockageAbstraite(abc.ABC):
-    @abc.abstractmethod
-    def existe(self, reference: str) -> bool:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def sauvegarde(self, reference: str, contenu: str) -> bool:
-        raise NotImplementedError
+from automatheque.suivi.adaptateurs.repertoire import StockageRepertoire
+from automatheque.suivi.ports import StockageAbstraite
 
 
 @attr.s
