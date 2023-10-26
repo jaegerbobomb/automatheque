@@ -1,0 +1,36 @@
+[project]
+name = "automatheque.schema"
+version = "0.9.4"
+description = "Domaine pour des classes courantes et partagées"
+authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
+license = {text = "GPLv3.0"}
+requires-python = ">=3.8"
+readme = "README.md"
+dependencies = [
+    "attrs",
+]
+
+[project.urls]
+Home = "https://github.com/jaegerbobomb/automatheque"
+Repository = "https://github.com/jaegerbobomb/automatheque.git"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "tox",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    min_version = 4.0
+    env_list = test_env
+
+    [testenv]
+    deps = pytest
+    commands = pytest -s
+"""
