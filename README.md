@@ -9,6 +9,13 @@ Ce dépôt est géré en "monorepo" grâce à [monas](https://monas.fming.dev/en
 Il contient la bibliothèque `automatheque` ainsi que tous les packages qui y sont liés, mais
 qui sont livrés sous leur propre espace de nommage.
 
+## Subpackage
+
+Nous essayons dans un mono répo de gérer des sous-paquets python, pour
+avoir un unique namespace "automatheque" et pouvoir publier les sous paquets "automatheque.schema" etc.
+
+Voir (https://packaging.python.org/en/latest/guides/packaging-namespace-packages/) pour plus d'informations.
+
 ## Nomenclature que l'on essaie de respecter
 
 D'après internet :
