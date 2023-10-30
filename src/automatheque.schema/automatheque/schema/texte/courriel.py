@@ -20,7 +20,7 @@ class Courriel:
     Pour l'instant on se contente de ça : https://stackoverflow.com/a/14485817/8721626
     """
 
-    _sujet: str = attr.ib(kw_only=True)
+    sujet: str = attr.ib(kw_only=True)
     _emetteur: Union[tuple, str] = attr.ib(kw_only=True)
     _destinataires: Sequence[Union[tuple, str]] = attr.ib(factory=list, kw_only=True)
     contenu: str = attr.ib(init=False, kw_only=True)
