@@ -32,25 +32,6 @@ class Courriel:
         init=False, default=lambda e: ("@" in e, ""), kw_only=True
     )
 
-    def __init__(
-        self,
-        appelant=None,
-        sujet=None,
-        contenu="",
-        destinataires=None,
-        emetteur=None,
-        pieces_jointes=None,
-    ):
-        """__init__.
-
-        :param appelant:       le nom de l'appelant
-        :param sujet:          le sujet du mail (sera concaténé avec appelant)
-        :param contenu:        contenu du courriel
-        :param destinataires:  liste des adresses de courriel des destinataires
-        :param emetteur:       adresse de courriel de l'emetteur
-        :param pieces_jointes: liste des pièces jointes
-        """
-
     def _controle_format_email(self, valeur: Union[tuple, str], champ: str):
         """Renvoie l'email contrôlé pour le champ indiqué.
 
@@ -115,15 +96,3 @@ class Courriel:
     def date_envoi(self):
         if self._date_envoi and isinstance(self._date_envoi, datetime):
             return formatdate(datetime.timestamp(self._date_envoi))
-
-    def charge_utile(self):
-        """Renvoie la charge utile du courriel, à utiliser avec esmtp.
-
-        TODO supprimer et mettre dans un StockageCourrielEsmtp par ex.
-        """
-        res = 'Subject: {}\nMime-Version: 1.0;\nContent-Type: text/html; charset="ISO-8859-1";\nContent-Transfer-Encoding: 7bit;\n\n{}\n'.format(
-            self.sujet, self.contenu
-        ).encode(
-            "utf-8"
-        )
-        return res
