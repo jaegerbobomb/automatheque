@@ -23,7 +23,7 @@ class Courriel:
     sujet: str = attr.ib(kw_only=True)
     _emetteur: Union[tuple, str] = attr.ib(kw_only=True)
     _destinataires: Sequence[Union[tuple, str]] = attr.ib(factory=list, kw_only=True)
-    contenu: str = attr.ib(init=False, kw_only=True)
+    contenu: str = attr.ib(init=False, default="", kw_only=True)
     pieces_jointes: List[str] = attr.ib(init=False, factory=list, kw_only=True)
     _date_envoi: datetime = attr.ib(
         init=False, default=None, kw_only=True

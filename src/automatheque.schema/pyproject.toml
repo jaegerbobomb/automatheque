@@ -1,6 +1,6 @@
 [project]
 name = "automatheque.schema"
-version = "0.9.6alpha1"
+version = "0.9.6alpha2"
 description = "Domaine pour des classes courantes et partagées"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "GPLv3.0"}
