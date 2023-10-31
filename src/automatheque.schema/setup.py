@@ -1,3 +1,3 @@
 from setuptools import setup
 
-setup(name='automatheque.schema')
+setup(name="automatheque.schema")
