@@ -24,12 +24,6 @@ dev = [
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.package-data]
-"automatheque.schema" = ["py.typed"]
-
-[tool.setuptools.packages.find]
-where = ["automatheque"]
-
 [tool.tox]
 legacy_tox_ini = """
     [tox]
