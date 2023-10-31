@@ -2,6 +2,7 @@
 from datetime import datetime
 from email.header import Header
 from email.utils import formataddr, formatdate, parseaddr
+from pathlib import Path
 from typing import Callable, List, Sequence, Tuple, Union
 
 import attr
@@ -24,9 +25,9 @@ class Courriel:
     _emetteur: Union[tuple, str] = attr.ib(kw_only=True)
     _destinataires: Sequence[Union[tuple, str]] = attr.ib(factory=list, kw_only=True)
     contenu: str = attr.ib(init=False, default="", kw_only=True)
-    pieces_jointes: List[str] = attr.ib(init=False, factory=list, kw_only=True)
+    pieces_jointes: List[Path] = attr.ib(init=False, factory=list, kw_only=True)
     _date_envoi: datetime = attr.ib(
-        init=False, default=None, kw_only=True
+        init=False, default=datetime.now(), kw_only=True
     )  # TODO vérifier les timezones
     teste_adresse_valide: Callable[[str], Tuple[bool, str]] = attr.ib(
         init=False, default=lambda e: ("@" in e, ""), kw_only=True
@@ -79,7 +80,7 @@ class Courriel:
         for d in [d for d in valeur or []]:
             self.ajouter_destinataire(d)
 
-    def ajouter_piece_jointe(self, fichier):
+    def ajouter_piece_jointe(self, fichier: Path):
         """Ajoute une pièce jointe au message."""
         self.pieces_jointes.append(fichier)
 
