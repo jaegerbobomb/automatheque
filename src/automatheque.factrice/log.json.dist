@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "formatters": {
+        "classique": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "formatter": "classique",
+            "class": "logging.StreamHandler"
+        }
+    },
+    "loggers": {
+        "factrice": {
+            "handlers": ["console"],
+            "level": "DEBUG"
+        },
+        "automatheque": {
+            "handlers": ["console"],
+            "level": "DEBUG"
+        }
+    }
+}
