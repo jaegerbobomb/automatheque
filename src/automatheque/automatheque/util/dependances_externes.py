@@ -115,10 +115,10 @@ class Executant(object):
 
     executable = attr.ib()
 
-    def exec(self, *args, **kwargs):
+    def exec(self, *args, stdin=None, **kwargs) -> subprocess.CompletedProcess:
         """Execute le programme donné en dépendances avec les arguments en paramètres.
 
-        Renvoie un objet pipes avec pipes.stderr, pipes.stdout et pipes.stin
+        Renvoie un objet CompletedProcess (https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)
 
         L'idéal est de donner une instance de cette classe à un wrapper pour l'action souhaitée
         qui se charge d'appeler `self.executant.exec` par ex.
@@ -126,10 +126,12 @@ class Executant(object):
         procargs = [self.executable, *args]
         for k, v in kwargs.items():
             procargs += [k, v]
-        LOGGER.debug("Executant.exec : procargs={}".format(procargs))
+
+        msg_redir = " < 'stdin'" if stdin is not None else ""
+        LOGGER.debug(f"Executant.exec : procargs={procargs}" + msg_redir )
         pipes = subprocess.run(
             procargs,
-            stdin=subprocess.PIPE,
+            stdin=stdin if stdin is not None else subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
