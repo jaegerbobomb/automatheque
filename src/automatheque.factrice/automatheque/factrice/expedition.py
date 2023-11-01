@@ -14,9 +14,9 @@ import attr
 from automatheque.configuration import NoOptionError, charge_configuration
 from automatheque.log import recup_logger
 from automatheque.schema.texte import Courriel
-from automatheque.util.dependances_externes import Executant
+from automatheque.util.dependances_externes import charge_dependance, Executant
 
-from automatheque.factrice.preparation import PreparatriceSmtp
+from automatheque.factrice.preparation import PreparatriceSmtp, SEPARATEUR_DESTINATAIRES
 
 LOGGER = recup_logger(__name__)
 
@@ -151,14 +151,18 @@ class ExpeditriceEsmtp:
 
     def __attrs_post_init__(self):
         self.config = self.config if self.config else charge_configuration()
+        self.executant: Executant = charge_dependance("esmtp", "esmtp", "")
 
-    def gen_fichier(
+    def __gen_fichier(
         self, courriel: Courriel, fichier_sortie: Optional[Path] = None
     ) -> Path:
         """Génère un fichier temporaire à donner à esmtp.
 
         :return: Path du fichier
         """
+        if courriel.emetteur is None:
+            courriel.emetteur = "osuser@localhost"  # TODO ?
+
         date = datetime.now().strftime("%Y%m%d-%H%M%s")
         # TODO nom fic
         fic = fichier_sortie or Path("/tmp/") / f"{date}_{courriel.sujet}.txt"
@@ -167,3 +171,21 @@ class ExpeditriceEsmtp:
             f.write(contenu)
 
         return fic
+
+    def expedie(self, courriel: Courriel):
+        # envoi du mail si esmtp est paramétré
+        # cmd = 'cat "{0}" | esmtp {1}'.format(
+        #    self__.gen_fichier(courriel), SEPARATEUR_DESTINATAIRES.join(courriel.destinataires)
+        # )
+        args = [SEPARATEUR_DESTINATAIRES.join(courriel.destinataires)]
+        fic = self.__gen_fichier(courriel)
+        with open(fic, "r") as f:
+            # On execute : `esmtp courriel1,courriel2 < fic`
+            process = self.executant.exec(*args, stdin=f)
+
+        try:
+            process.check_returncode()  # TODO attention raise !
+        except Exception as e:
+            LOGGER.exception(process.stderr)
+            # raise e
+        return process.returncode
