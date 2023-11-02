@@ -1,13 +1,13 @@
 [project]
 name = "automatheque.factrice"
-version = "0.10.0"
+version = "0.10.1"
 description = "Librairie et app simplifiée d'envoi de mail"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "GPLv3.0"}
 requires-python = ">=3.8"
 readme = "README.md"
 dependencies = [
-    "automatheque",
+    "automatheque>=0.9.6",
     "automatheque.schema>=0.9.5",
 ]
 
