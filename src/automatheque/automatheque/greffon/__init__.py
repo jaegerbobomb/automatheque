@@ -55,6 +55,7 @@ class FabriqueGreffon(Fabrique):
                 if not instance_greffon.actif:
                     LOGGER.warning(f"Greffon {instance_greffon} inactif")
                     return False
+                identifiant = instance_greffon.identifiant
             except Exception:
                 LOGGER.exception(f"Echec activation greffon : {identifiant}")
         return Greffon.greffon_par_identifiant(identifiant)
