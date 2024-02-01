@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.8] - 2024-02-01
+
+### Changed
+
+* Fix: Corrige l'attribution du même uuid identifiant à tous les greffons
+
 ## [0.9.7] - 2024-01-06
 
 ### Changed
