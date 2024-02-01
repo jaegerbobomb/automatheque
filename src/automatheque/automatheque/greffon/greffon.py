@@ -51,7 +51,7 @@ class Greffon(RegistreGreffons):
     # Utilisation de kw_only=True pour l'héritage :
     # https://github.com/python-attrs/attrs/issues/38
     # Il faut utiliser l'option également dans les classes filles.
-    identifiant = attr.ib(default=str(uuid.uuid4()), kw_only=True)
+    identifiant = attr.ib(factory=lambda: str(uuid.uuid4()), kw_only=True)
     config_requise = attr.ib(default=False, init=False, kw_only=True)
     config = attr.ib(init=False, factory=charge_configuration, kw_only=True)
 

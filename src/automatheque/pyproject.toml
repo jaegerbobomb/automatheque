@@ -21,3 +21,8 @@ Repository = "https://github.com/jaegerbobomb/automatheque.git"
 [build-system]
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
