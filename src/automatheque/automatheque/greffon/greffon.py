@@ -2,17 +2,17 @@
 """Gestion des Greffons et de leur capacités.
 """
 import uuid
+from typing import List
 
 import attr
 
 from automatheque.configuration import charge_configuration
+from automatheque.greffon.capacite import Capacite
 from automatheque.greffon.registre import RegistreGreffons
 from automatheque.log import recup_logger
 from automatheque.util.classe import classproperty
 
-
 LOGGER = recup_logger(__name__)
-LOGGER.debug("LOGGER")
 
 
 @attr.s(eq=False)  # pour rendre la classe hashable pour le set du registre
@@ -56,17 +56,20 @@ class Greffon(RegistreGreffons):
     config = attr.ib(init=False, factory=charge_configuration, kw_only=True)
 
     @classproperty
-    def cle(cls):
+    def cle(cls) -> str:
         """Retourne le nom de la classe sans "Greffon" s'il existe, en minuscule"""
         return cls.__name__.lower().replace("greffon", "")
 
     @property
-    def capacites(self):
+    def capacites(self) -> List[Capacite]:
         return self.CAPACITES
 
     @property
-    def actif(self):
-        """TODO pas très clair le fonctionnement !"""
+    def actif(self) -> bool:
+        """Renvoie True si le Greffon peut fonctionner sans configuration
+
+        ou s'il nécessite une configuration mais que celle ci est bien chargée.
+        """
         if not self.config_requise or self.config:
             return True
         return False
@@ -74,4 +77,4 @@ class Greffon(RegistreGreffons):
     def _signale_appel(self):
         # TODO log !!!
         # TODO on devrait mettre une annotation sur tous les appels de type "capacites"
-        LOGGER.debug("Greffon : {} - debut appel".format(self.cle))
+        LOGGER.debug(f"Greffon : {self.cle}||{self.identifiant} - debut appel")
