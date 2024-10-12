@@ -1,10 +1,10 @@
 from copy import deepcopy
+from typing import List, Optional, Union
 
 from automatheque.conception.structures import Fabrique, Monteur
-from automatheque.configuration import charge_configuration, ConfigParser
+from automatheque.configuration import ConfigParser, charge_configuration
 from automatheque.greffon.greffon import Greffon
 from automatheque.log import recup_logger
-
 
 LOGGER = recup_logger(__name__)
 
@@ -12,22 +12,29 @@ LOGGER = recup_logger(__name__)
 class FabriqueGreffon(Fabrique):
     """Classe qui permet d'instancier les Greffons dont les Monteur ont été enregistrés.
 
-    Il faut dans un premier temps enregistrer les monteurs des greffons par la fonction
-    enregistre_greffons, puis il faut activer le greffon donné ce qui lance
-    `monteur.cree()` avec les arguments donnés.
+    Il faut :
 
-    À défaut de Monteur, on peut donner la classe qui sera instanciée directement.
-    Dans les deux cas il faut que la classe ait une propriété "clé".
+    1. enregistrer les monteurs des greffons avec `fabrique_greffons.charge_monteurs()`
+    2. instancier le type de greffon demandé, via `fabrique_greffons.active()`, qui lance
+       `monteur.cree()` avec les arguments donnés, pour instancier le Greffon.
 
-    Si on utilise un Monteur, on peut utiliser la même clé que le Greffon, tant qu'elle
+    NB : À défaut de Monteur, s'il n'y a pas de complexité pour instancier un Greffon (en
+    particulier il n'y a pas plusieurs Greffons différents à instancier en fonction de la
+    configuration utilisateur), alors on peut donner la classe du Greffon en tant que
+    monteur et celle ci sera instanciée directement.
+        Attention: pour que la classe Greffon se comporte comme un monteur, il faut
+        qu'elle ait une propriété "clé".
+
+    NB: Si on utilise un Monteur, on peut utiliser la même clé que le Greffon, tant qu'elle
     n'est pas utilisée par plusieurs Greffons ou Monteurs, puisqu'elle servira à
     déclencher l'instanciation du Monteur ou du Greffon associée.
 
-    .. example::
+    .. code-block:: python
         >>> from automatheque.greffon import fabrique_greffon
+        >>> from plugin2.monteur import Monteur2  # dépend de l'argument donné à `charge_monteurs`
         >>> fabrique_greffon.charge_monteurs([
                "plugin1.monteur.Monteur1",
-               "plugin2.monteur.Monteur2"
+               Monteur2
             ])
         >>> plugin1_id1 = fabrique_greffon.active(
                "monteur1",
@@ -38,29 +45,35 @@ class FabriqueGreffon(Fabrique):
         >>> plugin1_id1.appel_quelconque_capacite()
     """
 
-    def active(self, cle_monteur, *args, identifiant=None, **kwargs):
+    def active(
+        self, cle_monteur, *args, identifiant=None, **kwargs
+    ) -> Union[Greffon, False, None]:
         """Va chercher dans le registre des greffons et renvoie le greffon activé.
 
-        S'il ne trouve pas le greffon il en instancie un autre.
-        TODO : comme identifiant peut etre auto génré on devrait pouvoir
-        le rendre facultatif si on ne veut pas l'appeler nommément ? ou mettre clé ?
+        S'il ne trouve pas le greffon grâce à l'identifiant donné, alors il en
+        instancie un nouveau.
+        En l'absence d'identifiant, un nouveau Greffon est instancié et on lui
+        attribue un identifiant unique auto-généré.
         """
         if not identifiant or identifiant not in Greffon.greffons_identifiants():
-            # greffons.keys():
             try:
                 if identifiant:
                     kwargs["identifiant"] = identifiant
                 instance_greffon = self.cree(cle_monteur, *args, **kwargs)
-                LOGGER.debug(f"Greffon activé : {instance_greffon}")
+                LOGGER.debug(f"Greffon instancié : {instance_greffon}")
                 if not instance_greffon.actif:
                     LOGGER.warning(f"Greffon {instance_greffon} inactif")
                     return False
                 identifiant = instance_greffon.identifiant
             except Exception:
-                LOGGER.exception(f"Echec activation greffon : {identifiant}")
+                LOGGER.exception(
+                    f"Echec activation greffon : {identifiant} de type {cle_monteur}"
+                )
         return Greffon.greffon_par_identifiant(identifiant)
 
-    def charge_monteurs(self, liste_monteurs):
+    def charge_monteurs(
+        self, liste_monteurs: List[Union[str, Monteur, Greffon]]
+    ) -> List[Monteur]:
         """Enregistre les monteurs de greffons disponibles dans la fabrique.
 
         Cela  pourrait etre fait de manière automatique, par ex en scannant un
@@ -69,9 +82,12 @@ class FabriqueGreffon(Fabrique):
         """
         monteurs = []
         for elem in liste_monteurs:
-            from pydoc import locate
+            if isinstance(elem, str):
+                from pydoc import locate
 
-            monteur = locate(elem)  # ou importlib TODO ?
+                monteur = locate(elem)  # ou importlib TODO ?
+            else:
+                monteur = elem
             if issubclass(monteur, Greffon):
                 monteur_concret = monteur
             elif issubclass(monteur, Monteur):
@@ -88,28 +104,43 @@ class FabriqueGreffon(Fabrique):
     #    self.enregistre_greffons(LISTE_GREFFONS_DEFAUT)
     #    LOGGER.debug(f"Greffons chargés : {self.recup_monteurs()}")
 
-    def active_greffons_conf(self, liste_greffons=None, configuration=None):
+    def active_greffons_conf(
+        self,
+        liste_greffons: Optional[List[str]] = None,
+        configuration: Union[dict, ConfigParser, None] = None,
+    ) -> List[Greffon]:
         """Active les greffons qui sont définis en conf dans l'option "greffons".
+
+        Si liste_greffons est remplie, on ne charge que ces identifiants-ci et pas
+        tous ceux définis en configuration.
 
         Si on utilise cette méthode pour activer les greffons, alors il est nécessaire
         de fournir un identifiant, on ne peut pas laisser automatheque créer l'identifiant
-        automatiquement.
+        automatiquement, donc il faut fournir une configuration ou laisser automatheque
+        charger la configuration standard.
 
-        .. example::
+        configuration peut donc être un dictionnaire ou un ConfigParser de la
+        configuration`.ini` suivante :
+
+        .. code-block:: ini
             [greffons]
             # liste d'identifiants des greffons, il peut y avoir plusieurs identifiants
             # pour le même greffon, par exemple avec des arguments différents
-            greffons=kodi1,trakt1
+            greffons=kodi1,kodi2,trakt1
 
             [kodi1]
             # clé du monteur ou du plugin
             greffon=kodi
             # Argument supplémentaire fourni à l'instanciation
             hote=xxx
+            [kodi2]
+            # clé du monteur ou du plugin
+            greffon=kodi
+            # Argument supplémentaire fourni à l'instanciation
+            hote=yyy
             [trakt1]
             greffon=trakt
 
-        configuration peut aussi être un dictionnaire équivalent.
         """
         if configuration is None:
             configuration = dict(charge_configuration())
