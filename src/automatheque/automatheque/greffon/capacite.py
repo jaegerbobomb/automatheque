@@ -9,7 +9,7 @@ class Capacite(Protocol):
 
     .. code-block:: python
 
-       class LireCapacite(Capacite):
+       class LireCapacite(Capacite, Protocol):
            # Protocol à respecter
            def lire(self) -> bool:
                ...
