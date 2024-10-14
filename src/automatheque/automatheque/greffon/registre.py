@@ -29,8 +29,8 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
              Pour l'instant il faut forcer le type en retour de l'appel :
              `greffons: CapaciteDemandeeProtocol = rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
 
-        :param capacite: _description_
-        :return: _description_
+        :param capacite: Protocol que doit respecter le Greffon recherché
+        :return: Union type, mais devrait être Intersect (TODO https://github.com/python/typing/issues/213)
         """
         return [
             p
