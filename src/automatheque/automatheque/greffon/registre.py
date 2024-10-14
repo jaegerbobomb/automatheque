@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
 
 from automatheque.conception.structures import MetaInstancePersistanteRegistre
 from automatheque.greffon.capacite import Capacite
@@ -20,7 +20,18 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
     """
 
     @classmethod
-    def greffons_par_capacite(cls, capacite: T) -> List[Union[T, Greffon]]:
+    def greffons_par_capacite(cls, capacite: Type[T]) -> List[Union[T, Greffon]]:
+        """Les Greffons renvoyés sont censés respecter le Protocol "capacite" donné.
+
+        TODO https://github.com/python/mypy/issues/4717 mypy ne gère pas correctement
+             les Protocol ou classes abstraites passées en paramètre, donc
+             Type[CapaciteProtocol] renvoie `Only concrete class can be given`.
+             Pour l'instant il faut forcer le type en retour de l'appel :
+             `greffons: CapaciteDemandeeProtocol = rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
+
+        :param capacite: _description_
+        :return: _description_
+        """
         return [
             p
             for p in cls._instances(inclure_enfants=True)
