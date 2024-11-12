@@ -39,7 +39,7 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
         return [
             p
             for p in cls._instances(inclure_enfants=True)
-            if capacite.__class__ in [c.__class__ for c in p.capacites]
+            if capacite.__name__ in [c.__name__ for c in p.capacites]
         ]
 
     @classmethod
