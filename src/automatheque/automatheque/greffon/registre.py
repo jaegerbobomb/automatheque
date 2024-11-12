@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, List, Optional, Type, TypeVar, Union
 
 from automatheque.conception.structures import MetaInstancePersistanteRegistre
 from automatheque.greffon.capacite import Capacite
@@ -20,17 +20,21 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
     """
 
     @classmethod
-    def greffons_par_capacite(cls, capacite: Type[T]) -> List[Union[T, Greffon]]:
+    def greffons_par_capacite(
+        cls, capacite: Type[T] | Callable[[], T]
+    ) -> List[Union[T, Greffon]]:
         """Les Greffons renvoyés sont censés respecter le Protocol "capacite" donné.
 
         TODO https://github.com/python/mypy/issues/4717 mypy ne gère pas correctement
-             les Protocol ou classes abstraites passées en paramètre, donc
-             Type[CapaciteProtocol] renvoie `Only concrete class can be given`.
-             Pour l'instant il faut forcer le type en retour de l'appel :
+             les Protocol ou classes abstraites passées en paramètre, donc `Type[T]`
+             renvoie `Only concrete class can be given`.
+             On utilise `Callable[[], T]` comme correctif temporaire.
+
+        TODO Pour l'instant il faut également forcer le type en retour de l'appel :
              `greffons: CapaciteDemandeeProtocol = rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
 
         :param capacite: Protocol que doit respecter le Greffon recherché
-        :return: Union type, mais devrait être Intersect (TODO https://github.com/python/typing/issues/213)
+        :return: Type _Union_, mais devrait être _Intersect_ (TODO https://github.com/python/typing/issues/213)
         """
         return [
             p
