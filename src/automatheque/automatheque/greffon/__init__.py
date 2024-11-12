@@ -1,9 +1,11 @@
+from abc import ABC, ABCMeta
 from copy import deepcopy
 from typing import List, Optional, Union
 
 from automatheque.conception.structures import Fabrique, Monteur
 from automatheque.configuration import ConfigParser, charge_configuration
 from automatheque.greffon.greffon import Greffon
+from automatheque.greffon.registre import MetaInstancePersistanteRegistre
 from automatheque.log import recup_logger
 
 LOGGER = recup_logger(__name__)
@@ -164,6 +166,36 @@ class FabriqueGreffon(Fabrique):
             cle = conf.pop("greffon")
             greffons_actifs.append(self.active(cle, identifiant=identifiant, **conf))
         return greffons_actifs
+
+
+class MetaABCGreffon(ABCMeta, MetaInstancePersistanteRegistre):
+    """Metaclass à utiliser pour créer un Greffon abstrait.
+
+    .. code-block:: python
+
+        class GreffonAbstrait(ABC, Greffon, metaclass=MetaABCGreffon):
+            @abstractmethod
+            def test(self):
+                pass
+    """
+
+    pass
+
+
+class GreffonAbstrait(ABC, Greffon, metaclass=MetaABCGreffon):
+    """Greffon abstrait à sous-classer directement.
+
+    .. code-block:: python
+
+        from abc import abstractmethod
+
+        class GreffonQuelconqueInterface(GreffonAbstrait):
+            @abstractmethod
+            def methode_importante(self):
+                raise NotImplementedError
+    """
+
+    pass
 
 
 fabrique_greffon = FabriqueGreffon()
