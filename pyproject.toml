@@ -2,3 +2,33 @@
 packages = ["src/*"]
 version = "0.9.9"
 python-version = "3.11"
+
+# --- Outillage qualité (cf. issue #16) ---
+
+[tool.ruff]
+target-version = "py39"
+# Les setup.py sont générés par monas, on ne les lint/formate pas.
+extend-exclude = ["**/setup.py"]
+
+[tool.ruff.lint]
+# Démarrage volontairement permissif (erreurs, imports inutiles, tri des
+# imports). À durcir progressivement une fois le code nettoyé (cf. issue #17).
+select = ["E", "F", "W", "I"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src/automatheque"
+
+[tool.pytest.ini_options]
+testpaths = ["src"]
+addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["automatheque"]
+
+[tool.coverage.report]
+show_missing = true

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installe Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Installe les paquets (editable) et les dépendances de test
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e src/automatheque -e src/automatheque.schema -e src/automatheque.factrice
+          pip install pytest pytest-cov
+
+      - name: Lance les tests avec couverture
+        run: pytest src --cov=automatheque --cov-report=term-missing
+
+  qualite:
+    name: Qualité (lint, format, types) — rapport
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installe Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installe les paquets et l'outillage qualité
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e src/automatheque -e src/automatheque.schema -e src/automatheque.factrice
+          pip install ruff mypy
+
+      # NB : ruff et mypy sont volontairement en mode « rapport » (non bloquant)
+      # tant que le nettoyage du code n'est pas réalisé (cf. issue #17).
+      # Une fois le code nettoyé, retirer les « continue-on-error » pour les
+      # rendre bloquants.
+      - name: Lint (ruff check)
+        continue-on-error: true
+        run: ruff check src
+
+      - name: Format (ruff format --check)
+        continue-on-error: true
+        run: ruff format --check src
+
+      - name: Vérification de types (mypy)
+        continue-on-error: true
+        run: mypy src/automatheque/automatheque
