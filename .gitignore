@@ -9,3 +9,6 @@
 requirements.txt
 **/.venv
 **/build
+.coverage
+htmlcov/
+coverage.xml
