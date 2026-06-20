@@ -100,15 +100,6 @@ def _gen_erreur(cle):
     return "\n{} n'est pas installé !\n".format(cle.title()).lstrip()
 
 
-# TODO
-"""
-def verifie_specifique(Dependance d):
-    for f in d.fichiers_specifiques:
-        if not os.path.exists(f):
-            raise DependanceIncomplete(d["xxx"])
-"""
-
-
 @attr.s
 class Executant(object):
     """Classe pour faciliter l'exécution des dépendances."""

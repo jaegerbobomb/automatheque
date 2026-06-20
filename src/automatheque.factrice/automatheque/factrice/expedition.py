@@ -88,13 +88,11 @@ class ExpeditriceSmtp(Expeditrice):
             self.__connecter()
         except NoOptionError:
             # Les identifiants ne sont pas renseignés en conf, on vérifie que c'est voulu
-            if self.config.getboolean("factrice.smtp", "anonyme", default=False):
+            if self.config.getboolean("factrice.smtp", "anonyme", fallback=False):
                 pass
             LOGGER.exception("no options")
-        except Exception as e:
-            LOGGER.exception(e)
-            # TODO etre plus fin dans l'exception
-            pass
+        except smtplib.SMTPException:
+            LOGGER.exception("Échec de la connexion au serveur SMTP.")
 
     def __connecter(self):
         """Identifie l'utilisateur sur le SMTP donné.
@@ -139,10 +137,6 @@ class ExpeditriceSmtp(Expeditrice):
         if res:
             LOGGER.warning(res)
         self.s.quit()
-
-    def envoyer_courriel(cls):
-        """décorateur envoi mail ??"""
-        pass
 
 
 @attr.s
