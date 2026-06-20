@@ -10,15 +10,14 @@ from automatheque.log import recup_logger, configure_logging
 
 fichier_config = "{}/config.ini".format(constantes.repertoire_config)
 
-# Pour pouvoir tester relativement a une erreur automatheque:
-NoOptionError = NoOptionError
-NoSectionError = NoSectionError
 
-
-def charge_configuration(fichiers_supplementaires=[], ecraser=False, recharger=False):
+def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger=False):
     """Fonction pour charger la configuration generale de automatheque."""
     if hasattr(charge_configuration, "config") and not recharger:
         return charge_configuration.config
+
+    if fichiers_supplementaires is None:
+        fichiers_supplementaires = []
 
     charge_configuration.config = ConfigParser()
 
@@ -106,7 +105,9 @@ def _configure_logging(config):
         desactive_loggers_existants = config.get(
             "log", "desactive_loggers_existants", fallback=None
         )
-    except Exception:
-        pass
+    except (NoOptionError, NoSectionError):
+        recup_logger(__name__).debug(
+            "Pas de configuration de logging dans la configuration globale."
+        )
     else:
         configure_logging(fichier_config_log, desactive_loggers_existants)

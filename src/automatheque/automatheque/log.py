@@ -12,12 +12,6 @@ import yaml
 
 from automatheque.constantes import logger_config_dict
 
-# Python2 n'a pas "FileNotFoundError"
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
-
 
 def configure_logging(conf, desactive_loggers_existants=None):
     """Configure le logging à partir de la conf donnée en paramètre."""
@@ -31,14 +25,13 @@ def configure_logging(conf, desactive_loggers_existants=None):
         # demandé par fileConfig (ou directement sous forme de dictionnaire).
         if isinstance(conf, str):
             with open(conf, "r") as f:
-                try:
-                    conf = json.load(f)
-                except:
-                    pass
-                try:
-                    conf = yaml.safe_load(conf)
-                except:
-                    pass
+                contenu = f.read()
+            try:
+                # Le fichier peut être au format JSON ou YAML : on tente JSON en
+                # premier, et on retombe sur YAML s'il ne s'agit pas de JSON.
+                conf = json.loads(contenu)
+            except json.JSONDecodeError:
+                conf = yaml.safe_load(contenu)
         elif not isinstance(conf, dict):
             raise ValueError("conf doit etre un fichier ou un dictionnaire")
     except FileNotFoundError:

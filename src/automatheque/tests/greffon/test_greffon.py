@@ -1,7 +1,7 @@
 from typing import Protocol
 
 import pytest
-
+from automatheque.conception.structures import Monteur
 from automatheque.greffon import Greffon, fabrique_greffon
 from automatheque.greffon.capacite import Capacite
 
@@ -73,3 +73,33 @@ def test_greffon_identifiant():
 
     with pytest.raises(AttributeError):
         assert len(Greffon.greffons_par_capacite("TEST_CAPACITE")) == 1
+
+
+class GreffonInactif(Greffon):
+    """Greffon dont la capacité à fonctionner est toujours fausse."""
+
+    CAPACITES = []
+
+    @property
+    def actif(self):
+        return False
+
+
+class MonteurQuiPlante(Monteur):
+    """Monteur dont la construction lève une exception."""
+
+    def construit(self, *args, **kwargs):
+        raise RuntimeError("construction impossible")
+
+
+def test_active_renvoie_none_si_greffon_inactif():
+    """active() renvoie None (et non False) lorsqu'un greffon est inactif."""
+    fabrique_greffon.enregistre_monteur(GreffonInactif.cle, GreffonInactif)
+    assert fabrique_greffon.active(GreffonInactif.cle) is None
+
+
+def test_active_renvoie_none_si_instanciation_echoue():
+    """active() journalise l'exception et renvoie None, sans retomber
+    silencieusement sur une recherche dans le registre."""
+    fabrique_greffon.enregistre_monteur("monteur_qui_plante", MonteurQuiPlante())
+    assert fabrique_greffon.active("monteur_qui_plante") is None

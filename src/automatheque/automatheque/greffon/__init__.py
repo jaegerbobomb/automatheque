@@ -49,7 +49,7 @@ class FabriqueGreffon(Fabrique):
 
     def active(
         self, cle_monteur, *args, identifiant=None, **kwargs
-    ) -> Union[Greffon, False, None]:
+    ) -> Optional[Greffon]:
         """Va chercher dans le registre des greffons et renvoie le greffon activé.
 
         S'il ne trouve pas le greffon grâce à l'identifiant donné, alors il en
@@ -65,12 +65,13 @@ class FabriqueGreffon(Fabrique):
                 LOGGER.debug(f"Greffon instancié : {instance_greffon}")
                 if not instance_greffon.actif:
                     LOGGER.warning(f"Greffon {instance_greffon} inactif")
-                    return False
+                    return None
                 identifiant = instance_greffon.identifiant
             except Exception:
                 LOGGER.exception(
                     f"Echec activation greffon : {identifiant} de type {cle_monteur}"
                 )
+                return None
         return Greffon.greffon_par_identifiant(identifiant)
 
     def charge_monteurs(
@@ -100,11 +101,6 @@ class FabriqueGreffon(Fabrique):
                 )
             monteurs.append(self.enregistre_monteur(monteur.cle, monteur_concret))
         return monteurs
-
-    # def greffons_charge_defaut(self):
-    #    """Charge les greffons par défaut dans la liste de monteurs."""
-    #    self.enregistre_greffons(LISTE_GREFFONS_DEFAUT)
-    #    LOGGER.debug(f"Greffons chargés : {self.recup_monteurs()}")
 
     def active_greffons_conf(
         self,
