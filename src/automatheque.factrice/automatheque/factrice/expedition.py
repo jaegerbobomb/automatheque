@@ -53,12 +53,12 @@ class ExpeditriceSmtp(Expeditrice):
     # Cas 3 : token oauth
     # défaut à false
     oauth=0
-    oauth_cmd=/chemin/vers/script/generation_token # TODO livrer en dépendances ?
+    oauth_cmd=/chemin/vers/script/generation_token # TODO(#27) livrer en dépendances ?
     oauth_client_id=XyXyXyX
     ```
     """
 
-    config: ConfigParser = attr.ib(default=None)  # TODO validator
+    config: ConfigParser = attr.ib(default=None)  # TODO(#24) validator
     s: smtplib.SMTP = attr.ib(init=False)
     preparatrice = attr.ib(init=False, default=PreparatriceSmtp)
 
@@ -141,7 +141,7 @@ class ExpeditriceSmtp(Expeditrice):
 
 @attr.s
 class ExpeditriceEsmtp:
-    config: ConfigParser = attr.ib(default=None)  # TODO validator
+    config: ConfigParser = attr.ib(default=None)  # TODO(#24) validator
 
     def __attrs_post_init__(self):
         self.config = self.config if self.config else charge_configuration()
@@ -155,10 +155,10 @@ class ExpeditriceEsmtp:
         :return: Path du fichier
         """
         if courriel.emetteur is None:
-            courriel.emetteur = "osuser@localhost"  # TODO ?
+            courriel.emetteur = "osuser@localhost"  # TODO(#27) émetteur configurable
 
         date = datetime.now().strftime("%Y%m%d-%H%M%s")
-        # TODO nom fic
+        # TODO(#27) nom fic
         fic = fichier_sortie or Path("/tmp/") / f"{date}_{courriel.sujet}.txt"
         with open(fic, "w") as f:
             contenu = PreparatriceSmtp().prepare(courriel).as_string()
@@ -178,7 +178,7 @@ class ExpeditriceEsmtp:
             process = self.executant.exec(*args, stdin=f)
 
         try:
-            process.check_returncode()  # TODO attention raise !
+            process.check_returncode()  # TODO(#26) attention raise !
         except Exception as e:
             LOGGER.exception(process.stderr)
             # raise e

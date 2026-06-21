@@ -4,7 +4,7 @@
 
 Application pour envoyer des mails simplement en utilisant la connexion configurée dans config.ini.
 
-TODO pouvoir faire `cat contenu | factrice sujet email`
+TODO(#27) pouvoir faire `cat contenu | factrice sujet email`
 
 Usage:
   factrice [--via-esmtp] <sujet> <adresse_mail_cible> <texte_du_mail>
