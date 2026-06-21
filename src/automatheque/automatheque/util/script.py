@@ -1,10 +1,8 @@
 # -*- coding:utf-8 -*-
 """Utilitaire pour faciliter la création de scripts basés sur automatheque.
 
-TODO cookiecutter : ? https://github.com/LucasRGoes/ports-adapters-sample/blob/master/app/settings.py
-
 Il faut pouvoir l'utiliser aussi dans les modules, pas juste dans les scripts.
-TODO !!
+TODO(#24)
 
 Le format que l'on souhaite est le suivant :
 ```
@@ -91,7 +89,7 @@ class ScriptAutomatheque(object):
         self._logger = None
 
     def __repr__(self):
-        """TODO utiliser attrs."""
+        """TODO(#24) utiliser attrs."""
         return "<ScriptAutomatheque {} {} {}>".format(
             self.nom, self.arguments, self.config
         )
@@ -138,7 +136,7 @@ class ScriptAutomatheque(object):
                 self.config = charge_configuration(ecraser=True, recharger=True)
         except KeyError:
             self.config = charge_configuration(ecraser=True, recharger=True)
-        # TODO ici on pourrait aussi merger la conf et les arguments ...
+        # TODO(#27) ici on pourrait aussi merger la conf et les arguments ...
         # dans self.parametres ?
         """
         def merge(dict_1, dict_2):

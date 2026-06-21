@@ -57,10 +57,7 @@ def verifie_dependance(cle_dependance):
 
 
 def charge_dependance(cle, executable, executable_complet, erreur="", verifie=True):
-    """Charge la dépendance donnée, dans le registre.
-
-    TODO: voir s'il faut utiliser une fabrique et/ou un constructeur ...
-    """
+    """Charge la dépendance donnée, dans le registre."""
     executable = recup_executable(executable, executable_complet)
     executant = Executant(executable)
 
@@ -86,7 +83,7 @@ def recup_executable(nom, chemin_complet):
     :returns: str ou False
     """
     path = shutil.which(nom)
-    # TODO : il faut aussi tester l'execution sans args pour voir si ç march non ?
+    # TODO(#25) : il faut aussi tester l'execution sans args pour voir si ça marche.
     # Si on ne trouve pas l'exécutable on essaie de forcer un chemin classique :
     if path is None:
         path = chemin_complet

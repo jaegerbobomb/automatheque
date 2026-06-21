@@ -28,7 +28,7 @@ class Courriel:
     pieces_jointes: List[Path] = attr.ib(init=False, factory=list, kw_only=True)
     _date_envoi: datetime = attr.ib(
         init=False, default=datetime.now(), kw_only=True
-    )  # TODO vérifier les timezones
+    )  # TODO(#25) vérifier les timezones
     teste_adresse_valide: Callable[[str], Tuple[bool, str]] = attr.ib(
         init=False, default=lambda e: ("@" in e, ""), kw_only=True
     )

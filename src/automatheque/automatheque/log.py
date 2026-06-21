@@ -77,7 +77,7 @@ def recup_logger(name="automatheque"):
     # Si la configuration a déjà été chargée alors logging est déjà paramétré
     # et charge_configuration() ne fait rien.
     charge_configuration()
-    # TODO pour gagner en perf on peut aussi garder un attribut "deja_joue" par
+    # TODO(#26) pour gagner en perf on peut aussi garder un attribut "deja_joue" par
     # exemple pour éviter d'appeler charge_configuration à chaque fois.
 
     lg = logging.getLogger(name)

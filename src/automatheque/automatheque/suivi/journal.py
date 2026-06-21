@@ -33,7 +33,7 @@ class JournalSuivi:
         Il faut donner en entrée le nom du paramètre qui contient la référence, et la
         decoration sauvegardera "nom_fonction_reference".
 
-        TODO ajouter option pour date.
+        TODO(#27) ajouter option pour date.
         """
         pass
 

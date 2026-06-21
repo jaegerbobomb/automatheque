@@ -42,7 +42,7 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
                 continue
 
             _charge_fichier_configuration(fichier, charge_configuration.config)
-            break  # TODO sauf si on veut charger les 2 fichiers ?
+            break  # TODO(#27) sauf si on veut charger les 2 fichiers ?
     # Si on veut conserver la configuration de automatheque, alors on charge
     # sa configuration en dernier :
     if not ecraser:
@@ -69,10 +69,10 @@ def _recup_fichier_config_log(config):
     défaut.
     """
     try:
-        # TODO on ne doit pas forcer l'existence de la config 'log'
+        # TODO(#26) on ne doit pas forcer l'existence de la config 'log'
         fichier_config_log = config.get("log", "fichier_config", fallback="log.json")
     except NoOptionError:
-        # TODO créer une exception custom
+        # TODO(#26) créer une exception custom
         msg = """Pas de configuration pour le fichier de log.
         Rappel structure:
         [log]

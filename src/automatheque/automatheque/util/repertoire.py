@@ -20,7 +20,7 @@ def mkdir_p(path):
 
     Renvoie une erreur si la cible existe et n'est pas un répertoire.
 
-    TODO déprécier pour Path.mkdir()
+    TODO(#24) déprécier pour Path.mkdir()
     """
     try:
         os.makedirs(path)
@@ -29,10 +29,6 @@ def mkdir_p(path):
             pass
         else:
             raise
-
-
-# Fonction supplémentaire à ajouter :
-# TODO https://peterlyons.com/problog/2009/04/zip-dir-python
 
 
 def supprime(repertoire, force=False):

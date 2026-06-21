@@ -75,6 +75,6 @@ class Greffon(RegistreGreffons):
         return False
 
     def _signale_appel(self):
-        # TODO log !!!
-        # TODO on devrait mettre une annotation sur tous les appels de type "capacites"
+        # TODO(#26) log !!!
+        # TODO(#26) annoter tous les appels de type "capacites"
         LOGGER.debug(f"Greffon : {self.cle}||{self.identifiant} - debut appel")
