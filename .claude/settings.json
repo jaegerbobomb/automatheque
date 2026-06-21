@@ -1,5 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  // Empêche l'ajout du lien de session claude.ai (trailer "Claude-Session"
+  // dans les commits + lien dans le corps des PR) en session web/remote.
+  // Réf. doc : https://code.claude.com/docs/en/claude-code-on-the-web
+  // (réglage "attribution.sessionUrl", requiert Claude Code >= 2.1.182).
   "attribution": {
     "sessionUrl": false
   }
