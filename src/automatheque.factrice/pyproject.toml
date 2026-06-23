@@ -1,6 +1,6 @@
 [project]
 name = "automatheque.factrice"
-version = "0.10.1"
+version = "0.11.0"
 description = "Librairie et app simplifiée d'envoi de mail"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "GPLv3.0"}

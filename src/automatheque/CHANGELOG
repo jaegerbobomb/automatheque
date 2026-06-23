@@ -13,10 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Removed
+
+## [0.11.0] - 2026-06-23
+
+Réalignement du monorepo sur la version globale gérée par monas. Les packages
+qui ont réellement changé depuis leur dernière version passent à 0.11.0
+(`automatheque` depuis 0.9.9, `automatheque.factrice` depuis 0.10.1).
+`automatheque.schema` reste en 0.9.7 (aucun changement de code depuis) et
+sautera à la version globale lors de sa prochaine modification.
+
+### Added
+
+* CI : socle d'intégration continue (tests multi-versions, lint/format/types)
+* CI : publication PyPI via tag (trusted publishing OIDC)
+
+### Changed
+
 * Feat: Modifie la gestion des Capacites des Greffons
 * Feat: Ajoute du typing dans le module greffon
 * Feat: Ajoute GreffonAbstrait pour les Greffons qui nécessitent une contrainte d'abstraction
 * Feat: Déclare (à tort) être correctement typé - Travail en cours
+* Nettoyage qualité (typage, excepts ciblés, argument mutable, code mort)
 
 ### Removed
 
@@ -111,5 +129,6 @@ Nouvel utilitaire, pour gérer les dépendances externes.
 
 * Corrige lien entre media et photo
 
-[Unreleased]: https://github.com/jaegerbobomb/automatheque/compare/v0.8.10...HEAD
+[Unreleased]: https://github.com/jaegerbobomb/automatheque/compare/0.11.0...HEAD
+[0.11.0]: https://github.com/jaegerbobomb/automatheque/releases/tag/0.11.0
 [0.8.10]: https://github.com/jaegerbobomb/automatheque/releases/tag/v0.8.10
