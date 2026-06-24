@@ -10,7 +10,9 @@
   // (sessionUrl requiert Claude Code >= 2.1.182).
   "includeCoAuthoredBy": false,
   "attribution": {
-    "sessionUrl": false
+    "sessionUrl": false,
+    "commit": "",
+    "pr": ""
   },
 
   // --- Identité / signature des commits (sessions web/remote) --------------
