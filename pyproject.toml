@@ -1,6 +1,6 @@
 [tool.monas]
 packages = ["src/*"]
-version = "0.9.9"
+version = "0.11.0"
 python-version = "3.11"
 
 # --- Outillage qualité (cf. issue #16) ---
