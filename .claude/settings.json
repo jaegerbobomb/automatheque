@@ -1,10 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  // Empêche l'ajout du lien de session claude.ai (trailer "Claude-Session"
-  // dans les commits + lien dans le corps des PR) en session web/remote.
+
+  // --- Attribution ---------------------------------------------------------
+  // includeCoAuthoredBy=false : supprime la byline "Co-Authored-By: Claude"
+  // dans les commits ET la ligne "🤖 Generated with Claude Code" en bas des PR.
+  // attribution.sessionUrl=false : supprime le trailer "Claude-Session" dans
+  // les commits et le lien de session claude.ai en bas du corps des PR.
   // Réf. doc : https://code.claude.com/docs/en/claude-code-on-the-web
-  // (réglage "attribution.sessionUrl", requiert Claude Code >= 2.1.182).
+  // (sessionUrl requiert Claude Code >= 2.1.182).
+  "includeCoAuthoredBy": false,
   "attribution": {
     "sessionUrl": false
+  },
+
+  // --- Identité / signature des commits (sessions web/remote) --------------
+  // Hook SessionStart commité dans le dépôt : seul type de hook qui s'exécute
+  // en session cloud, à chaque démarrage/reprise. Il rétablit l'identité git
+  // et la signature SSH de dwwm93 (no-op si SIGNING_SSH_KEY est absent, donc
+  // sans effet pour les autres contributeurs ou en local).
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-identity.sh"
+          }
+        ]
+      }
+    ]
   }
 }
