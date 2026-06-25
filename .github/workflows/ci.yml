@@ -30,6 +30,65 @@ jobs:
       - name: Lance les tests avec couverture
         run: pytest src --cov=automatheque --cov-report=term-missing
 
+  tests-plancher:
+    # Lower-bound testing : le job « tests » ci-dessus installe les paquets
+    # intra-dépôt en editable, donc les planchers de version déclarés par
+    # factrice (ex. `automatheque>=0.9.6`) ne sont jamais réellement éprouvés.
+    # Ici on installe explicitement ces planchers depuis PyPI puis on lance les
+    # tests de factrice : on garantit ainsi que les planchers sont *vrais*
+    # (pas de régression à la version minimale annoncée), au lieu d'une simple
+    # affirmation. Cf. #33.
+    name: Tests factrice contre les versions planchers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installe Python 3.9 (plus basse version supportée par la CI)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Installe les planchers déclarés par factrice (depuis PyPI)
+        # Les planchers sont *dérivés* du pyproject de factrice (et non codés en
+        # dur ici) : si un plancher est relevé, ou s'il référence une version
+        # non publiée, ce job suit automatiquement / casse — ce qui est le but.
+        run: |
+          python -m pip install --upgrade pip tomli
+          python - <<'PY'
+          import re
+          import subprocess
+          import sys
+
+          try:
+              import tomllib
+          except ModuleNotFoundError:  # Python < 3.11
+              import tomli as tomllib
+
+          chemin = "src/automatheque.factrice/pyproject.toml"
+          with open(chemin, "rb") as f:
+              data = tomllib.load(f)
+
+          pins = []
+          for dep in data["project"]["dependencies"]:
+              # On ne traite que les dépendances intra-dépôt (préfixe automatheque).
+              if not re.match(r"\s*automatheque", dep):
+                  continue
+              m = re.match(r"\s*([A-Za-z0-9_.\-]+)\s*>=\s*([0-9][^,;\s]*)", dep)
+              assert m, "Dépendance intra-dépôt sans plancher '>=' : {!r}".format(dep)
+              pins.append("{}=={}".format(m.group(1), m.group(2)))
+
+          print("Planchers installés depuis PyPI :", pins)
+          subprocess.check_call([sys.executable, "-m", "pip", "install", *pins])
+          PY
+
+      - name: Installe factrice depuis les sources (sans toucher aux planchers)
+        run: |
+          pip install --no-deps ./src/automatheque.factrice
+          pip install pytest
+
+      - name: Tests factrice contre les planchers
+        run: pytest src/automatheque.factrice/tests -q
+
   qualite:
     name: Qualité (lint, format, types) — rapport
     runs-on: ubuntu-latest

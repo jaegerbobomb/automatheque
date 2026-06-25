@@ -8,7 +8,11 @@ requires-python = ">=3.8"
 readme = "README.md"
 dependencies = [
     "automatheque>=0.9.6",
-    "automatheque.schema>=0.9.5",
+    # 0.9.6 est la plus ancienne version publiée d'automatheque.schema ; le
+    # plancher précédent (>=0.9.5) référençait une version jamais publiée. Le
+    # job CI « tests-plancher » valide que factrice fonctionne contre ces
+    # planchers.
+    "automatheque.schema>=0.9.6",
 ]
 
 [project.urls]
