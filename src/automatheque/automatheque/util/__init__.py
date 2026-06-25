@@ -3,6 +3,9 @@
 # Imports depuis fichier
 from .fichier import enleve_caracteres_invalides
 
+# Imports depuis reessaye
+from .reessaye import reessaye
+
 # Imports depuis repertoire
 from .repertoire import mkdir_p
 
@@ -12,6 +15,8 @@ from .structures_python import dict_merge
 __all__ = [
     # .fichier
     "enleve_caracteres_invalides",
+    # .reessaye
+    "reessaye",
     # .repertoire
     "mkdir_p",
     # .structures_python
