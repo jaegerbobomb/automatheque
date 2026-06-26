@@ -12,7 +12,7 @@ def test_reussite_premier_essai_sans_attente():
     fonction = Mock(return_value="ok")
     decoree = reessaye()(fonction)
 
-    with patch("automatheque.util.reessaye.time.sleep") as sleep:
+    with patch("automatheque.util.reessaye.sleep") as sleep:
         assert decoree("a", b=2) == "ok"
 
     fonction.assert_called_once_with("a", b=2)
@@ -26,7 +26,7 @@ def test_reessaie_puis_reussit_avec_delais_croissants():
         tentatives=4, delai=2, multiplicateur=2, exceptions=(ConnectionError,)
     )(fonction)
 
-    with patch("automatheque.util.reessaye.time.sleep") as sleep:
+    with patch("automatheque.util.reessaye.sleep") as sleep:
         assert decoree() == "ok"
 
     assert fonction.call_count == 3
@@ -39,7 +39,7 @@ def test_epuise_les_tentatives_et_releve_la_derniere_exception():
     fonction = Mock(side_effect=[ValueError("boom-1"), ValueError("boom-2"), derniere])
     decoree = reessaye(tentatives=3, delai=1, exceptions=(ValueError,))(fonction)
 
-    with patch("automatheque.util.reessaye.time.sleep") as sleep:
+    with patch("automatheque.util.reessaye.sleep") as sleep:
         with pytest.raises(ValueError) as info:
             decoree()
 
@@ -54,7 +54,7 @@ def test_exception_non_ciblee_se_propage_sans_reessai():
     fonction = Mock(side_effect=KeyError("absente"))
     decoree = reessaye(tentatives=5, exceptions=(ValueError,))(fonction)
 
-    with patch("automatheque.util.reessaye.time.sleep") as sleep:
+    with patch("automatheque.util.reessaye.sleep") as sleep:
         with pytest.raises(KeyError):
             decoree()
 
@@ -67,7 +67,7 @@ def test_accepte_une_exception_unique_hors_tuple():
     fonction = Mock(side_effect=[TimeoutError(), "ok"])
     decoree = reessaye(tentatives=2, delai=1, exceptions=TimeoutError)(fonction)
 
-    with patch("automatheque.util.reessaye.time.sleep"):
+    with patch("automatheque.util.reessaye.sleep"):
         assert decoree() == "ok"
 
     assert fonction.call_count == 2
@@ -80,9 +80,9 @@ def test_gigue_ajoute_au_delai():
         fonction
     )
 
-    cible = "automatheque.util.reessaye.random.uniform"
+    cible = "automatheque.util.reessaye.uniform"
     with patch(cible, return_value=0.5) as uniform:
-        with patch("automatheque.util.reessaye.time.sleep") as sleep:
+        with patch("automatheque.util.reessaye.sleep") as sleep:
             assert decoree() == "ok"
 
     uniform.assert_called_once_with(0, 1)

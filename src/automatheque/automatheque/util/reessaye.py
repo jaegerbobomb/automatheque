@@ -17,8 +17,8 @@ exception est relevée telle quelle.
 """
 
 import functools
-import random
-import time
+from random import uniform
+from time import sleep
 
 from automatheque.log import recup_logger
 
@@ -66,14 +66,14 @@ def reessaye(tentatives=4, delai=2, multiplicateur=2, exceptions=(Exception,), g
                             )
                         )
                         raise
-                    pause = attente + (random.uniform(0, gigue) if gigue else 0)
+                    pause = attente + (uniform(0, gigue) if gigue else 0)
                     LOGGER.debug(
                         "{} a échoué (essai {}/{}) : {}. "
                         "Nouvel essai dans {:.2f}s".format(
                             nom, essai, tentatives, exc, pause
                         )
                     )
-                    time.sleep(pause)
+                    sleep(pause)
                     attente *= multiplicateur
 
         return enveloppe
