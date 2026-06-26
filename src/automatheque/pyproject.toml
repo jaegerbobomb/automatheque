@@ -6,8 +6,15 @@ authors = [
     { name = "Marc", email = "githubmarc@maj44.com" },
 ]
 license = { text = "GPLv3.0" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "docopt",
     "pytz",

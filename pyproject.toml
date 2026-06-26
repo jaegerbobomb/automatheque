@@ -1,11 +1,18 @@
 [tool.monas]
 packages = ["src/*"]
 version = "0.11.0"
+# Interpréteur Python de l'environnement de DÉVELOPPEMENT géré par monas. À ne
+# pas confondre avec le plancher SUPPORTÉ (requires-python = ">=3.9" dans les
+# 3 paquets) : on développe sur un interpréteur récent tout en supportant 3.9.
+# ruff/mypy ciblent volontairement 3.9 (le plancher) pour détecter toute
+# incompatibilité avec la plus ancienne version supportée. Cf. #32.
 python-version = "3.11"
 
 # --- Outillage qualité (cf. issue #16) ---
 
 [tool.ruff]
+# Cible le plancher supporté (cf. requires-python = ">=3.9") afin de repérer
+# l'usage de syntaxe trop récente pour 3.9.
 target-version = "py39"
 # Les setup.py sont générés par monas, on ne les lint/formate pas.
 extend-exclude = ["**/setup.py"]
