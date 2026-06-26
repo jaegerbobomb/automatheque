@@ -1,0 +1,46 @@
+# Changelog — automatheque.factrice
+
+<!-- markdownlint-disable MD024 -->
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+> Ce journal a été introduit avec la version 0.11.0 (cf. #34). Les entrées des
+> versions antérieures sont reconstituées depuis l'historique git et peuvent
+> donc être moins détaillées.
+
+## [Unreleased]
+
+### Changed
+
+* Corrige le plancher de dépendance `automatheque.schema` (`>=0.9.5` →
+  `>=0.9.6`, plus ancienne version réellement publiée) et ajoute un job CI
+  « tests-plancher » qui éprouve factrice contre ses versions planchers — cf. #33
+
+## [0.11.0] - 2026-06-23
+
+Réalignement sur la version globale du monorepo gérée par monas.
+
+### Added
+
+* Tests de `expedition`
+
+### Changed
+
+* `expedition.py` : repli (`fallback`) sur `ConfigParser`, exception SMTP
+  ciblée à la place d'un `except` trop large, suppression de code mort
+* Nettoyage qualité (typage, `except` ciblés, argument par défaut mutable)
+
+## [0.10.1] - 2023-11-02
+
+### Added
+
+* Gestion de l'envoi via ESMTP (`ExpeditriceEsmtp`)
+
+## [0.10.0] - 2023-10-31
+
+### Added
+
+* Première version fonctionnelle d'envoi de mail simple (`ExpeditriceSmtp`)
