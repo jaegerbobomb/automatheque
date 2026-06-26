@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `util.reessaye` : décorateur de réessais avec attente croissante
+  (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
+
 ### Changed
 
 ### Removed
