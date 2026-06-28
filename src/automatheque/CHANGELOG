@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `util.reessaye` : décorateur de réessais avec attente croissante
   (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
+* `util.script` : alias court `script` pour `script_automatheque`
+  (`@script(__doc__, __version__)`), le nom canonique restant disponible.
 
 ### Changed
 
