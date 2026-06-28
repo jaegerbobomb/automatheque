@@ -17,7 +17,9 @@ Options:
 '''
 __version__ = '0.1a'  # ou importer depuis mon_package.__version__
 
-@script_automatheque(__doc__, __version__)
+from automatheque.util.script import script  # alias court de script_automatheque
+
+@script(__doc__, __version__)
 def main(..., _script=None):
     # code à exécuter
     # _script est un objet `ScriptAutomatheque`
@@ -27,6 +29,9 @@ if __name__ == '__main__':
     main(...)
 ```
 Cela déclenche les logs de début, de fin, parse les arguments etc.
+
+``script`` est un alias court de ``script_automatheque`` : les deux noms sont
+équivalents et exportés depuis ``automatheque.util.script``.
 """
 
 import sys
@@ -166,3 +171,8 @@ class ScriptAutomatheque(object):
                 self.nom, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%s")
             )
         )
+
+
+# Alias court : `@script(...)` se lit mieux que `@script_automatheque(...)`.
+# Le nom canonique reste disponible (rétrocompatibilité).
+script = script_automatheque
