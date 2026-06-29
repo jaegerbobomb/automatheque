@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Packaging : `requires-python` passe à `>=3.9` (3.8 est en fin de vie et
+  n'était plus testé) et ajout des classifiers trove `Python :: 3.9..3.12`,
+  pour une baseline Python unique et cohérente — cf. #32
+
 ### Removed
 
 ## [0.11.0] - 2026-06-23
