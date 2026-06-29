@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* Packaging : identifiant de licence corrigé en SPDX valide
+  `GPL-3.0-or-later` (était `GPLv3.0`) — cf. #20
+
 ## [0.11.0] - 2026-06-29
 
 Réalignement sur la version globale du monorepo gérée par monas.

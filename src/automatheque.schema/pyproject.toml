@@ -3,7 +3,7 @@ name = "automatheque.schema"
 version = "0.9.7"
 description = "Domaine pour des classes courantes et partagées"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
-license = {text = "GPLv3.0"}
+license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.9"
 readme = "README.md"
 classifiers = [
