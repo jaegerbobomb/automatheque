@@ -11,7 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `log.configure_logging_defaut()` : active explicitement le logging console
+  par défaut (opt-in pour les applications/scripts) — cf. #45
+
 ### Changed
+
+* `log` : la bibliothèque **ne configure plus le logging global à l'import**
+  (simple `NullHandler` sur le logger `automatheque`) et **ne désactive plus
+  les loggers existants** (`disable_existing_loggers=False`). `recup_logger`
+  se réduit à `logging.getLogger`. Les scripts conservent leur sortie console :
+  `@script_automatheque` appelle `configure_logging_defaut()`. — cf. #45
 
 ### Removed
 

@@ -21,9 +21,8 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
 
     charge_configuration.config = ConfigParser()
 
-    # On charge le logger ici, donc si la configuration a déjà été chargée on
-    # est sûrs que recup_logger ne sera pas appelé de nouveau.
-    # (ce que l'on souhaite vu que recup_logger appelle charge_configuration..)
+    # recup_logger renvoie simplement un logger (il ne reconfigure plus le
+    # logging global ni ne rappelle charge_configuration).
     logger = recup_logger(__name__)
 
     # Pour écraser la configuration de automatheque on la charge en premier
