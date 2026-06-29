@@ -11,20 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* `util.reessaye` : décorateur de réessais avec attente croissante
-  (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
-* `util.script` : alias court `script` pour `script_automatheque`
-  (`@script(__doc__, __version__)`), le nom canonique restant disponible.
-
 ### Changed
 
-* Packaging : `requires-python` passe à `>=3.9` (3.8 est en fin de vie et
-  n'était plus testé) et ajout des classifiers trove `Python :: 3.9..3.12`,
-  pour une baseline Python unique et cohérente — cf. #32
+* Packaging : identifiant de licence corrigé en SPDX valide
+  `GPL-3.0-or-later` (était `GPLv3.0`) — cf. #20
+* Packaging : dépendance `docopt` bornée `>=0.6,<1` (garde-fou breaking
+  changes) — cf. #4/#39
 
 ### Removed
 
-## [0.11.0] - 2026-06-23
+## [0.11.0] - 2026-06-29
 
 Réalignement du monorepo sur la version globale gérée par monas. Les packages
 qui ont réellement changé depuis leur dernière version passent à 0.11.0
@@ -34,11 +30,18 @@ sautera à la version globale lors de sa prochaine modification.
 
 ### Added
 
+* `util.reessaye` : décorateur de réessais avec attente croissante
+  (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
+* `util.script` : alias court `script` pour `script_automatheque`
+  (`@script(__doc__, __version__)`), le nom canonique restant disponible.
 * CI : socle d'intégration continue (tests multi-versions, lint/format/types)
 * CI : publication PyPI via tag (trusted publishing OIDC)
 
 ### Changed
 
+* Packaging : `requires-python` passe à `>=3.9` (3.8 est en fin de vie et
+  n'était plus testé) et ajout des classifiers trove `Python :: 3.9..3.12`,
+  pour une baseline Python unique et cohérente — cf. #32
 * Feat: Modifie la gestion des Capacites des Greffons
 * Feat: Ajoute du typing dans le module greffon
 * Feat: Ajoute GreffonAbstrait pour les Greffons qui nécessitent une contrainte d'abstraction
