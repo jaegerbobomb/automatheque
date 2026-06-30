@@ -86,10 +86,10 @@ def test_dictconfig_depuis_ini_console_par_defaut():
 
 
 def test_dictconfig_depuis_ini_fichier_et_format():
-    """`fichier` → FileHandler ; `format` est repris tel quel."""
+    """`fichier` → FileHandler ; `format` avec `%%` est dé-échappé en `%`."""
     config = ConfigParser()
     config.read_string(
-        "[log]\nniveau = DEBUG\nfichier = /tmp/app.log\nformat = %(message)s\n"
+        "[log]\nniveau = DEBUG\nfichier = /tmp/app.log\nformat = %%(message)s\n"
     )
 
     conf = _dictconfig_depuis_ini(config)
@@ -98,3 +98,12 @@ def test_dictconfig_depuis_ini_fichier_et_format():
     assert handler["class"] == "logging.FileHandler"
     assert handler["filename"] == "/tmp/app.log"
     assert conf["formatters"]["automatheque"]["format"] == "%(message)s"
+
+
+def test_dictconfig_depuis_ini_pourcent_non_echappe_message_clair():
+    """Un `%` non échappé dans [log] lève un ValueError qui invite à doubler."""
+    config = ConfigParser()
+    config.read_string("[log]\nformat = %(asctime)s\n")
+
+    with pytest.raises(ValueError, match="%%"):
+        _dictconfig_depuis_ini(config)

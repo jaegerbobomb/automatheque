@@ -3,7 +3,12 @@
 
 from os import path
 
-from configparser import ConfigParser, NoOptionError, NoSectionError
+from configparser import (
+    ConfigParser,
+    InterpolationError,
+    NoOptionError,
+    NoSectionError,
+)
 
 from automatheque import constantes
 from automatheque.log import recup_logger, configure_logging
@@ -108,24 +113,32 @@ def _dictconfig_depuis_ini(config):
 
     * ``niveau``  : niveau du logger ``automatheque`` (défaut ``INFO``) ;
     * ``fichier`` : si présent, journalise dans ce fichier (sinon console) ;
-    * ``format``  : format des messages.
+    * ``format``  : format des messages. Les ``%`` doivent être **échappés en
+      ``%%``** (convention ConfigParser, comme partout ailleurs dans le ``.ini``),
+      p. ex. ``format = %%(asctime)s [%%(levelname)s] %%(name)s: %%(message)s``.
 
     Renvoie ``None`` si aucune de ces clés n'est présente (rien à configurer).
+
+    :raise ValueError: si une valeur contient un ``%`` non échappé (message
+        explicite invitant à doubler le ``%``).
     """
     cles = ("niveau", "fichier", "format")
     if not any(config.has_option("log", c) for c in cles):
         return None
 
-    niveau = config.get("log", "niveau", fallback="INFO").upper()
-    # raw=True : les formats de log (`%(asctime)s`…) et les chemins ne doivent
-    # pas subir l'interpolation `%` de ConfigParser.
-    fmt = config.get(
-        "log",
-        "format",
-        fallback="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        raw=True,
-    )
-    fichier = config.get("log", "fichier", fallback=None, raw=True)
+    try:
+        niveau = config.get("log", "niveau", fallback="INFO").upper()
+        fmt = config.get(
+            "log",
+            "format",
+            fallback="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        )
+        fichier = config.get("log", "fichier", fallback=None)
+    except InterpolationError as exc:
+        raise ValueError(
+            "Section [log] : un '%' non échappé. Doublez-le en '%%' (convention "
+            "ConfigParser), p. ex. format = %%(asctime)s %%(message)s. [{}]".format(exc)
+        ) from exc
 
     if fichier:
         handler = {

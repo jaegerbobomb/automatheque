@@ -15,7 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   par défaut (opt-in pour les applications/scripts) — cf. #45
 * Configuration de log **inline** dans la section `[log]` du `.ini` : clés
   simples `niveau` / `fichier` / `format` (dictConfig minimal fabriqué à la
-  volée), pour le cas courant sans fichier externe — cf. #45
+  volée), pour le cas courant sans fichier externe. Dans `format`, les `%`
+  s'échappent en `%%` (convention ConfigParser) ; un `%` non échappé lève une
+  erreur explicite. — cf. #45
 
 ### Changed
 
