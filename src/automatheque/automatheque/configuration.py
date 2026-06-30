@@ -3,12 +3,19 @@
 
 from os import path
 
-from configparser import ConfigParser, NoOptionError, NoSectionError
+from configparser import (
+    ConfigParser,
+    InterpolationError,
+    NoOptionError,
+    NoSectionError,
+)
 
 from automatheque import constantes
 from automatheque.log import recup_logger, configure_logging
 
-fichier_config = "{}/config.ini".format(constantes.repertoire_config)
+def fichier_config():
+    """Chemin du ``config.ini`` **partagé** d'automatheque (couche de base)."""
+    return path.join(constantes.repertoire_config(), "config.ini")
 
 
 def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger=False):
@@ -21,21 +28,20 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
 
     charge_configuration.config = ConfigParser()
 
-    # On charge le logger ici, donc si la configuration a déjà été chargée on
-    # est sûrs que recup_logger ne sera pas appelé de nouveau.
-    # (ce que l'on souhaite vu que recup_logger appelle charge_configuration..)
+    # recup_logger renvoie simplement un logger (il ne reconfigure plus le
+    # logging global ni ne rappelle charge_configuration).
     logger = recup_logger(__name__)
 
     # Pour écraser la configuration de automatheque on la charge en premier
     # et les fichiers suivants vont prendre la précédence.
     if ecraser:
-        _charge_fichier_configuration(fichier_config, charge_configuration.config)
+        _charge_fichier_configuration(fichier_config(), charge_configuration.config)
 
     # Ajout des autres fichiers s'il y en a :
     for f in fichiers_supplementaires:
         # Si "f" n'est pas un fichier, on regarde s'il existe dans le
-        # répertoire de configuration d'automatheque.
-        paths_a_tester = [f, path.join(constantes.repertoire_config, f)]
+        # répertoire de configuration partagé d'automatheque.
+        paths_a_tester = [f, path.join(constantes.repertoire_config(), f)]
         for fichier in paths_a_tester:
             if not path.isfile(fichier):
                 logger.debug("{} n'est pas un fichier.".format(fichier))
@@ -46,7 +52,7 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
     # Si on veut conserver la configuration de automatheque, alors on charge
     # sa configuration en dernier :
     if not ecraser:
-        _charge_fichier_configuration(fichier_config, charge_configuration.config)
+        _charge_fichier_configuration(fichier_config(), charge_configuration.config)
 
     # Si la configuration que l'on vient d'importer contient des paramètres
     # qui concernent les logs alors on configure le logging :
@@ -62,52 +68,104 @@ def _charge_fichier_configuration(fichier, config):
     config.read(fichier)
 
 
-def _recup_fichier_config_log(config):
-    """Renvoie le fichier de configuration des logs.
-
-    S'il n'en trouve pas dans la configuration globale il renvoie log.json par
-    défaut.
-    """
-    try:
-        # TODO(#26) on ne doit pas forcer l'existence de la config 'log'
-        fichier_config_log = config.get("log", "fichier_config", fallback="log.json")
-    except NoOptionError:
-        # TODO(#26) créer une exception custom
-        msg = """Pas de configuration pour le fichier de log.
-        Rappel structure:
-        [log]
-        fichier_config=chemin/vers/fichier/config.json ou .yaml"""
-        recup_logger(__name__).exception(msg)
-        raise
-    return fichier_config_log
-
-
 def _configure_logging(config):
-    """Configure logging avec les valeurs définies dans le config.ini.
+    """Configure le logging d'après la section ``[log]`` de la configuration.
 
-    Par défaut automatheque charge la configuration du fichier définit dans le
-    config.ini dans la section :
-    `[log]
-    fichier_config=mon_fichierlog.json ou yaml
-    `
-    ou dans le fichier log.json à la racine du script s'il existe.
+    Précédence (plus aucune découverte magique de fichier au ``cwd``) :
 
-    Cette fonction est appelée automatiquement par charge_configuration à sa
-    première exécution.
+    1. ``fichier_config`` → chemin d'un dictConfig externe (JSON **ou** YAML,
+       détecté d'après son contenu) ;
+    2. sinon, clés simples ``niveau`` / ``fichier`` / ``format`` dans ``[log]``
+       → un dictConfig minimal est fabriqué à la volée ;
+    3. sinon, rien (le logging par défaut éventuellement posé par l'application
+       — cf. ``log.configure_logging_defaut`` — reste en place).
 
-    :param desactive_loggers_existants: boolean Force ce paramètre de log
+    Appelée automatiquement par ``charge_configuration``. N'interrompt jamais le
+    chargement de la configuration si la section/option est absente.
     """
-    # Puis on ajoute la configuration trouvée dans le fichier de configuration
-    # du logging, dont le chemin est stocké dans la configuration globale :
-
     try:
-        fichier_config_log = _recup_fichier_config_log(config)
+        if not config.has_section("log"):
+            recup_logger(__name__).debug("Section [log] absente : logging inchangé.")
+            return
+        fichier_config_log = config.get("log", "fichier_config", fallback=None)
         desactive_loggers_existants = config.get(
             "log", "desactive_loggers_existants", fallback=None
         )
     except (NoOptionError, NoSectionError):
         recup_logger(__name__).debug(
-            "Pas de configuration de logging dans la configuration globale."
+            "Pas de configuration de logging exploitable dans [log]."
         )
-    else:
+        return
+
+    if fichier_config_log:
         configure_logging(fichier_config_log, desactive_loggers_existants)
+        return
+
+    conf = _dictconfig_depuis_ini(config)
+    if conf is not None:
+        if desactive_loggers_existants is not None:
+            conf["disable_existing_loggers"] = desactive_loggers_existants
+        configure_logging(conf)
+
+
+def _dictconfig_depuis_ini(config):
+    """Construit un dictConfig minimal depuis des clés simples de ``[log]``.
+
+    Clés reconnues (toutes optionnelles) :
+
+    * ``niveau``  : niveau du logger ``automatheque`` (défaut ``INFO``) ;
+    * ``fichier`` : si présent, journalise dans ce fichier (sinon console) ;
+    * ``format``  : format des messages. Les ``%`` doivent être **échappés en
+      ``%%``** (convention ConfigParser, comme partout ailleurs dans le ``.ini``),
+      p. ex. ``format = %%(asctime)s [%%(levelname)s] %%(name)s: %%(message)s``.
+
+    Renvoie ``None`` si aucune de ces clés n'est présente (rien à configurer).
+
+    :raise ValueError: si une valeur contient un ``%`` non échappé (message
+        explicite invitant à doubler le ``%``).
+    """
+    cles = ("niveau", "fichier", "format")
+    if not any(config.has_option("log", c) for c in cles):
+        return None
+
+    try:
+        niveau = config.get("log", "niveau", fallback="INFO").upper()
+        fmt = config.get(
+            "log",
+            "format",
+            fallback="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        )
+        fichier = config.get("log", "fichier", fallback=None)
+    except InterpolationError as exc:
+        raise ValueError(
+            "Section [log] : un '%' non échappé. Doublez-le en '%%' (convention "
+            "ConfigParser), p. ex. format = %%(asctime)s %%(message)s. [{}]".format(exc)
+        ) from exc
+
+    if fichier:
+        handler = {
+            "class": "logging.FileHandler",
+            "filename": fichier,
+            "formatter": "automatheque",
+            "level": niveau,
+        }
+    else:
+        handler = {
+            "class": "logging.StreamHandler",
+            "formatter": "automatheque",
+            "level": niveau,
+        }
+
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {"automatheque": {"format": fmt}},
+        "handlers": {"automatheque": handler},
+        "loggers": {
+            "automatheque": {
+                "handlers": ["automatheque"],
+                "level": niveau,
+                "propagate": True,
+            }
+        },
+    }

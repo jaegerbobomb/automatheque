@@ -1,7 +1,11 @@
 import json
 import logging
 
-from automatheque.log import configure_logging
+from automatheque.log import (
+    configure_logging,
+    configure_logging_defaut,
+    recup_logger,
+)
 
 
 def _config_logging_dict(nom_logger):
@@ -21,6 +25,30 @@ def test_configure_logging_charge_fichier_json(tmp_path):
     configure_logging(str(fichier))
 
     assert logging.getLogger(nom).level == logging.DEBUG
+
+
+def test_import_pose_un_nullhandler_sur_le_logger_automatheque():
+    """À l'import, la lib n'installe qu'un NullHandler (pas de config globale)."""
+    handlers = logging.getLogger("automatheque").handlers
+    assert any(isinstance(h, logging.NullHandler) for h in handlers)
+
+
+def test_recup_logger_ne_configure_pas_le_global():
+    """recup_logger renvoie le logger demandé sans rien reconfigurer."""
+    lg = recup_logger("un.logger.quelconque")
+    assert isinstance(lg, logging.Logger)
+    assert lg.name == "un.logger.quelconque"
+
+
+def test_configure_logging_defaut_ne_desactive_pas_les_loggers_existants():
+    """La config par défaut ne doit pas désactiver un logger préexistant
+    (disable_existing_loggers = False)."""
+    autre = logging.getLogger("un_logger_preexistant")
+    autre.disabled = False
+
+    configure_logging_defaut()
+
+    assert autre.disabled is False
 
 
 def test_configure_logging_charge_fichier_yaml(tmp_path):

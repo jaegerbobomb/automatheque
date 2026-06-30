@@ -13,13 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-* Corrige le plancher de dépendance `automatheque.schema` (`>=0.9.5` →
-  `>=0.9.6`, plus ancienne version réellement publiée) et ajoute un job CI
-  « tests-plancher » qui éprouve factrice contre ses versions planchers — cf. #33
-
-## [0.11.0] - 2026-06-23
+## [0.11.0] - 2026-06-29
 
 Réalignement sur la version globale du monorepo gérée par monas.
 
@@ -32,6 +26,11 @@ Réalignement sur la version globale du monorepo gérée par monas.
 * `expedition.py` : repli (`fallback`) sur `ConfigParser`, exception SMTP
   ciblée à la place d'un `except` trop large, suppression de code mort
 * Nettoyage qualité (typage, `except` ciblés, argument par défaut mutable)
+* Packaging : `requires-python` passe à `>=3.9` + classifiers trove
+  `Python :: 3.9..3.12` — cf. #32
+* Corrige le plancher de dépendance `automatheque.schema` (`>=0.9.5` →
+  `>=0.9.6`, plus ancienne version réellement publiée) et ajoute un job CI
+  « tests-plancher » qui éprouve factrice contre ses versions planchers — cf. #33
 
 ## [0.10.1] - 2023-11-02
 
