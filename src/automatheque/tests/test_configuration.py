@@ -11,6 +11,8 @@ from automatheque.configuration import (
     charge_configuration,
 )
 
+from automatheque import constantes
+
 
 def test_charge_configuration_defaut_non_mutable():
     """L'argument par défaut ne doit pas être une liste mutable partagée."""
@@ -107,3 +109,41 @@ def test_dictconfig_depuis_ini_pourcent_non_echappe_message_clair():
 
     with pytest.raises(ValueError, match="%%"):
         _dictconfig_depuis_ini(config)
+
+
+def test_racine_config_honore_xdg(monkeypatch, tmp_path):
+    """`$XDG_CONFIG_HOME` est respecté quand il est défini."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    assert constantes._racine_config() == str(tmp_path)
+
+
+def test_racine_config_defaut_sur_config(monkeypatch):
+    """Sans `$XDG_CONFIG_HOME`, on retombe sur ~/.config."""
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    assert constantes._racine_config().endswith("/.config")
+
+
+def test_repertoire_config_par_script(monkeypatch, tmp_path):
+    """Le répertoire par script est <racine>/<nom_court>/."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    assert constantes.repertoire_config_script("monscript") == str(
+        tmp_path / "monscript"
+    )
+
+
+def test_charge_configuration_en_couches(monkeypatch, tmp_path):
+    """La couche supplémentaire surcharge la couche partagée, qui sert de base."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    partage = tmp_path / "automatheque"
+    partage.mkdir()
+    (partage / "config.ini").write_text("[demo]\ncle = partagee\nbase = oui\n")
+
+    (tmp_path / "monscript").mkdir()
+    specifique = tmp_path / "monscript" / "config.ini"
+    specifique.write_text("[demo]\ncle = specifique\n")
+
+    cfg = charge_configuration([str(specifique)], ecraser=True, recharger=True)
+
+    assert cfg.get("demo", "cle") == "specifique"  # la couche script surcharge
+    assert cfg.get("demo", "base") == "oui"  # la couche partagée reste la base
