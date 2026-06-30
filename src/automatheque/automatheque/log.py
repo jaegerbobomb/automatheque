@@ -53,36 +53,32 @@ def logger_existe(nom):
     return existe
 
 
-def recup_logger(name="automatheque"):
-    """Renvoie un logger : wrapper autour de logging.
+def configure_logging_defaut():
+    """Active la configuration de logging par défaut d'automatheque.
 
-    Charge la configuration de l'application et celle du logging si cela n'a
-    pas encore été fait, puis renvoie le logger demandé.
-    Renvoie le logger "automatheque" par défaut, défini dans les constantes.
-
-    Par défaut automatheque charge la configuration du fichier définit dans le
-    config.ini, dans la section :
-    .. code-block:: ini
-        [log]
-        fichier_config=mon_fichierlog.json
-
-    ou dans le fichier log.json à la racine du script appelant s'il existe.
-
-    :param name:  Nom du logger demandé (passé à logging.getLogger())
+    Pose un handler console sur le logger ``automatheque``. À appeler par une
+    **application** (un script, p. ex. via ``@script_automatheque``), jamais à
+    l'import d'une bibliothèque : configurer le logging global est le rôle de
+    l'application, pas de la lib.
     """
-    # charge_configuration() utilise aussi recup_logger mais il ne l'appelle
-    # que si la configuration n'a pas encore été chargée.
-    from automatheque.configuration import charge_configuration
-
-    # Si la configuration a déjà été chargée alors logging est déjà paramétré
-    # et charge_configuration() ne fait rien.
-    charge_configuration()
-    # TODO(#26) pour gagner en perf on peut aussi garder un attribut "deja_joue" par
-    # exemple pour éviter d'appeler charge_configuration à chaque fois.
-
-    lg = logging.getLogger(name)
-    return lg
+    configure_logging(logger_config_dict)
 
 
-# D'abord on configure le logging par défaut d'automatheque
-configure_logging(logger_config_dict)
+def recup_logger(name="automatheque"):
+    """Renvoie un logger (simple wrapper de ``logging.getLogger``).
+
+    **Ne configure pas** le logging global : une bibliothèque ne doit pas le
+    faire. C'est à l'application d'activer le logging quand elle le souhaite
+    (``configure_logging`` / ``configure_logging_defaut``, ou
+    ``@script_automatheque`` qui s'en charge pour les scripts).
+
+    :param name: nom du logger demandé (passé à ``logging.getLogger``).
+    """
+    return logging.getLogger(name)
+
+
+# Une bibliothèque ne configure pas le logging global à l'import : on se
+# contente d'un NullHandler sur le logger « automatheque » (handler de dernier
+# recours, évite « No handlers could be found »). L'application active le
+# logging quand elle le veut, via configure_logging[_defaut].
+logging.getLogger("automatheque").addHandler(logging.NullHandler())

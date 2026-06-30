@@ -11,20 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* `util.reessaye` : décorateur de réessais avec attente croissante
-  (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
-* `util.script` : alias court `script` pour `script_automatheque`
-  (`@script(__doc__, __version__)`), le nom canonique restant disponible.
+* `log.configure_logging_defaut()` : active explicitement le logging console
+  par défaut (opt-in pour les applications/scripts) — cf. #45
+* Configuration de log **inline** dans la section `[log]` du `.ini` : clés
+  simples `niveau` / `fichier` / `format` (dictConfig minimal fabriqué à la
+  volée), pour le cas courant sans fichier externe. Dans `format`, les `%`
+  s'échappent en `%%` (convention ConfigParser) ; un `%` non échappé lève une
+  erreur explicite. — cf. #45
 
 ### Changed
 
-* Packaging : `requires-python` passe à `>=3.9` (3.8 est en fin de vie et
-  n'était plus testé) et ajout des classifiers trove `Python :: 3.9..3.12`,
-  pour une baseline Python unique et cohérente — cf. #32
+* `log` : la bibliothèque **ne configure plus le logging global à l'import**
+  (simple `NullHandler` sur le logger `automatheque`) et **ne désactive plus
+  les loggers existants** (`disable_existing_loggers=False`). `recup_logger`
+  se réduit à `logging.getLogger`. Les scripts conservent leur sortie console :
+  `@script_automatheque` appelle `configure_logging_defaut()`. — cf. #45
+* Résolution de la config de log : `[log] fichier_config=` accepte un dictConfig
+  **JSON ou YAML** (détection par contenu) ; **fin de la découverte magique de
+  `log.json` au `cwd`** (plus de `fallback="log.json"`). — cf. #45
 
 ### Removed
 
-## [0.11.0] - 2026-06-23
+## [0.11.0] - 2026-06-29
 
 Réalignement du monorepo sur la version globale gérée par monas. Les packages
 qui ont réellement changé depuis leur dernière version passent à 0.11.0
@@ -34,11 +42,18 @@ sautera à la version globale lors de sa prochaine modification.
 
 ### Added
 
+* `util.reessaye` : décorateur de réessais avec attente croissante
+  (multiplicateur, gigue optionnelle, exceptions ciblées) — cf. #7
+* `util.script` : alias court `script` pour `script_automatheque`
+  (`@script(__doc__, __version__)`), le nom canonique restant disponible.
 * CI : socle d'intégration continue (tests multi-versions, lint/format/types)
 * CI : publication PyPI via tag (trusted publishing OIDC)
 
 ### Changed
 
+* Packaging : `requires-python` passe à `>=3.9` (3.8 est en fin de vie et
+  n'était plus testé) et ajout des classifiers trove `Python :: 3.9..3.12`,
+  pour une baseline Python unique et cohérente — cf. #32
 * Feat: Modifie la gestion des Capacites des Greffons
 * Feat: Ajoute du typing dans le module greffon
 * Feat: Ajoute GreffonAbstrait pour les Greffons qui nécessitent une contrainte d'abstraction
