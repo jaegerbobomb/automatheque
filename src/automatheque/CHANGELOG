@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `log.configure_logging_defaut()` : active explicitement le logging console
   par défaut (opt-in pour les applications/scripts) — cf. #45
+* Configuration de log **inline** dans la section `[log]` du `.ini` : clés
+  simples `niveau` / `fichier` / `format` (dictConfig minimal fabriqué à la
+  volée), pour le cas courant sans fichier externe — cf. #45
 
 ### Changed
 
@@ -21,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   les loggers existants** (`disable_existing_loggers=False`). `recup_logger`
   se réduit à `logging.getLogger`. Les scripts conservent leur sortie console :
   `@script_automatheque` appelle `configure_logging_defaut()`. — cf. #45
+* Résolution de la config de log : `[log] fichier_config=` accepte un dictConfig
+  **JSON ou YAML** (détection par contenu) ; **fin de la découverte magique de
+  `log.json` au `cwd`** (plus de `fallback="log.json"`). — cf. #45
 
 ### Removed
 

@@ -61,52 +61,96 @@ def _charge_fichier_configuration(fichier, config):
     config.read(fichier)
 
 
-def _recup_fichier_config_log(config):
-    """Renvoie le fichier de configuration des logs.
-
-    S'il n'en trouve pas dans la configuration globale il renvoie log.json par
-    défaut.
-    """
-    try:
-        # TODO(#26) on ne doit pas forcer l'existence de la config 'log'
-        fichier_config_log = config.get("log", "fichier_config", fallback="log.json")
-    except NoOptionError:
-        # TODO(#26) créer une exception custom
-        msg = """Pas de configuration pour le fichier de log.
-        Rappel structure:
-        [log]
-        fichier_config=chemin/vers/fichier/config.json ou .yaml"""
-        recup_logger(__name__).exception(msg)
-        raise
-    return fichier_config_log
-
-
 def _configure_logging(config):
-    """Configure logging avec les valeurs définies dans le config.ini.
+    """Configure le logging d'après la section ``[log]`` de la configuration.
 
-    Par défaut automatheque charge la configuration du fichier définit dans le
-    config.ini dans la section :
-    `[log]
-    fichier_config=mon_fichierlog.json ou yaml
-    `
-    ou dans le fichier log.json à la racine du script s'il existe.
+    Précédence (plus aucune découverte magique de fichier au ``cwd``) :
 
-    Cette fonction est appelée automatiquement par charge_configuration à sa
-    première exécution.
+    1. ``fichier_config`` → chemin d'un dictConfig externe (JSON **ou** YAML,
+       détecté d'après son contenu) ;
+    2. sinon, clés simples ``niveau`` / ``fichier`` / ``format`` dans ``[log]``
+       → un dictConfig minimal est fabriqué à la volée ;
+    3. sinon, rien (le logging par défaut éventuellement posé par l'application
+       — cf. ``log.configure_logging_defaut`` — reste en place).
 
-    :param desactive_loggers_existants: boolean Force ce paramètre de log
+    Appelée automatiquement par ``charge_configuration``. N'interrompt jamais le
+    chargement de la configuration si la section/option est absente.
     """
-    # Puis on ajoute la configuration trouvée dans le fichier de configuration
-    # du logging, dont le chemin est stocké dans la configuration globale :
-
     try:
-        fichier_config_log = _recup_fichier_config_log(config)
+        if not config.has_section("log"):
+            recup_logger(__name__).debug("Section [log] absente : logging inchangé.")
+            return
+        fichier_config_log = config.get("log", "fichier_config", fallback=None)
         desactive_loggers_existants = config.get(
             "log", "desactive_loggers_existants", fallback=None
         )
     except (NoOptionError, NoSectionError):
         recup_logger(__name__).debug(
-            "Pas de configuration de logging dans la configuration globale."
+            "Pas de configuration de logging exploitable dans [log]."
         )
-    else:
+        return
+
+    if fichier_config_log:
         configure_logging(fichier_config_log, desactive_loggers_existants)
+        return
+
+    conf = _dictconfig_depuis_ini(config)
+    if conf is not None:
+        if desactive_loggers_existants is not None:
+            conf["disable_existing_loggers"] = desactive_loggers_existants
+        configure_logging(conf)
+
+
+def _dictconfig_depuis_ini(config):
+    """Construit un dictConfig minimal depuis des clés simples de ``[log]``.
+
+    Clés reconnues (toutes optionnelles) :
+
+    * ``niveau``  : niveau du logger ``automatheque`` (défaut ``INFO``) ;
+    * ``fichier`` : si présent, journalise dans ce fichier (sinon console) ;
+    * ``format``  : format des messages.
+
+    Renvoie ``None`` si aucune de ces clés n'est présente (rien à configurer).
+    """
+    cles = ("niveau", "fichier", "format")
+    if not any(config.has_option("log", c) for c in cles):
+        return None
+
+    niveau = config.get("log", "niveau", fallback="INFO").upper()
+    # raw=True : les formats de log (`%(asctime)s`…) et les chemins ne doivent
+    # pas subir l'interpolation `%` de ConfigParser.
+    fmt = config.get(
+        "log",
+        "format",
+        fallback="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        raw=True,
+    )
+    fichier = config.get("log", "fichier", fallback=None, raw=True)
+
+    if fichier:
+        handler = {
+            "class": "logging.FileHandler",
+            "filename": fichier,
+            "formatter": "automatheque",
+            "level": niveau,
+        }
+    else:
+        handler = {
+            "class": "logging.StreamHandler",
+            "formatter": "automatheque",
+            "level": niveau,
+        }
+
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {"automatheque": {"format": fmt}},
+        "handlers": {"automatheque": handler},
+        "loggers": {
+            "automatheque": {
+                "handlers": ["automatheque"],
+                "level": niveau,
+                "propagate": True,
+            }
+        },
+    }
