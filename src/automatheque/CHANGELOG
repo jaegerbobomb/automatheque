@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   volée), pour le cas courant sans fichier externe. Dans `format`, les `%`
   s'échappent en `%%` (convention ConfigParser) ; un `%` non échappé lève une
   erreur explicite. — cf. #45
+* Configuration **en couches** : `@script_automatheque` charge automatiquement
+  `<racine>/automatheque/config.ini` (partagé) **puis**
+  `<racine>/<nom_court>/config.ini` (propre au script, surcharge), avant
+  `--config`. `$XDG_CONFIG_HOME` est désormais honoré. — cf. #2
 
 ### Changed
 
@@ -29,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Résolution de la config de log : `[log] fichier_config=` accepte un dictConfig
   **JSON ou YAML** (détection par contenu) ; **fin de la découverte magique de
   `log.json` au `cwd`** (plus de `fallback="log.json"`). — cf. #45
+* `constantes.repertoire_config` et `configuration.fichier_config` deviennent des
+  **fonctions** (résolution `$XDG_CONFIG_HOME` à l'exécution) ; ajout de
+  `constantes.repertoire_config_script(nom_court)`. Plus besoin du
+  `[default: <script>.ini]` docopt pour la config par script. — cf. #2
 
 ### Removed
 
