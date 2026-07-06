@@ -28,7 +28,18 @@ def test_configure_logging_charge_fichier_json(tmp_path):
 
 
 def test_import_pose_un_nullhandler_sur_le_logger_automatheque():
-    """À l'import, la lib n'installe qu'un NullHandler (pas de config globale)."""
+    """À l'import, la lib installe un NullHandler sur le logger `automatheque`.
+
+    On recharge le module pour ré-exécuter sa logique d'import de façon
+    déterministe : sinon un autre test de la suite peut avoir reconfiguré le
+    logging global (dictConfig remplace les handlers), retirant le NullHandler.
+    """
+    import importlib
+
+    from automatheque import log as _log
+
+    importlib.reload(_log)
+
     handlers = logging.getLogger("automatheque").handlers
     assert any(isinstance(h, logging.NullHandler) for h in handlers)
 
