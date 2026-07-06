@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `automatheque.essai` : harness de test des scripts `@script_automatheque`
+  (`execute_script`, `ecris_config`, `reinitialise_configuration`) — cf. #46
+
 ### Changed
 
 ### Removed
