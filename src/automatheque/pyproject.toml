@@ -5,7 +5,7 @@ description = "Bibliothèque pour se faciliter le scripting !"
 authors = [
     { name = "Marc", email = "githubmarc@maj44.com" },
 ]
-license = { text = "GPLv3.0" }
+license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.9"
 readme = "README.md"
 classifiers = [
@@ -16,7 +16,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "docopt",
+    # Borné < 1 : garde-fou contre une éventuelle 1.0 à breaking changes
+    # (migration suivie dans #4 / #39).
+    "docopt>=0.6,<1",
     "pytz",
     "pyyaml",
     "attrs>=19.2",
