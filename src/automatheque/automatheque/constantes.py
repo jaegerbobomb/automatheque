@@ -8,7 +8,9 @@ repertoire_config = "{}/.config/automatheque".format(path.expanduser("~"))
 
 logger_config_dict = {
     "version": 1,
-    "disable_existing_loggers": True,
+    # False : une bibliothèque ne doit pas désactiver les loggers déjà
+    # configurés par l'application ou d'autres bibliothèques.
+    "disable_existing_loggers": False,
     "formatters": {
         "automatheque": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"}
     },

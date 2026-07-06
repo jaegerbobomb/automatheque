@@ -43,7 +43,7 @@ from functools import wraps
 import docopt
 
 from automatheque.configuration import charge_configuration, NoOptionError
-from automatheque.log import recup_logger, logger_existe
+from automatheque.log import configure_logging_defaut, recup_logger, logger_existe
 
 
 def script_automatheque(chaine_docopt, version=None):
@@ -128,6 +128,9 @@ class ScriptAutomatheque(object):
         self.logger.info("********** {} {} *********".format(self.nom, self.version))
 
     def initialise(self):
+        # Un script EST une application : c'est le bon endroit pour activer le
+        # logging console par défaut (la lib, elle, ne configure rien à l'import).
+        configure_logging_defaut()
         self.arguments = docopt.docopt(self.chaine_docopt, version=self.version)
         try:
             if self.arguments["--config"]:
