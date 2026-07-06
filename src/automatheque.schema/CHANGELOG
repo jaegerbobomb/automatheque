@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Packaging : `requires-python` passe à `>=3.9` + classifiers trove
   `Python :: 3.9..3.12` — cf. #32. (Changement de métadonnées non encore
   publié : sera embarqué au prochain bump de `schema`.)
+* Packaging : identifiant de licence corrigé en SPDX valide
+  `GPL-3.0-or-later` (était `GPLv3.0`) — cf. #20
 
 ### Removed
 

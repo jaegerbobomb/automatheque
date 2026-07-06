@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   volée), pour le cas courant sans fichier externe. Dans `format`, les `%`
   s'échappent en `%%` (convention ConfigParser) ; un `%` non échappé lève une
   erreur explicite. — cf. #45
+* `automatheque.essai` : harness de test des scripts `@script_automatheque`
+  (`execute_script`, `ecris_config`, `reinitialise_configuration`) — cf. #46
 
 ### Changed
 
@@ -29,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Résolution de la config de log : `[log] fichier_config=` accepte un dictConfig
   **JSON ou YAML** (détection par contenu) ; **fin de la découverte magique de
   `log.json` au `cwd`** (plus de `fallback="log.json"`). — cf. #45
+* Packaging : identifiant de licence corrigé en SPDX valide
+  `GPL-3.0-or-later` (était `GPLv3.0`) — cf. #20
+* Packaging : dépendance `docopt` bornée `>=0.6,<1` (garde-fou breaking
+  changes) — cf. #4/#39
 
 ### Removed
 
