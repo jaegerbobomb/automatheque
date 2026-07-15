@@ -44,3 +44,21 @@ En ce qui concerne la différence entre framework et librairie :
 
 * pour les iterators / generators / yield and co : [https://nedbatchelder.com/text/iter.html](https://nedbatchelder.com/text/iter.html)
 * utiliser any , all, attritems etc.
+
+## Licence
+
+Copyright © dwwm93.
+
+Automathèque est un logiciel libre distribué sous les termes de la **GNU Lesser
+General Public License, version 3 ou ultérieure** (`LGPL-3.0-or-later`).
+
+Le choix de la LGPL (copyleft *faible*) est délibéré : `automatheque` et
+`automatheque.schema` sont des **bibliothèques** que l'on peut importer dans
+n'importe quel projet — y compris propriétaire — sans en « contaminer » le code,
+tout en garantissant que les améliorations apportées **à la bibliothèque
+elle-même** restent libres.
+
+Le texte de la LGPLv3 est dans [`LICENSE`](LICENSE) ; il complète et incorpore
+la GPLv3, fournie dans [`GPL-3.0.txt`](GPL-3.0.txt). Voir aussi
+[`CONTRIBUTING.md`](CONTRIBUTING.md) pour le certificat d'origine (DCO) demandé
+aux contributions.

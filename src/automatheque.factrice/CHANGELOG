@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Packaging : identifiant de licence corrigé en SPDX valide
-  `GPL-3.0-or-later` (était `GPLv3.0`) — cf. #20
+* Licence : passage de GPLv3 à **LGPLv3** (`LGPL-3.0-or-later`) — copyleft
+  faible mieux adapté à une bibliothèque réutilisable ; identifiant SPDX valide
+  (était l'invalide `GPLv3.0`) + classifier trove. Cf. #20
 
 ## [0.11.0] - 2026-06-29
 
