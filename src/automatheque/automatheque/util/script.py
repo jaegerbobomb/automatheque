@@ -13,9 +13,14 @@ Usage:
 
 Options:
   --action  Action realisée
-  --config=<fichier_config>  Fichier de configuration [default: mon_script.ini]
+  --config=<fichier_config>  Fichier de configuration supplémentaire (ponctuel)
 '''
 __version__ = '0.1a'  # ou importer depuis mon_package.__version__
+
+# La configuration est chargée en couches, sans rien déclarer ici :
+#   ~/.config/automatheque/config.ini   (partagé entre scripts)
+#   ~/.config/<mon_script>/config.ini   (propre à ce script ; surcharge)
+#   --config <fichier>                  (ponctuel ; surcharge)
 
 from automatheque.util.script import script  # alias court de script_automatheque
 
@@ -42,6 +47,7 @@ from functools import wraps
 
 import docopt
 
+from automatheque import constantes
 from automatheque.configuration import charge_configuration, NoOptionError
 from automatheque.log import configure_logging_defaut, recup_logger, logger_existe
 
@@ -132,18 +138,20 @@ class ScriptAutomatheque(object):
         # logging console par défaut (la lib, elle, ne configure rien à l'import).
         configure_logging_defaut()
         self.arguments = docopt.docopt(self.chaine_docopt, version=self.version)
-        try:
-            if self.arguments["--config"]:
-                # On écrase les configurations précédentes (par ex si
-                # automatheque a déjà été chargé) car on estime que
-                # l'annotation vient avec des informations supplémentaires.
-                self.config = charge_configuration(
-                    [self.arguments["--config"]], ecraser=True, recharger=True
-                )
-            else:
-                self.config = charge_configuration(ecraser=True, recharger=True)
-        except KeyError:
-            self.config = charge_configuration(ecraser=True, recharger=True)
+        # Configuration en couches, de la plus générale à la plus spécifique
+        # (chaque couche surcharge la précédente) :
+        #   1. config.ini partagé d'automatheque  (chargé par ecraser=True)
+        #   2. <racine>/<nom_court>/config.ini     (propre au script)
+        #   3. --config <fichier>                  (explicite, ponctuel)
+        fichiers = [
+            os.path.join(
+                constantes.repertoire_config_script(self.nom_court), "config.ini"
+            )
+        ]
+        config_cli = self.arguments.get("--config")
+        if config_cli:
+            fichiers.append(config_cli)
+        self.config = charge_configuration(fichiers, ecraser=True, recharger=True)
         # TODO(#27) ici on pourrait aussi merger la conf et les arguments ...
         # dans self.parametres ?
         """

@@ -13,7 +13,9 @@ from configparser import (
 from automatheque import constantes
 from automatheque.log import recup_logger, configure_logging
 
-fichier_config = "{}/config.ini".format(constantes.repertoire_config)
+def fichier_config():
+    """Chemin du ``config.ini`` **partagé** d'automatheque (couche de base)."""
+    return path.join(constantes.repertoire_config(), "config.ini")
 
 
 def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger=False):
@@ -33,13 +35,13 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
     # Pour écraser la configuration de automatheque on la charge en premier
     # et les fichiers suivants vont prendre la précédence.
     if ecraser:
-        _charge_fichier_configuration(fichier_config, charge_configuration.config)
+        _charge_fichier_configuration(fichier_config(), charge_configuration.config)
 
     # Ajout des autres fichiers s'il y en a :
     for f in fichiers_supplementaires:
         # Si "f" n'est pas un fichier, on regarde s'il existe dans le
-        # répertoire de configuration d'automatheque.
-        paths_a_tester = [f, path.join(constantes.repertoire_config, f)]
+        # répertoire de configuration partagé d'automatheque.
+        paths_a_tester = [f, path.join(constantes.repertoire_config(), f)]
         for fichier in paths_a_tester:
             if not path.isfile(fichier):
                 logger.debug("{} n'est pas un fichier.".format(fichier))
@@ -50,7 +52,7 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
     # Si on veut conserver la configuration de automatheque, alors on charge
     # sa configuration en dernier :
     if not ecraser:
-        _charge_fichier_configuration(fichier_config, charge_configuration.config)
+        _charge_fichier_configuration(fichier_config(), charge_configuration.config)
 
     # Si la configuration que l'on vient d'importer contient des paramètres
     # qui concernent les logs alors on configure le logging :
