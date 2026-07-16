@@ -83,3 +83,28 @@ By making a contribution to this project, I certify that:
 * Les messages de commit et le journal suivent
   [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) : pensez à ajouter
   une entrée dans le `CHANGELOG` du paquet concerné, sous `[Unreleased]`.
+
+## Lier et fermer les issues
+
+Une PR qui **termine** une issue doit la **fermer automatiquement au merge**.
+Pour cela, la description de la PR **doit** contenir un des mots-clés reconnus
+par GitHub, en **anglais**, suivi du numéro :
+
+```
+Closes #42
+Fixes #42
+Resolves #42
+```
+
+⚠️ **Les périphrases françaises ne ferment rien.** « Résout #42 », « Corrige
+#42 », « cf. #42 » sont ignorées par GitHub : l'issue **reste ouverte** et il
+faut la fermer à la main. On peut tout à fait rédiger le reste de la description
+en français — mais le mot-clé de fermeture, lui, est en anglais.
+
+* Une PR peut fermer plusieurs issues : un mot-clé **par** issue
+  (`Closes #4\nCloses #39`), pas `Closes #4, #39`.
+* Pour seulement **référencer** une issue sans la fermer, citer `#42` sans
+  mot-clé (ou « cf. #42 »).
+
+Le gabarit [`.github/pull_request_template.md`](.github/pull_request_template.md)
+pré-remplit ce champ pour ne pas l'oublier.
