@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `@script_automatheque` — commodités câblées automatiquement quand le script
+  les déclare dans son usage docopt (#5) :
+  * `--dry-run` exposé via `_script.dry_run` (au script d'en tenir compte) ;
+  * `-v`/`--verbose` (DEBUG) et `-q`/`--quiet` (WARNING) ajustent le niveau de
+    log sans code ;
+  * `Ctrl-C` (KeyboardInterrupt) → sortie propre (code POSIX 130) au lieu d'une
+    traceback ; toute exception non gérée est journalisée (avec sa traceback)
+    avant de remonter ;
+  * la fin de traitement journalise la **durée** d'exécution.
+
 ### Changed
 
 * `script_automatheque` / `script` / `ScriptAutomatheque` sont promus de

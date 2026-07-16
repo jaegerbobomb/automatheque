@@ -7,7 +7,29 @@ rétrocompatibilité qui ré-exporte les mêmes objets et émet un
 """
 
 import importlib
+import logging
 import warnings
+
+import pytest
+
+from automatheque.essai import execute_script
+
+
+#: Usage docopt déclarant les commodités câblées par #5.
+DOC_OPTIONS = """Script de démonstration des options.
+
+Usage:
+  demo [--dry-run] [-v | -q]
+
+Options:
+  --dry-run     N'effectue aucune action définitive.
+  -v --verbose  Journalisation DEBUG.
+  -q --quiet    Journalisation WARNING.
+"""
+
+
+def _noop(_script=None):
+    return "ok"
 
 
 def test_import_depuis_le_nouvel_emplacement():
@@ -52,3 +74,62 @@ def test_shim_reexporte_les_memes_objets():
     assert ancien.script_automatheque is nouveau.script_automatheque
     assert ancien.ScriptAutomatheque is nouveau.ScriptAutomatheque
     assert ancien.script is nouveau.script
+
+
+# --- #5 : enrichissement de @script_automatheque -------------------------------
+
+
+def test_dry_run_cable_automatiquement():
+    """`--dry-run` déclaré dans l'usage → `_script.dry_run` reflète l'argument."""
+    avec = execute_script(DOC_OPTIONS, _noop, argv=["--dry-run"])
+    sans = execute_script(DOC_OPTIONS, _noop, argv=[])
+
+    assert avec.script.dry_run is True
+    assert sans.script.dry_run is False
+
+
+def test_verbosite_v_descend_en_debug():
+    """`-v` abaisse le logger ET le handler `automatheque` en DEBUG."""
+    execute_script(DOC_OPTIONS, _noop, argv=["-v"])
+
+    lg = logging.getLogger("automatheque")
+    assert lg.level == logging.DEBUG
+    assert all(h.level == logging.DEBUG for h in lg.handlers)
+
+
+def test_verbosite_q_remonte_en_warning():
+    """`-q` masque les INFO en passant le logger `automatheque` en WARNING."""
+    execute_script(DOC_OPTIONS, _noop, argv=["-q"])
+
+    assert logging.getLogger("automatheque").level == logging.WARNING
+
+
+def test_interruption_clavier_sort_proprement_130():
+    """Un Ctrl-C (KeyboardInterrupt) se traduit en `SystemExit(130)`."""
+
+    def interrompt(_script=None):
+        raise KeyboardInterrupt
+
+    with pytest.raises(SystemExit) as exc:
+        execute_script(DOC_OPTIONS, interrompt, argv=[])
+
+    assert exc.value.code == 130
+
+
+def test_exception_journalisee_et_propagee(caplog):
+    """Une exception non gérée est journalisée (avec traceback) puis remonte."""
+
+    def echoue(_script=None):
+        raise ValueError("boom")
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(ValueError, match="boom"):
+            execute_script(DOC_OPTIONS, echoue, argv=[])
+
+    assert any("erreur" in r.message.lower() for r in caplog.records)
+
+
+def test_duree_mesuree_a_la_fin():
+    """La fin de traitement dispose d'un horodatage de début pour la durée."""
+    res = execute_script(DOC_OPTIONS, _noop, argv=[])
+    assert res.script._debut is not None
