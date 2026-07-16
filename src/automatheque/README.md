@@ -21,15 +21,16 @@ pip install automatheque
 ## Usage : Utilitaire pour script
 
 ```python
-from automatheque.util.script import script_automatheque
+from automatheque.script import script  # alias court de script_automatheque
 
-# préparation de l'annotation en haut du fichier :
-script_automatheque = script_automatheque(__doc__, __version__)
-
-@script_automatheque
+@script(__doc__, __version__)
 def main(_script):
     print(_script.config)
 
 if __name__ == '__main__':
     main()
 ```
+
+> L'API a été promue de `automatheque.util.script` vers `automatheque.script`
+> (#41). L'ancien chemin reste importable (shim) mais émet un
+> `DeprecationWarning` : migrez vers `from automatheque.script import script`.

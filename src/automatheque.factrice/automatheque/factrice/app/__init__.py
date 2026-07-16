@@ -18,7 +18,7 @@ Options:
 import subprocess
 
 from automatheque.schema.texte.courriel import Courriel
-from automatheque.util.script import script_automatheque, ScriptAutomatheque
+from automatheque.script import script_automatheque, ScriptAutomatheque
 
 from automatheque.factrice.expedition import ExpeditriceEsmtp, ExpeditriceSmtp
 

@@ -4,7 +4,7 @@
 Tester un script décoré demanderait sinon de bricoler ``sys.argv``, la
 configuration et le logger à la main. Ce module permet d'exécuter un script
 décoré avec un ``argv`` contrôlé et d'inspecter l'objet
-:class:`~automatheque.util.script.ScriptAutomatheque` produit (arguments parsés,
+:class:`~automatheque.script.ScriptAutomatheque` produit (arguments parsés,
 configuration chargée) ainsi que la valeur de retour.
 
 Exemple ::
@@ -34,7 +34,7 @@ from collections import namedtuple
 from pathlib import Path
 
 from automatheque.configuration import charge_configuration
-from automatheque.util.script import script_automatheque
+from automatheque.script import script_automatheque
 
 __all__ = [
     "ResultatScript",
@@ -79,7 +79,7 @@ def execute_script(doc, fonction, argv=None, version=None, reinitialise=True):
         l'exécution, pour isoler les tests les uns des autres.
     :return: un :class:`ResultatScript` ``(resultat, script)`` où ``resultat`` est
         la valeur renvoyée par ``fonction`` et ``script`` l'objet
-        :class:`~automatheque.util.script.ScriptAutomatheque` (``.arguments``,
+        :class:`~automatheque.script.ScriptAutomatheque` (``.arguments``,
         ``.config``…).
     """
     if reinitialise:

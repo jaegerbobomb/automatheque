@@ -7,7 +7,7 @@ from automatheque.essai import (
     execute_script,
     reinitialise_configuration,
 )
-from automatheque.util.script import ScriptAutomatheque
+from automatheque.script import ScriptAutomatheque
 
 DOC = """Script de démonstration.
 
