@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-16
+
 ### Added
 
 * Dispatch de **sous-commandes** via **commandopt 1.0** dans
@@ -201,7 +203,8 @@ Nouvel utilitaire, pour gérer les dépendances externes.
 
 * Corrige lien entre media et photo
 
-[Unreleased]: https://github.com/jaegerbobomb/automatheque/compare/0.12.0...HEAD
+[Unreleased]: https://github.com/jaegerbobomb/automatheque/compare/0.13.0...HEAD
+[0.13.0]: https://github.com/jaegerbobomb/automatheque/releases/tag/0.13.0
 [0.12.0]: https://github.com/jaegerbobomb/automatheque/releases/tag/0.12.0
 [0.11.0]: https://github.com/jaegerbobomb/automatheque/releases/tag/0.11.0
 [0.8.10]: https://github.com/jaegerbobomb/automatheque/releases/tag/v0.8.10
