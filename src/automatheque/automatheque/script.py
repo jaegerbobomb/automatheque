@@ -9,10 +9,13 @@ Le format que l'on souhaite est le suivant :
 '''Mon script
 
 Usage:
-  mon_script.py [--action] [--config=<fichier_config>]
+  mon_script.py [--action] [--dry-run] [-v | -q] [--config=<fichier_config>]
 
 Options:
   --action  Action realisée
+  --dry-run  N'effectue aucune action définitive
+  -v --verbose  Journalisation plus bavarde (DEBUG) ; répétable
+  -q --quiet  Journalisation plus discrète (WARNING)
   --config=<fichier_config>  Fichier de configuration supplémentaire (ponctuel)
 '''
 __version__ = '0.1a'  # ou importer depuis mon_package.__version__
@@ -28,12 +31,18 @@ from automatheque.script import script  # alias court de script_automatheque
 def main(..., _script=None):
     # code à exécuter
     # _script est un objet `ScriptAutomatheque`
+    if _script.dry_run:
+        return  # rien de définitif en dry-run
     print(_script)
 
 if __name__ == '__main__':
     main(...)
 ```
-Cela déclenche les logs de début, de fin, parse les arguments etc.
+Cela déclenche les logs de début, de fin, parse les arguments etc. Si le script
+déclare ``--dry-run``, ``-v``/``-q`` dans son usage, ils sont **câblés
+automatiquement** : ``_script.dry_run`` et le niveau de log sont ajustés sans
+code supplémentaire. Une interruption clavier (Ctrl-C) se solde par une sortie
+propre (code 130) et toute exception non gérée est journalisée avant de remonter.
 
 ``script`` est un alias court de ``script_automatheque`` : les deux noms sont
 équivalents et exportés depuis ``automatheque.script``.
@@ -48,6 +57,7 @@ Cela déclenche les logs de début, de fin, parse les arguments etc.
 import sys
 import os
 import re
+import logging
 import datetime
 from functools import wraps
 
@@ -75,7 +85,22 @@ def script_automatheque(chaine_docopt, version=None):
             try:
                 s.joli_titre()
                 s.signale_debut_traitement()
+                if s.dry_run:
+                    s.logger.info(
+                        "Mode --dry-run actif : aucune action définitive "
+                        "ne devrait être effectuée."
+                    )
                 return fonction(_script=s, *args, **kwds)
+            except KeyboardInterrupt:
+                # Ctrl-C : sortie propre (code POSIX 130) plutôt qu'une
+                # traceback. N'arrive jamais dans les tests (pas d'interruption).
+                s.logger.warning("Interruption clavier (Ctrl-C) — arrêt.")
+                raise SystemExit(130)
+            except Exception:
+                # On journalise l'erreur (avec sa traceback) puis on la laisse
+                # remonter : code de sortie non nul + testabilité préservée.
+                s.logger.exception("Le script s'est terminé sur une erreur.")
+                raise
             finally:
                 s.signale_fin_traitement()
 
@@ -103,6 +128,11 @@ class ScriptAutomatheque(object):
         self.version = version
         self.arguments = None
         self.config = None
+        #: Vrai si le script a été appelé avec ``--dry-run`` (câblé
+        #: automatiquement si l'option figure dans l'usage docopt). Au script
+        #: d'en tenir compte pour ne rien modifier de définitif.
+        self.dry_run = False
+        self._debut = None
         self._logger = None
 
     def __repr__(self):
@@ -158,6 +188,10 @@ class ScriptAutomatheque(object):
         if config_cli:
             fichiers.append(config_cli)
         self.config = charge_configuration(fichiers, ecraser=True, recharger=True)
+        # Commodités câblées automatiquement si le script les déclare dans son
+        # usage docopt (sinon `.get` renvoie None → comportement par défaut).
+        self.dry_run = bool(self.arguments.get("--dry-run"))
+        self._applique_verbosite()
         # TODO(#27) ici on pourrait aussi merger la conf et les arguments ...
         # dans self.parametres ?
         """
@@ -170,22 +204,63 @@ class ScriptAutomatheque(object):
         for key in set(dict_2) | set(dict_1))
         """
 
+    def _niveau_journal_demande(self):
+        """Traduit ``-v``/``-vv``/``-q`` en niveau de log, ou ``None``.
+
+        ``None`` = ne rien changer (on garde le niveau INFO par défaut).
+        ``--quiet``/``-q`` masque les INFO (WARNING) ; ``--verbose``/``-v``
+        (répétable) descend en DEBUG.
+        """
+        args = self.arguments or {}
+        if args.get("--quiet") or args.get("-q"):
+            return logging.WARNING
+        v = args.get("--verbose")
+        if v is None:
+            v = args.get("-v")
+        try:
+            v = int(v or 0)
+        except (TypeError, ValueError):
+            v = 1 if v else 0
+        if v >= 1:
+            return logging.DEBUG
+        return None
+
+    def _applique_verbosite(self):
+        """Aligne le logger et le handler ``automatheque`` sur ``-v``/``-q``.
+
+        Il faut baisser le niveau du **handler** (INFO par défaut, cf.
+        ``constantes.logger_config_dict``), sinon les DEBUG restent filtrés.
+        """
+        niveau = self._niveau_journal_demande()
+        if niveau is None:
+            return
+        lg = logging.getLogger("automatheque")
+        lg.setLevel(niveau)
+        for handler in lg.handlers:
+            handler.setLevel(niveau)
+
     def signale_debut_traitement(self):
         """Signale que le traitement a debuté.
 
         On pourrait aussi initialiser un logger et s'en servir.
         """
+        self._debut = datetime.datetime.now()
         self.logger.info(
             "{}|{}| Début du traitement".format(
-                self.nom, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%s")
+                self.nom, self._debut.strftime("%Y-%m-%d %H:%M:%S")
             )
         )
 
     def signale_fin_traitement(self):
-        """Signale que le traitement est terminé."""
+        """Signale que le traitement est terminé (avec la durée si connue)."""
+        fin = datetime.datetime.now()
+        if self._debut is not None:
+            duree = "{:.3f}s".format((fin - self._debut).total_seconds())
+        else:
+            duree = "?"
         self.logger.info(
-            "{}|{}| Fin du traitement".format(
-                self.nom, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%s")
+            "{}|{}| Fin du traitement (durée : {})".format(
+                self.nom, fin.strftime("%Y-%m-%d %H:%M:%S"), duree
             )
         )
 
