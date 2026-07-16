@@ -221,3 +221,14 @@ def test_options_internes_couvrent_les_commodites():
     """Le jeu d'options ignorées couvre config + dry-run + verbosité."""
     attendues = {"--config", "--dry-run", "-v", "--verbose", "-q", "--quiet"}
     assert attendues <= OPTIONS_INTERNES
+
+
+# --- #4 : migration docopt -> docopt-ng ----------------------------------------
+
+
+def test_parseur_est_docopt_ng():
+    """#4 : le module `docopt` importé est fourni par docopt-ng (dépendance
+    déclarée), aligné avec commandopt qui s'appuie sur le même parseur."""
+    import importlib.metadata as md
+
+    assert md.version("docopt-ng")  # lève PackageNotFoundError si absent

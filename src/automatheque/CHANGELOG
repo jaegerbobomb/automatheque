@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Parseur CLI : passage de `docopt` à **`docopt-ng`** (`docopt-ng>=0.9,<1`) —
+  fork maintenu, même module importable `docopt` (aucun changement de code),
+  aligné avec commandopt qui s'appuie sur le même parseur. — cf. #4
 * `script_automatheque` / `script` / `ScriptAutomatheque` sont promus de
   `automatheque.util.script` vers **`automatheque.script`** : c'est l'API phare
   du projet, pas un utilitaire bas niveau. `automatheque.util.script` reste
