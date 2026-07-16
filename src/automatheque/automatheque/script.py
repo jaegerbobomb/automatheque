@@ -47,6 +47,29 @@ propre (code 130) et toute exception non gérée est journalisée avant de remon
 ``script`` est un alias court de ``script_automatheque`` : les deux noms sont
 équivalents et exportés depuis ``automatheque.script``.
 
+Sous-commandes (via ``commandopt``) : on déclare des fonctions-commandes avec
+``@commande([...])`` et on aiguille avec ``_script.execute_commande()``. Les
+options internes d'automatheque (``--config``, ``--dry-run``, ``-v``/``-q``)
+sont exclues de la sélection.
+```
+'''Usage:
+  mon_script.py (--ajouter | --supprimer) [--config=<f>] [-v]
+'''
+from automatheque.script import script, commande
+
+@commande(["--ajouter"])
+def ajouter(arguments):
+    ...
+
+@commande(["--supprimer"])
+def supprimer(arguments):
+    ...
+
+@script(__doc__, __version__)
+def main(_script):
+    return _script.execute_commande()
+```
+
 .. note::
    Historiquement ce module vivait dans ``automatheque.util.script``. Il a été
    promu au premier niveau (:mod:`automatheque.script`) car c'est l'API centrale
@@ -54,18 +77,39 @@ propre (code 130) et toute exception non gérée est journalisée avant de remon
    importable via un shim qui émet un ``DeprecationWarning``.
 """
 
-import sys
+import datetime
+import logging
 import os
 import re
-import logging
-import datetime
+import sys
 from functools import wraps
 
 import docopt
 
+# Ré-exportés pour offrir une seule surface d'import aux scripts
+# (`from automatheque.script import commande, Registry, NoCommandFoundError`).
+from commandopt import (  # noqa: F401
+    Command,
+    NoCommandFoundError,
+    Registry,
+    commandopt,
+)
+
 from automatheque import constantes
-from automatheque.configuration import charge_configuration, NoOptionError
-from automatheque.log import configure_logging_defaut, recup_logger, logger_existe
+from automatheque.configuration import charge_configuration
+from automatheque.log import configure_logging_defaut, logger_existe, recup_logger
+
+#: Options « internes » à automatheque : elles configurent le script (logging,
+#: emplacement de config, simulation), elles ne le **routent** pas. On les
+#: exclut donc de la sélection de commande commandopt (#39), sinon un
+#: ``--config`` ou un ``-v`` ferait échouer l'appariement d'une commande.
+OPTIONS_INTERNES = frozenset(
+    {"--config", "--dry-run", "-v", "--verbose", "-q", "--quiet"}
+)
+
+#: Alias ergonomique de :func:`commandopt.commandopt` : ``@commande([...])`` se
+#: lit mieux dans un script. Le nom d'origine reste disponible via commandopt.
+commande = commandopt
 
 
 def script_automatheque(chaine_docopt, version=None):
@@ -203,6 +247,24 @@ class ScriptAutomatheque(object):
             return dict((str(key), dict_1.get(key) or dict_2.get(key))
         for key in set(dict_2) | set(dict_1))
         """
+
+    def execute_commande(self, registry=None):
+        """Aiguille vers la commande commandopt correspondant aux arguments.
+
+        Les commandes sont déclarées avec ``@commande([...])`` (alias de
+        :func:`commandopt.commandopt`) ; ``execute_commande`` sélectionne celle
+        dont les options obligatoires sont présentes dans ``self.arguments`` et
+        l'exécute, en lui passant le dict d'arguments complet.
+
+        Les :data:`OPTIONS_INTERNES` d'automatheque (``--config``, ``-v``…) sont
+        **exclues de la sélection** : elles paramètrent le script sans le router.
+
+        :param registry: :class:`commandopt.Registry` à interroger ; par défaut
+            le registre global (façade :class:`commandopt.Command`).
+        :raises commandopt.NoCommandFoundError: si aucune commande ne correspond.
+        """
+        cible = Command if registry is None else registry
+        return cible.run(self.arguments, ignore=OPTIONS_INTERNES)
 
     def _niveau_journal_demande(self):
         """Traduit ``-v``/``-vv``/``-q`` en niveau de log, ou ``None``.

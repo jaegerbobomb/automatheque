@@ -10,10 +10,11 @@ import importlib
 import logging
 import warnings
 
+import commandopt
 import pytest
-
 from automatheque.essai import execute_script
-
+from automatheque.script import OPTIONS_INTERNES, commande
+from commandopt import NoCommandFoundError, Registry
 
 #: Usage docopt déclarant les commodités câblées par #5.
 DOC_OPTIONS = """Script de démonstration des options.
@@ -133,3 +134,90 @@ def test_duree_mesuree_a_la_fin():
     """La fin de traitement dispose d'un horodatage de début pour la durée."""
     res = execute_script(DOC_OPTIONS, _noop, argv=[])
     assert res.script._debut is not None
+
+
+# --- #39 : intégration commandopt (dispatch de sous-commandes) -----------------
+
+
+#: Usage docopt déclarant deux sous-commandes + des options internes.
+DOC_COMMANDES = """Script de démonstration des sous-commandes.
+
+Usage:
+  demo [--ajouter] [--supprimer] [--config=<f>] [-v] [--dry-run]
+
+Options:
+  --ajouter     Ajoute.
+  --supprimer   Supprime.
+  -v            Bavard.
+  --dry-run     Simulation.
+  --config=<f>  Configuration ponctuelle.
+"""
+
+
+def test_commande_est_l_alias_de_commandopt():
+    """`commande` est exactement le décorateur `commandopt.commandopt`."""
+    assert commande is commandopt.commandopt
+
+
+def test_execute_commande_aiguille_vers_la_bonne_commande():
+    """`execute_commande` sélectionne la commande selon les options présentes."""
+    reg = Registry()
+
+    @commande(["--ajouter"], registry=reg)
+    def ajouter(arguments):
+        return "AJOUT"
+
+    @commande(["--supprimer"], registry=reg)
+    def supprimer(arguments):
+        return "SUPPR"
+
+    def main(_script=None):
+        return _script.execute_commande(registry=reg)
+
+    assert execute_script(DOC_COMMANDES, main, argv=["--ajouter"]).resultat == "AJOUT"
+    assert execute_script(DOC_COMMANDES, main, argv=["--supprimer"]).resultat == "SUPPR"
+
+
+def test_execute_commande_ignore_les_options_internes():
+    """`--config`/`-v`/`--dry-run` n'entrent pas dans la sélection, mais restent
+    transmises à la commande."""
+    reg = Registry()
+
+    @commande(["--ajouter"], registry=reg)
+    def ajouter(arguments):
+        return arguments  # on renvoie le dict complet pour l'inspecter
+
+    def main(_script=None):
+        return _script.execute_commande(registry=reg)
+
+    args = execute_script(
+        DOC_COMMANDES,
+        main,
+        argv=["--ajouter", "--config", "c.ini", "-v", "--dry-run"],
+    ).resultat
+
+    # La sélection a réussi malgré les options internes…
+    assert args["--ajouter"] is True
+    # … et la commande reçoit bien le dict complet, options internes incluses.
+    assert args["--config"] == "c.ini"
+
+
+def test_execute_commande_sans_correspondance_leve():
+    """Aucune option de commande présente → NoCommandFoundError (propagée)."""
+    reg = Registry()
+
+    @commande(["--ajouter"], registry=reg)
+    def ajouter(arguments):
+        return "AJOUT"
+
+    def main(_script=None):
+        return _script.execute_commande(registry=reg)
+
+    with pytest.raises(NoCommandFoundError):
+        execute_script(DOC_COMMANDES, main, argv=["--config", "c.ini"])
+
+
+def test_options_internes_couvrent_les_commodites():
+    """Le jeu d'options ignorées couvre config + dry-run + verbosité."""
+    attendues = {"--config", "--dry-run", "-v", "--verbose", "-q", "--quiet"}
+    assert attendues <= OPTIONS_INTERNES

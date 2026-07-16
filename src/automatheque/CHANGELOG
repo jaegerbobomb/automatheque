@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Dispatch de **sous-commandes** via **commandopt 1.0** dans
+  `@script_automatheque` (#39) : on déclare des fonctions-commandes avec
+  `@commande([...])` (alias de `commandopt.commandopt`, ré-exporté par
+  `automatheque.script`) et on aiguille avec `_script.execute_commande()`. Les
+  options internes d'automatheque (`--config`, `--dry-run`, `-v`/`-q`, cf.
+  `OPTIONS_INTERNES`) sont **exclues de la sélection**. Nouvelle dépendance
+  `commandopt>=1.0.0rc1,<2` — automatheque sert de banc de validation à la 1.0.
 * `@script_automatheque` — commodités câblées automatiquement quand le script
   les déclare dans son usage docopt (#5) :
   * `--dry-run` exposé via `_script.dry_run` (au script d'en tenir compte) ;
