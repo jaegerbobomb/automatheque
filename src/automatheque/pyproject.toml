@@ -17,9 +17,14 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    # Borné < 1 : garde-fou contre une éventuelle 1.0 à breaking changes
-    # (migration suivie dans #4 / #39).
-    "docopt>=0.6,<1",
+    # docopt-ng : fork maintenu de docopt, même module importable `docopt`
+    # (drop-in). Aligné avec commandopt, qui s'appuie lui aussi sur docopt-ng
+    # (#4). Borné < 1 : garde-fou contre une 1.0 à breaking changes.
+    "docopt-ng>=0.9,<1",
+    # Dispatch de sous-commandes dans @script_automatheque (#39). La borne
+    # >=1.0.0rc1 embarque volontairement la RC : automatheque sert de banc de
+    # validation à la 1.0 de commandopt. <2 : garde-fou contre une 2.0.
+    "commandopt>=1.0.0rc1,<2",
     "pytz",
     "pyyaml",
     "attrs>=19.2",
