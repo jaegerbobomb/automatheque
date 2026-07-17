@@ -17,12 +17,11 @@ exception est relevée telle quelle.
 """
 
 import functools
+import logging
 from random import uniform
 from time import sleep
 
-from automatheque.log import recup_logger
-
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def reessaye(tentatives=4, delai=2, multiplicateur=2, exceptions=(Exception,), gigue=0):

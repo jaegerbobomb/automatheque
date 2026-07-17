@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, ABCMeta
 from copy import deepcopy
 from typing import List, Optional, Union
@@ -6,9 +7,8 @@ from automatheque.conception.structures import Fabrique, Monteur
 from automatheque.configuration import ConfigParser, charge_configuration
 from automatheque.greffon.greffon import Greffon
 from automatheque.greffon.registre import MetaInstancePersistanteRegistre
-from automatheque.log import recup_logger
 
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class FabriqueGreffon(Fabrique):

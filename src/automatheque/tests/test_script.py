@@ -90,19 +90,17 @@ def test_dry_run_cable_automatiquement():
 
 
 def test_verbosite_v_descend_en_debug():
-    """`-v` abaisse le logger ET le handler `automatheque` en DEBUG."""
+    """`-v` abaisse la **racine** en DEBUG (le handler racine est NOTSET)."""
     execute_script(DOC_OPTIONS, _noop, argv=["-v"])
 
-    lg = logging.getLogger("automatheque")
-    assert lg.level == logging.DEBUG
-    assert all(h.level == logging.DEBUG for h in lg.handlers)
+    assert logging.getLogger().level == logging.DEBUG
 
 
 def test_verbosite_q_remonte_en_warning():
-    """`-q` masque les INFO en passant le logger `automatheque` en WARNING."""
+    """`-q` masque les INFO en passant la **racine** en WARNING."""
     execute_script(DOC_OPTIONS, _noop, argv=["-q"])
 
-    assert logging.getLogger("automatheque").level == logging.WARNING
+    assert logging.getLogger().level == logging.WARNING
 
 
 def test_interruption_clavier_sort_proprement_130():
@@ -117,17 +115,23 @@ def test_interruption_clavier_sort_proprement_130():
     assert exc.value.code == 130
 
 
-def test_exception_journalisee_et_propagee(caplog):
-    """Une exception non gérée est journalisée (avec traceback) puis remonte."""
+def test_exception_journalisee_et_propagee(capfd):
+    """Une exception non gérée est journalisée (avec traceback) puis remonte.
+
+    On capture stderr au niveau du descripteur (`capfd`) : `configure_logging`
+    reconfigure la racine via dictConfig, ce qui remplacerait le handler de
+    `caplog`.
+    """
 
     def echoue(_script=None):
         raise ValueError("boom")
 
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(ValueError, match="boom"):
-            execute_script(DOC_OPTIONS, echoue, argv=[])
+    with pytest.raises(ValueError, match="boom"):
+        execute_script(DOC_OPTIONS, echoue, argv=[])
 
-    assert any("erreur" in r.message.lower() for r in caplog.records)
+    err = capfd.readouterr().err
+    assert "erreur" in err.lower()
+    assert "Traceback" in err  # la traceback accompagne bien le message
 
 
 def test_duree_mesuree_a_la_fin():

@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* **Logging (régression #45)** : la section `[log]` d'un script configure
+  désormais la **racine**, plus seulement le logger `automatheque`. Ainsi
+  `logging.getLogger(__name__)` dans le script **et** les loggers des
+  dépendances reçoivent bien le handler/format/niveau. La forme inline gagne la
+  clé **`names`** = niveaux par logger (`names = automatheque:WARNING,
+  mon_script:DEBUG, requests:ERROR`). Le routage vers des destinations
+  distinctes reste l'affaire du dictConfig complet via `fichier_config`. — cf.
+  #63
+
+### Changed
+
+* `configure_logging_defaut()` et la verbosité `-v`/`-q` visent la **racine**
+  (au lieu du seul logger `automatheque`), pour couvrir tout le logging d'une
+  application. — cf. #63
+* Exemple canonique de configuration de log **complète** livré par automatheque :
+  [`log.yaml.dist`](log.yaml.dist) (le `factrice/log.json.dist`, doublon, est
+  supprimé). — cf. #63
+
+### Removed
+
+* `log.recup_logger` : devenu un simple alias de `logging.getLogger` (depuis
+  #45), il est retiré. Utiliser directement **`logging.getLogger`**. — cf. #63
+
 ## [0.13.0] - 2026-07-16
 
 ### Added

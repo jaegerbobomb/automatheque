@@ -20,18 +20,17 @@ Il est ensuite conseillé de créer ses propres classes "wrapper" et de leur don
 l'exécutant en paramètre, qui se chargera de faire les appels subprocess.
 
 """
-from collections import namedtuple
+import logging
 import os
 import shutil
 import subprocess
+from collections import namedtuple
 
 import attr
 
 from automatheque.exceptions import DependanceManquante
-from automatheque.log import recup_logger
 
-
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 MAUVAISE_CLE_ERREUR = """Aucune dépendance à ce nom n'a été trouvée.

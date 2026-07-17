@@ -4,9 +4,9 @@
 Contient quelques loggers par défaut pour les différents modules.
 """
 
+import json
 import logging
 import logging.config
-import json
 
 import yaml
 
@@ -35,9 +35,7 @@ def configure_logging(conf, desactive_loggers_existants=None):
         elif not isinstance(conf, dict):
             raise ValueError("conf doit etre un fichier ou un dictionnaire")
     except FileNotFoundError:
-        # configure_logging a déjà été joué au moins une fois avec la config
-        # présente dans les constantes, donc recup_logger renvoie bien qqch.
-        recup_logger(__name__).warning("Fichier absent : {}".format(conf))
+        logging.getLogger(__name__).warning("Fichier absent : {}".format(conf))
     else:
         if desactive_loggers_existants is not None:
             # on peut forcer True ou False
@@ -62,19 +60,6 @@ def configure_logging_defaut():
     l'application, pas de la lib.
     """
     configure_logging(logger_config_dict)
-
-
-def recup_logger(name="automatheque"):
-    """Renvoie un logger (simple wrapper de ``logging.getLogger``).
-
-    **Ne configure pas** le logging global : une bibliothèque ne doit pas le
-    faire. C'est à l'application d'activer le logging quand elle le souhaite
-    (``configure_logging`` / ``configure_logging_defaut``, ou
-    ``@script_automatheque`` qui s'en charge pour les scripts).
-
-    :param name: nom du logger demandé (passé à ``logging.getLogger``).
-    """
-    return logging.getLogger(name)
 
 
 # Une bibliothèque ne configure pas le logging global à l'import : on se

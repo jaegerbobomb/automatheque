@@ -1,24 +1,20 @@
 # -*- coding: utf-8 -*-
 import abc
-import os
+import logging
 import smtplib
 from configparser import ConfigParser
 from datetime import datetime
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
 
 import attr
+
 from automatheque.configuration import NoOptionError, charge_configuration
-from automatheque.log import recup_logger
+from automatheque.factrice.preparation import SEPARATEUR_DESTINATAIRES, PreparatriceSmtp
 from automatheque.schema.texte import Courriel
-from automatheque.util.dependances_externes import charge_dependance, Executant
+from automatheque.util.dependances_externes import Executant, charge_dependance
 
-from automatheque.factrice.preparation import PreparatriceSmtp, SEPARATEUR_DESTINATAIRES
-
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class Expeditrice(metaclass=abc.ABCMeta):
@@ -179,7 +175,7 @@ class ExpeditriceEsmtp:
 
         try:
             process.check_returncode()  # TODO(#26) attention raise !
-        except Exception as e:
+        except Exception:
             LOGGER.exception(process.stderr)
             # raise e
         return process.returncode

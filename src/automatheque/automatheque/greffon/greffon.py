@@ -1,6 +1,7 @@
 # -*- coding=utf-8 -*-
 """Gestion des Greffons et de leur capacités.
 """
+import logging
 import uuid
 from typing import List
 
@@ -9,10 +10,9 @@ import attr
 from automatheque.configuration import charge_configuration
 from automatheque.greffon.capacite import Capacite
 from automatheque.greffon.registre import RegistreGreffons
-from automatheque.log import recup_logger
 from automatheque.util.classe import classproperty
 
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @attr.s(eq=False)  # pour rendre la classe hashable pour le set du registre
