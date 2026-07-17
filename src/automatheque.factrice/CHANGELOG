@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* `ExpeditriceSmtp` (OAuth) : récupération du jeton via
+  `Executant.exec(..., encoding="utf-8")` — la sortie est décodée par
+  `subprocess`, plus de `.stdout.decode("utf-8")` manuel côté appelant. Tire
+  parti de l'option `text`/`encoding` d'`automatheque` 0.14.0 (#66).
+
 ## [0.12.0] - 2026-07-15
 
 ### Changed
