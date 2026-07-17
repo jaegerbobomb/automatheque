@@ -59,11 +59,20 @@ def test_exec_check_defaut_false():
     assert _exec().call_args.kwargs["check"] is False
 
 
-def test_exec_kwargs_transmis_a_subprocess_pas_en_cli():
-    """Les kwargs vont à subprocess.run (échappatoire), plus en arguments CLI."""
-    run = _exec("arg", start_new_session=True)
-    assert run.call_args.args[0] == ["/bin/truc", "arg"]  # aucun token en plus
-    assert run.call_args.kwargs["start_new_session"] is True
+def test_exec_kwargs_deviennent_arguments_cli():
+    """Les kwargs (hors noms réservés) sont ajoutés en paires clé/valeur au CLI."""
+    run = _exec("build", mode="rapide")
+    assert run.call_args.args[0] == ["/bin/truc", "build", "mode", "rapide"]
+    # ...et ne sont PAS passés à subprocess.run.
+    assert "mode" not in run.call_args.kwargs
+
+
+def test_exec_noms_reserves_ne_partent_pas_en_cli():
+    """Un nom réservé (cwd/timeout/…) va à subprocess.run, pas dans la commande."""
+    run = _exec("build", cwd="/x", timeout=5)
+    assert run.call_args.args[0] == ["/bin/truc", "build"]  # cwd/timeout absents
+    assert run.call_args.kwargs["cwd"] == "/x"
+    assert run.call_args.kwargs["timeout"] == 5
 
 
 def test_exec_timeout_propage_timeoutexpired():
