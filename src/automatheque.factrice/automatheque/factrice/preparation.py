@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-from pathlib import Path
+
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from automatheque.schema.texte import Courriel
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-
 
 SEPARATEUR_DESTINATAIRES = ", "
 

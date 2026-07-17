@@ -2,6 +2,11 @@
 
 **Utilitaires, modèles et librairies communes.**
 
+[![PyPI](https://img.shields.io/pypi/v/automatheque.svg)](https://pypi.org/project/automatheque/)
+[![Python](https://img.shields.io/pypi/pyversions/automatheque.svg)](https://pypi.org/project/automatheque/)
+[![Licence](https://img.shields.io/badge/licence-LGPL--3.0--or--later-blue.svg)](LICENSE)
+[![CI](https://github.com/jaegerbobomb/automatheque/actions/workflows/ci.yml/badge.svg)](https://github.com/jaegerbobomb/automatheque/actions/workflows/ci.yml)
+
 ## Préambule
 
 Ce dépôt est géré en "monorepo" grâce à [monas](https://monas.fming.dev/en/latest).

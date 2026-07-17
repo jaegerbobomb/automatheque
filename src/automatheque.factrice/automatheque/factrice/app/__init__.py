@@ -15,12 +15,9 @@ Options:
   --via-esmtp
 """
 
-import subprocess
-
-from automatheque.schema.texte.courriel import Courriel
-from automatheque.script import script_automatheque, ScriptAutomatheque
-
 from automatheque.factrice.expedition import ExpeditriceEsmtp, ExpeditriceSmtp
+from automatheque.schema.texte.courriel import Courriel
+from automatheque.script import ScriptAutomatheque, script_automatheque
 
 __version__ = "0.0.1"
 
