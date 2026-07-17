@@ -41,8 +41,8 @@ class Fabrique(object):
     * soit donner directement une Classe comme constructeur, et on recevra une
     instance de la classe,
     * soit un Monteur concret qui construira l'objet voulu.
-     (utile par exemple si l'on veut abstraire le passage de paramètre à l'initialisation
-      de la classe)
+     (utile par exemple si l'on veut abstraire le passage de paramètre à
+      l'initialisation de la classe)
     """
 
     def __init__(self):

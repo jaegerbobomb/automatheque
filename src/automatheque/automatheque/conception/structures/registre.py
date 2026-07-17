@@ -88,7 +88,8 @@ class MetaInstanceRegistre(type):
         # Lors de la création **de la classe** du registre (et pas de l'instance)
         super(MetaInstanceRegistre, cls).__init__(name, bases, attrs)
 
-        # Initialise le stockage des instances, pas besoin pour l'instant d'une "weak ref"
+        # Initialise le stockage des instances, pas besoin pour l'instant d'une
+        # "weak ref"
         cls.__instances = weakref.WeakSet()
 
     def __call__(cls, *args, **kwargs):
@@ -123,7 +124,8 @@ class MetaInstancePersistanteRegistre(type):
     Ici on utilise un "set" et non un "weakRefSet", pour le cas où on ne garde **pas**
     les références des instances crées : on les stocke juste dans le registre et on les
     cherche ensuite.
-    Avec un weakRefSet on garde le registre de toutes les instances "en cours d'utilisation",
+    Avec un weakRefSet on garde le registre de toutes les instances "en cours
+    d'utilisation",
     (ie dont on a encore la référence).
 
     >>> class A(metaclass=MetaInstancePersistanteRegistre):
@@ -148,7 +150,8 @@ class MetaInstancePersistanteRegistre(type):
         # Lors de la création **de la classe** du registre (et pas de l'instance)
         super(MetaInstancePersistanteRegistre, cls).__init__(name, bases, attrs)
 
-        # Initialise le stockage des instances, pas besoin pour l'instant d'une "weak ref"
+        # Initialise le stockage des instances, pas besoin pour l'instant d'une
+        # "weak ref"
         cls.__instances = set()
 
     def __call__(cls, *args, **kwargs):

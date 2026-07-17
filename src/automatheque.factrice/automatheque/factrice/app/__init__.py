@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """factrice
 
-Application pour envoyer des mails simplement en utilisant la connexion configurée dans config.ini.
+Application pour envoyer des mails simplement en utilisant la connexion
+configurée dans config.ini.
 
 TODO(#27) pouvoir faire `cat contenu | factrice sujet email`
 

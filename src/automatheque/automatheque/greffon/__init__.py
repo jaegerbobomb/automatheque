@@ -17,23 +17,27 @@ class FabriqueGreffon(Fabrique):
     Il faut :
 
     1. enregistrer les monteurs des greffons avec `fabrique_greffons.charge_monteurs()`
-    2. instancier le type de greffon demandé, via `fabrique_greffons.active()`, qui lance
-       `monteur.cree()` avec les arguments donnés, pour instancier le Greffon.
+    2. instancier le type de greffon demandé, via `fabrique_greffons.active()`,
+       qui lance `monteur.cree()` avec les arguments donnés, pour instancier le
+       Greffon.
 
-    NB : À défaut de Monteur, s'il n'y a pas de complexité pour instancier un Greffon (en
-    particulier il n'y a pas plusieurs Greffons différents à instancier en fonction de la
-    configuration utilisateur), alors on peut donner la classe du Greffon en tant que
+    NB : À défaut de Monteur, s'il n'y a pas de complexité pour instancier un
+    Greffon (en particulier il n'y a pas plusieurs Greffons différents à
+    instancier en fonction de la configuration utilisateur), alors on peut donner
+    la classe du Greffon en tant que
     monteur et celle ci sera instanciée directement.
         Attention: pour que la classe Greffon se comporte comme un monteur, il faut
         qu'elle ait une propriété "clé".
 
-    NB: Si on utilise un Monteur, on peut utiliser la même clé que le Greffon, tant qu'elle
-    n'est pas utilisée par plusieurs Greffons ou Monteurs, puisqu'elle servira à
+    NB: Si on utilise un Monteur, on peut utiliser la même clé que le Greffon,
+    tant qu'elle n'est pas utilisée par plusieurs Greffons ou Monteurs, puisqu'elle
+    servira à
     déclencher l'instanciation du Monteur ou du Greffon associée.
 
     .. code-block:: python
         >>> from automatheque.greffon import fabrique_greffon
-        >>> from plugin2.monteur import Monteur2  # dépend de l'argument donné à `charge_monteurs`
+        >>> # dépend de l'argument donné à `charge_monteurs`
+        >>> from plugin2.monteur import Monteur2
         >>> fabrique_greffon.charge_monteurs([
                "plugin1.monteur.Monteur1",
                Monteur2
@@ -113,7 +117,8 @@ class FabriqueGreffon(Fabrique):
         tous ceux définis en configuration.
 
         Si on utilise cette méthode pour activer les greffons, alors il est nécessaire
-        de fournir un identifiant, on ne peut pas laisser automatheque créer l'identifiant
+        de fournir un identifiant, on ne peut pas laisser automatheque créer
+        l'identifiant
         automatiquement, donc il faut fournir une configuration ou laisser automatheque
         charger la configuration standard.
 

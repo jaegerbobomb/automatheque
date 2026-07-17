@@ -1,23 +1,23 @@
 """Module d'aide à la gestion des dépendances externes.
 
 Il est notamment utilisé :
-* dans le package "dependance", qui sert à livrer des dépendances complètes avec automatheque
-  (comme pour pyexiftool) et/ou à vérifier leur installation localement (en attendant peut être
-  l'utilisation de poetry ou autre ?).
-* dans des scripts qui utilisent automatheque, pour les aider à vérifier la présence de dépendances
-  externes
+* dans le package "dependance", qui sert à livrer des dépendances complètes avec
+  automatheque (comme pour pyexiftool) et/ou à vérifier leur installation
+  localement (en attendant peut être l'utilisation de poetry ou autre ?).
+* dans des scripts qui utilisent automatheque, pour les aider à vérifier la
+  présence de dépendances externes
 
 # Fonctionnement :
 
 Ce module fournit un registre des dépendances chargées.
 
-Lorsqu'une dépendance est chargée, une instance de la classe Executant est créée, et stockée dans
-le registre.
+Lorsqu'une dépendance est chargée, une instance de la classe Executant est créée,
+et stockée dans le registre.
 
 Ainsi c'est ce registre qu'il faut appeler si on a besoin d'une dépendance.
 
-Il est ensuite conseillé de créer ses propres classes "wrapper" et de leur donner l'instance de
-l'exécutant en paramètre, qui se chargera de faire les appels subprocess.
+Il est ensuite conseillé de créer ses propres classes "wrapper" et de leur donner
+l'instance de l'exécutant en paramètre, qui se chargera de faire les appels subprocess.
 
 """
 
@@ -43,8 +43,8 @@ Dependance = namedtuple("Dependance", ["erreur", "presente", "executant"])
 def verifie_dependance(cle_dependance):
     """Vérifie que la dépendance externe donnée est bien chargée.
 
-    Renvoie une erreur si la dépendance n'est pas chargée ou que l'exécutable n'est pas présent,
-    et ne renvoie rien sinon.
+    Renvoie une erreur si la dépendance n'est pas chargée ou que l'exécutable n'est
+    pas présent, et ne renvoie rien sinon.
 
     :returns: None
     """
