@@ -36,10 +36,10 @@ def test_exec_propage_cwd_env_timeout():
     assert kw["timeout"] == 5
 
 
-def test_exec_stdin_pipe_par_defaut():
-    """Par défaut (comportement historique préservé), stdin est un PIPE."""
+def test_exec_stdin_herite_par_defaut():
+    """#66 : par défaut, stdin est héritée (None), plus un PIPE jamais alimenté."""
     run = _exec()
-    assert run.call_args.kwargs["stdin"] == subprocess.PIPE
+    assert run.call_args.kwargs["stdin"] is None
 
 
 def test_exec_stdin_explicite_transmis():

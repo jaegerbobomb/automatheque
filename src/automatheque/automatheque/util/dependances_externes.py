@@ -130,6 +130,8 @@ class Executant(object):
         comme options CLI via ``kwargs``) :
 
         :param stdin:    entrée standard (objet fichier, ``PIPE``, ``DEVNULL``…).
+            Défaut ``None`` = **héritée** du parent (auparavant un ``PIPE`` ouvert
+            jamais alimenté, source de blocage). Cf. #66.
         :param cwd:      répertoire de travail du sous-processus.
         :param env:      environnement (dict) du sous-processus.
         :param timeout:  délai max en secondes ; à l'expiration, ``subprocess``
@@ -148,7 +150,7 @@ class Executant(object):
         LOGGER.debug("Executant.exec : procargs=%s%s", procargs, msg_redir)
         return subprocess.run(
             procargs,
-            stdin=stdin if stdin is not None else subprocess.PIPE,
+            stdin=stdin,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=cwd,
