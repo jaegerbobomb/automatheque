@@ -126,8 +126,8 @@ class Executant(object):
         * les ``**kwargs`` sont ajoutés par **paires clé/valeur** :
           ``exec("build", mode="rapide")`` → ``[exe, "build", "mode", "rapide"]``.
 
-        Options ``subprocess`` (paramètres nommés **réservés**, donc utilisables
-        comme options CLI via ``kwargs``) :
+        Options ``subprocess`` (paramètres nommés **réservés** : ces noms ne
+        peuvent donc plus servir d'option CLI via ``kwargs``) :
 
         :param stdin:    entrée standard (objet fichier, ``PIPE``, ``DEVNULL``…).
             Défaut ``None`` = **héritée** du parent (auparavant un ``PIPE`` ouvert
