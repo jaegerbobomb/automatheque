@@ -38,16 +38,14 @@ logger_config_dict = {
     },
     "handlers": {
         "automatheque": {
-            "level": "INFO",
             "formatter": "automatheque",
             "class": "logging.StreamHandler",
         }
     },
-    "loggers": {
-        "automatheque": {
-            "handlers": ["automatheque"],
-            "level": "DEBUG",
-            "propagate": True,
-        }
-    },
+    # Un script EST une application : sa configuration de log vise la **racine**
+    # (root), pas seulement le sous-arbre `automatheque`. Ainsi le logger propre
+    # du script (`getLogger(__name__)`) et ceux des dépendances héritent tous du
+    # handler. Le handler n'a pas de niveau (NOTSET) : c'est le niveau des
+    # loggers qui filtre. Cf. #63.
+    "root": {"handlers": ["automatheque"], "level": "INFO"},
 }

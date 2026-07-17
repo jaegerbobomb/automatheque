@@ -4,7 +4,6 @@ import logging
 from automatheque.log import (
     configure_logging,
     configure_logging_defaut,
-    recup_logger,
 )
 
 
@@ -42,13 +41,6 @@ def test_import_pose_un_nullhandler_sur_le_logger_automatheque():
 
     handlers = logging.getLogger("automatheque").handlers
     assert any(isinstance(h, logging.NullHandler) for h in handlers)
-
-
-def test_recup_logger_ne_configure_pas_le_global():
-    """recup_logger renvoie le logger demandé sans rien reconfigurer."""
-    lg = recup_logger("un.logger.quelconque")
-    assert isinstance(lg, logging.Logger)
-    assert lg.name == "un.logger.quelconque"
 
 
 def test_configure_logging_defaut_ne_desactive_pas_les_loggers_existants():

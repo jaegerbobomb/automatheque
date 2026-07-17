@@ -76,19 +76,28 @@ def test_dictconfig_depuis_ini_none_sans_cles():
     assert _dictconfig_depuis_ini(config) is None
 
 
-def test_dictconfig_depuis_ini_console_par_defaut():
-    """`niveau` seul → handler console, niveau normalisé en majuscules."""
+def test_dictconfig_depuis_ini_console_sur_la_racine():
+    """`niveau` seul → handler console posé sur la **racine** (couvre tout).
+
+    Régression #63 : la config d'un script doit viser la racine, pas seulement
+    le logger `automatheque`.
+    """
     config = ConfigParser()
     config.read_string("[log]\nniveau = warning\n")
 
     conf = _dictconfig_depuis_ini(config)
 
     assert conf["handlers"]["automatheque"]["class"] == "logging.StreamHandler"
-    assert conf["loggers"]["automatheque"]["level"] == "WARNING"
+    # Le handler n'a pas de niveau (NOTSET) : c'est la racine qui filtre.
+    assert "level" not in conf["handlers"]["automatheque"]
+    assert conf["root"]["handlers"] == ["automatheque"]
+    assert conf["root"]["level"] == "WARNING"
+    # Sans `names`, aucun logger nommé n'est surchargé.
+    assert "loggers" not in conf
 
 
 def test_dictconfig_depuis_ini_fichier_et_format():
-    """`fichier` → FileHandler ; `format` avec `%%` est dé-échappé en `%`."""
+    """`fichier` → FileHandler (sur la racine) ; `%%` dé-échappé en `%`."""
     config = ConfigParser()
     config.read_string(
         "[log]\nniveau = DEBUG\nfichier = /tmp/app.log\nformat = %%(message)s\n"
@@ -99,7 +108,39 @@ def test_dictconfig_depuis_ini_fichier_et_format():
     handler = conf["handlers"]["automatheque"]
     assert handler["class"] == "logging.FileHandler"
     assert handler["filename"] == "/tmp/app.log"
+    assert conf["root"]["handlers"] == ["automatheque"]
     assert conf["formatters"]["automatheque"]["format"] == "%(message)s"
+
+
+def test_dictconfig_depuis_ini_names_niveaux_par_logger():
+    """`names` fixe des niveaux par logger, sans handler propre (héritent root)."""
+    config = ConfigParser()
+    config.read_string(
+        "[log]\n"
+        "niveau = INFO\n"
+        "names = automatheque:WARNING, mon_script:DEBUG, requests\n"
+    )
+
+    conf = _dictconfig_depuis_ini(config)
+
+    loggers = conf["loggers"]
+    assert loggers["automatheque"] == {"level": "WARNING", "propagate": True}
+    assert loggers["mon_script"] == {"level": "DEBUG", "propagate": True}
+    # Nom seul → niveau global.
+    assert loggers["requests"] == {"level": "INFO", "propagate": True}
+    # Aucun logger nommé ne porte de handler propre (pas de double-log).
+    assert all("handlers" not in cfg for cfg in loggers.values())
+
+
+def test_dictconfig_depuis_ini_names_seul_suffit():
+    """`names` seul (sans niveau/format/fichier) déclenche quand même la config."""
+    config = ConfigParser()
+    config.read_string("[log]\nnames = mon_script:DEBUG\n")
+
+    conf = _dictconfig_depuis_ini(config)
+
+    assert conf is not None
+    assert conf["loggers"]["mon_script"]["level"] == "DEBUG"
 
 
 def test_dictconfig_depuis_ini_pourcent_non_echappe_message_clair():
@@ -109,6 +150,33 @@ def test_dictconfig_depuis_ini_pourcent_non_echappe_message_clair():
 
     with pytest.raises(ValueError, match="%%"):
         _dictconfig_depuis_ini(config)
+
+
+def test_configure_logging_couvre_un_logger_quelconque():
+    """#63 : `[log]` configure la racine → un logger de nom quelconque (le
+    script via `getLogger(__name__)`, ses dépendances) reçoit le handler et le
+    niveau, alors qu'avant seul `automatheque` était couvert."""
+    config = ConfigParser()
+    config.read_string("[log]\nniveau = DEBUG\n")
+
+    _configure_logging(config)
+
+    racine = logging.getLogger()
+    assert racine.handlers  # la racine porte bien un handler
+    quelconque = logging.getLogger("un_script_ou_une_dependance")
+    assert quelconque.getEffectiveLevel() == logging.DEBUG
+
+
+def test_configure_logging_names_surcharge_le_niveau_dun_logger():
+    """#63 : `names = nom:NIVEAU` fixe le niveau d'un logger précis."""
+    config = ConfigParser()
+    config.read_string("[log]\nniveau = INFO\nnames = bavard:ERROR\n")
+
+    _configure_logging(config)
+
+    assert logging.getLogger("bavard").getEffectiveLevel() == logging.ERROR
+    # Les autres restent au niveau global de la racine.
+    assert logging.getLogger("autre").getEffectiveLevel() == logging.INFO
 
 
 def test_racine_config_honore_xdg(monkeypatch, tmp_path):

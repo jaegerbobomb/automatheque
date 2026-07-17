@@ -69,3 +69,45 @@ def main(_script):
 if __name__ == '__main__':
     main()
 ```
+
+## Configuration du logging
+
+Automathèque **ne configure rien à l'import** (une bibliothèque ne doit pas
+toucher au logging global). C'est **l'application** qui configure : un script
+décoré par `@script_automatheque` appelle `configure_logging_defaut()` (sortie
+console) puis applique la section `[log]` de sa configuration.
+
+Un script étant une application, sa configuration de log vise la **racine** :
+`logging.getLogger(__name__)` dans le script **et** les loggers des dépendances
+en héritent.
+
+### Forme simple (inline dans le `.ini`)
+
+Dans le `config.ini` du script (`~/.config/<mon_script>/config.ini`) :
+
+```ini
+[log]
+niveau = INFO
+fichier = mon_script.log          ; optionnel (sinon console)
+format  = %%(asctime)s [%%(levelname)s] %%(name)s: %%(message)s
+; niveaux par logger (nom seul = niveau global) :
+names   = automatheque:WARNING, mon_script:DEBUG, requests:ERROR
+```
+
+> Dans un `.ini`, les `%` se doublent en `%%` (convention ConfigParser) ; un `%`
+> non échappé lève une erreur explicite.
+
+Un seul handler/destination est partagé ; `names` n'ajuste que des **niveaux**.
+
+### Forme complète (dictConfig externe)
+
+Pour router des loggers vers des **destinations différentes** (erreurs du script
+dans un fichier, automatheque ailleurs…), pointer vers un dictConfig complet
+(JSON **ou** YAML, détecté au contenu) :
+
+```ini
+[log]
+fichier_config = log.yaml
+```
+
+Voir l'exemple canonique [`log.yaml.dist`](log.yaml.dist).

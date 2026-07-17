@@ -1,0 +1,56 @@
+# Exemple de configuration de logging « complète » pour un script automatheque.
+#
+# À référencer depuis la section [log] du config.ini du script :
+#
+#     [log]
+#     fichier_config = log.yaml
+#
+# Format : dictConfig standard de Python (logging.config.dictConfig). Le JSON est
+# également accepté (détection au contenu), mais le YAML est plus lisible.
+#
+# Cet exemple illustre le cas AVANCÉ : router chaque logger vers sa propre
+# destination (les logs du script dans un fichier, ses erreurs à part, et
+# automatheque sur la console). Pour le cas courant, la forme *inline* de [log]
+# (niveau / format / fichier / names) suffit — voir le README d'automatheque.
+
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  classique:
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: classique
+  fichier_script:
+    class: logging.FileHandler
+    formatter: classique
+    filename: mon_script.log
+  fichier_erreurs:
+    class: logging.FileHandler
+    formatter: classique
+    filename: erreurs.log
+    level: ERROR
+
+loggers:
+  # Le logger propre du script : tout dans son fichier, et les erreurs
+  # dupliquées dans un fichier dédié.
+  mon_script:
+    handlers: [fichier_script, fichier_erreurs]
+    level: DEBUG
+    propagate: false
+  # automatheque : sur la console uniquement, à partir de WARNING.
+  automatheque:
+    handlers: [console]
+    level: WARNING
+    propagate: false
+  # Une dépendance bavarde que l'on veut museler.
+  urllib3:
+    level: ERROR
+
+# Par défaut, tout le reste va sur la console.
+root:
+  handlers: [console]
+  level: INFO

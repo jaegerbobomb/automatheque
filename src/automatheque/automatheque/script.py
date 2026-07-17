@@ -97,7 +97,7 @@ from commandopt import (  # noqa: F401
 
 from automatheque import constantes
 from automatheque.configuration import charge_configuration
-from automatheque.log import configure_logging_defaut, logger_existe, recup_logger
+from automatheque.log import configure_logging_defaut, logger_existe
 
 #: Options « internes » à automatheque : elles configurent le script (logging,
 #: emplacement de config, simulation), elles ne le **routent** pas. On les
@@ -194,20 +194,19 @@ class ScriptAutomatheque(object):
         :class:`ScriptAutomatheque` (alors ces logs sont écrits en utilisant
         la configuration de `nom_du_script.main`)
 
-        L'ideal est ensuite de gérer les loggers avec `logging.getLogger()` ou
-        son wrapper `automatheque.log.recup_logger()` même si self.logger est
-        quand même accessible dans la fonction wrappée.
+        L'ideal est ensuite de gérer les loggers avec `logging.getLogger()`
+        même si self.logger est quand même accessible dans la fonction wrappée.
 
         Si le logger pour le script n'a pas été déclaré, alors on utilise le
         logger automatheque.
         """
         if not self._logger:
             if not logger_existe(self.nom_court):
-                self._logger = recup_logger()
+                self._logger = logging.getLogger("automatheque")
                 self._logger.warning("Aucun logger pour '{}'.".format(self.nom_court))
                 self._logger.warning("Utilisation du logger automatheque par défault.")
             else:
-                self._logger = recup_logger(self.nom_court)
+                self._logger = logging.getLogger(self.nom_court)
         return self._logger
 
     def joli_titre(self):
@@ -288,18 +287,16 @@ class ScriptAutomatheque(object):
         return None
 
     def _applique_verbosite(self):
-        """Aligne le logger et le handler ``automatheque`` sur ``-v``/``-q``.
+        """Aligne le niveau de la **racine** sur ``-v``/``-q``.
 
-        Il faut baisser le niveau du **handler** (INFO par défaut, cf.
-        ``constantes.logger_config_dict``), sinon les DEBUG restent filtrés.
+        Le handler par défaut est posé sur la racine sans niveau (NOTSET, cf.
+        ``constantes.logger_config_dict``) : il suffit d'ajuster le niveau du
+        logger racine pour laisser passer plus (ou moins) de messages.
         """
         niveau = self._niveau_journal_demande()
         if niveau is None:
             return
-        lg = logging.getLogger("automatheque")
-        lg.setLevel(niveau)
-        for handler in lg.handlers:
-            handler.setLevel(niveau)
+        logging.getLogger().setLevel(niveau)
 
     def signale_debut_traitement(self):
         """Signale que le traitement a debuté.

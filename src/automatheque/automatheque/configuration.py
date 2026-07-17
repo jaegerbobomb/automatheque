@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """Chargement du fichier de configuration général."""
 
-from os import path
-
+import logging
 from configparser import (
     ConfigParser,
     InterpolationError,
     NoOptionError,
     NoSectionError,
 )
+from os import path
 
 from automatheque import constantes
-from automatheque.log import recup_logger, configure_logging
+from automatheque.log import configure_logging
+
 
 def fichier_config():
     """Chemin du ``config.ini`` **partagé** d'automatheque (couche de base)."""
@@ -28,9 +29,7 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
 
     charge_configuration.config = ConfigParser()
 
-    # recup_logger renvoie simplement un logger (il ne reconfigure plus le
-    # logging global ni ne rappelle charge_configuration).
-    logger = recup_logger(__name__)
+    logger = logging.getLogger(__name__)
 
     # Pour écraser la configuration de automatheque on la charge en premier
     # et les fichiers suivants vont prendre la précédence.
@@ -62,7 +61,7 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
 
 
 def _charge_fichier_configuration(fichier, config):
-    recup_logger(__name__).debug(
+    logging.getLogger(__name__).debug(
         "Chargement du fichier de configuration : {}.".format(fichier)
     )
     config.read(fichier)
@@ -85,14 +84,16 @@ def _configure_logging(config):
     """
     try:
         if not config.has_section("log"):
-            recup_logger(__name__).debug("Section [log] absente : logging inchangé.")
+            logging.getLogger(__name__).debug(
+                "Section [log] absente : logging inchangé."
+            )
             return
         fichier_config_log = config.get("log", "fichier_config", fallback=None)
         desactive_loggers_existants = config.get(
             "log", "desactive_loggers_existants", fallback=None
         )
     except (NoOptionError, NoSectionError):
-        recup_logger(__name__).debug(
+        logging.getLogger(__name__).debug(
             "Pas de configuration de logging exploitable dans [log]."
         )
         return
@@ -111,20 +112,30 @@ def _configure_logging(config):
 def _dictconfig_depuis_ini(config):
     """Construit un dictConfig minimal depuis des clés simples de ``[log]``.
 
+    Un script étant une **application**, cette forme configure la **racine**
+    (root) : le logger propre du script (``getLogger(__name__)``) comme ceux des
+    dépendances héritent tous du handler. Cf. #63.
+
     Clés reconnues (toutes optionnelles) :
 
-    * ``niveau``  : niveau du logger ``automatheque`` (défaut ``INFO``) ;
+    * ``niveau``  : niveau global (celui de la racine ; défaut ``INFO``) ;
     * ``fichier`` : si présent, journalise dans ce fichier (sinon console) ;
     * ``format``  : format des messages. Les ``%`` doivent être **échappés en
       ``%%``** (convention ConfigParser, comme partout ailleurs dans le ``.ini``),
-      p. ex. ``format = %%(asctime)s [%%(levelname)s] %%(name)s: %%(message)s``.
+      p. ex. ``format = %%(asctime)s [%%(levelname)s] %%(name)s: %%(message)s`` ;
+    * ``names``   : **niveaux par logger**, séparés par des virgules. Chaque
+      entrée est ``nom`` (→ niveau global) ou ``nom:NIVEAU``. Exemple :
+      ``names = automatheque:WARNING, mon_script:DEBUG, requests:ERROR``. Le
+      handler/destination reste **partagé** (un seul) ; pour router des loggers
+      vers des fichiers distincts, utiliser ``fichier_config`` (dictConfig
+      complet en JSON/YAML).
 
     Renvoie ``None`` si aucune de ces clés n'est présente (rien à configurer).
 
     :raise ValueError: si une valeur contient un ``%`` non échappé (message
         explicite invitant à doubler le ``%``).
     """
-    cles = ("niveau", "fichier", "format")
+    cles = ("niveau", "fichier", "format", "names")
     if not any(config.has_option("log", c) for c in cles):
         return None
 
@@ -136,6 +147,7 @@ def _dictconfig_depuis_ini(config):
             fallback="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         )
         fichier = config.get("log", "fichier", fallback=None)
+        names_brut = config.get("log", "names", fallback="")
     except InterpolationError as exc:
         raise ValueError(
             "Section [log] : un '%' non échappé. Doublez-le en '%%' (convention "
@@ -147,25 +159,35 @@ def _dictconfig_depuis_ini(config):
             "class": "logging.FileHandler",
             "filename": fichier,
             "formatter": "automatheque",
-            "level": niveau,
         }
     else:
         handler = {
             "class": "logging.StreamHandler",
             "formatter": "automatheque",
-            "level": niveau,
         }
 
-    return {
+    conf = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {"automatheque": {"format": fmt}},
+        # Le handler n'a pas de niveau (NOTSET) : ce sont les niveaux des loggers
+        # (racine + surcharges `names`) qui filtrent.
         "handlers": {"automatheque": handler},
-        "loggers": {
-            "automatheque": {
-                "handlers": ["automatheque"],
-                "level": niveau,
-                "propagate": True,
-            }
-        },
+        "root": {"handlers": ["automatheque"], "level": niveau},
     }
+
+    loggers = {}
+    for entree in names_brut.split(","):
+        entree = entree.strip()
+        if not entree:
+            continue
+        nom, sep, niv = entree.partition(":")
+        nom = nom.strip()
+        niv = niv.strip().upper() if sep else niveau
+        # Pas de handler propre : le logger hérite du handler de la racine (un
+        # seul affichage, pas de double-log) ; on n'ajuste que son niveau.
+        loggers[nom] = {"level": niv, "propagate": True}
+    if loggers:
+        conf["loggers"] = loggers
+
+    return conf

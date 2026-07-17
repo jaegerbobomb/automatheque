@@ -5,14 +5,12 @@
 Divers utilitaires.
 """
 
+import errno
+import logging
 import os
 from pathlib import Path
-import errno
 
-
-from automatheque.log import recup_logger
-
-LOGGER = recup_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def mkdir_p(path):
