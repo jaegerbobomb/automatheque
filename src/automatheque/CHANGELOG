@@ -13,17 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `util.dependances_externes.Executant.exec` accepte les options `subprocess`
   explicites **`cwd`**, **`env`**, **`timeout`** (+ `TimeoutExpired` propagé,
-  garde-fou anti-blocage), **`check`**, **`text`**/**`encoding`**. Tout
-  `**kwargs` restant est transmis à `subprocess.run`. — cf. #66
-
-### Changed
-
-* **`Executant.exec` (comportement)** — cf. #66 :
-  * `stdin` par défaut est désormais **héritée** du parent (`None`) au lieu d'un
-    `PIPE` ouvert jamais alimenté (qui pouvait bloquer un lecteur d'entrée) ;
-  * les `**kwargs` ne sont **plus convertis en arguments CLI** (mécanisme retiré,
-    inutilisé) ; passer les arguments du programme en **positionnel** via `args`,
-    les `kwargs` vont maintenant à `subprocess.run`.
+  garde-fou anti-blocage), **`check`**, **`text`**/**`encoding`**. La conversion
+  des `**kwargs` en arguments CLI (`exec("build", mode="rapide")` →
+  `[exe, "build", "mode", "rapide"]`) et le `stdin` par défaut (`PIPE`) sont
+  **préservés** : changement purement additif. Seul effet — ces 7 noms
+  (`stdin`, `cwd`, `env`, `timeout`, `check`, `text`, `encoding`) deviennent
+  réservés et ne peuvent plus servir d'option CLI via `kwargs`. — cf. #66
 
 ## [0.13.1] - 2026-07-17
 

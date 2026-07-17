@@ -114,17 +114,22 @@ class Executant(object):
         encoding=None,
         **kwargs,
     ) -> subprocess.CompletedProcess:
-        """Execute l'exécutable de la dépendance avec ``args`` comme arguments CLI.
+        """Execute l'exécutable de la dépendance.
 
         Renvoie un `CompletedProcess
         <https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess>`_.
         ``stdout`` et ``stderr`` sont **toujours capturés** (``PIPE``).
 
-        Options ``subprocess`` transmises telles quelles :
+        Arguments de la ligne de commande :
+
+        * les positionnels ``args`` sont ajoutés tels quels ;
+        * les ``**kwargs`` sont ajoutés par **paires clé/valeur** :
+          ``exec("build", mode="rapide")`` → ``[exe, "build", "mode", "rapide"]``.
+
+        Options ``subprocess`` (paramètres nommés **réservés**, donc utilisables
+        comme options CLI via ``kwargs``) :
 
         :param stdin:    entrée standard (objet fichier, ``PIPE``, ``DEVNULL``…).
-            Défaut ``None`` = **héritée** du processus parent (#66 : auparavant
-            un ``PIPE`` ouvert jamais alimenté, source de blocage).
         :param cwd:      répertoire de travail du sous-processus.
         :param env:      environnement (dict) du sous-processus.
         :param timeout:  délai max en secondes ; à l'expiration, ``subprocess``
@@ -134,19 +139,16 @@ class Executant(object):
             (défaut ``False`` = ``bytes``, comportement historique).
         :param encoding: encodage utilisé quand ``text`` (ou ``encoding``) est
             fourni.
-
-        Tout ``**kwargs`` restant est transmis à ``subprocess.run`` (échappatoire
-        pour les options non listées). ⚠️ Contrairement aux versions ≤ 0.13, les
-        ``kwargs`` ne sont **plus** convertis en arguments CLI : passer les
-        arguments du programme en positionnel via ``args``.
         """
         procargs = [self.executable, *args]
+        for k, v in kwargs.items():
+            procargs += [k, v]
 
         msg_redir = " < 'stdin'" if stdin is not None else ""
         LOGGER.debug("Executant.exec : procargs=%s%s", procargs, msg_redir)
         return subprocess.run(
             procargs,
-            stdin=stdin,
+            stdin=stdin if stdin is not None else subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=cwd,
@@ -155,5 +157,4 @@ class Executant(object):
             check=check,
             text=text,
             encoding=encoding,
-            **kwargs,
         )
