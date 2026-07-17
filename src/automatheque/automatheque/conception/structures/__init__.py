@@ -3,12 +3,11 @@ from .borg import Borg
 from .fabrique import Fabrique
 from .monteur import Monteur
 from .registre import (
-    MetaInstanceRegistre,
-    MetaInstancePersistanteRegistre,
     MetaClasseRegistre,
+    MetaInstancePersistanteRegistre,
+    MetaInstanceRegistre,
 )
 from .singleton import Singleton
-
 
 __all__ = [
     "Adaptateur",

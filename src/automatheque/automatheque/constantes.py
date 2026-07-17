@@ -28,6 +28,7 @@ def repertoire_config_script(nom_court):
     """
     return path.join(_racine_config(), nom_court)
 
+
 logger_config_dict = {
     "version": 1,
     # False : une bibliothèque ne doit pas désactiver les loggers déjà

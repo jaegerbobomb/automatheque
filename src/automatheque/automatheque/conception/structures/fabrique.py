@@ -26,6 +26,7 @@ depuis realpython ci dessus :
   requests the implementation from a creator component (get_serializer()) using some
   sort of identifier (format).
 """
+
 from .monteur import Monteur
 
 

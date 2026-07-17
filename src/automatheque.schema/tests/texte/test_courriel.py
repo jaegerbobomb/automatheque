@@ -1,5 +1,4 @@
 import pytest  # type: ignore
-
 from automatheque.schema.texte.courriel import Courriel
 
 

@@ -20,4 +20,3 @@ class Borg:
     def __init__(self):
         # copie de l'état lors de l'initialisation d'une nouvelle instance
         self.__dict__ = self.__etat_partage
-

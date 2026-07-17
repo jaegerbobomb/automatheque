@@ -4,6 +4,7 @@
 
 Divers utilitaires pour dict, list etc.
 """
+
 from copy import deepcopy
 from datetime import date, datetime, time
 

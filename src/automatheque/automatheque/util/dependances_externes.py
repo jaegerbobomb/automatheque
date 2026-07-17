@@ -20,6 +20,7 @@ Il est ensuite conseillé de créer ses propres classes "wrapper" et de leur don
 l'exécutant en paramètre, qui se chargera de faire les appels subprocess.
 
 """
+
 import logging
 import os
 import shutil

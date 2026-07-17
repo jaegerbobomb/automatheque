@@ -2,11 +2,11 @@
 """Module pour le patron Adaptateur.
 
 Ce patron convertit l'interface d'une classe en une autre interface exploitée ailleurs.
- 
-Cela permet d'interconnecter des classes qui sans cela seraient incompatibles. Il est 
-utilisé dans le cas où un programme se sert d'une bibliothèque de classe qui ne 
-correspond plus à l'utilisation qui en est faite, à la suite d'une mise à jour de la 
-bibliothèque dont l'interface a changé. 
+
+Cela permet d'interconnecter des classes qui sans cela seraient incompatibles. Il est
+utilisé dans le cas où un programme se sert d'une bibliothèque de classe qui ne
+correspond plus à l'utilisation qui en est faite, à la suite d'une mise à jour de la
+bibliothèque dont l'interface a changé.
 
 Un objet adaptateur (en anglais adapter) expose alors l'ancienne interface en utilisant
 les fonctionnalités de la nouvelle.

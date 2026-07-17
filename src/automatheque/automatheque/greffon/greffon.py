@@ -1,6 +1,6 @@
 # -*- coding=utf-8 -*-
-"""Gestion des Greffons et de leur capacités.
-"""
+"""Gestion des Greffons et de leur capacités."""
+
 import logging
 import uuid
 from typing import List
