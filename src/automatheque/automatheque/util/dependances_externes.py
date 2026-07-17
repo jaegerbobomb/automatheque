@@ -102,24 +102,58 @@ class Executant(object):
 
     executable = attr.ib()
 
-    def exec(self, *args, stdin=None, **kwargs) -> subprocess.CompletedProcess:
-        """Execute le programme donné en dépendances avec les arguments en paramètres.
+    def exec(
+        self,
+        *args,
+        stdin=None,
+        cwd=None,
+        env=None,
+        timeout=None,
+        check=False,
+        text=False,
+        encoding=None,
+        **kwargs,
+    ) -> subprocess.CompletedProcess:
+        """Execute l'exécutable de la dépendance avec ``args`` comme arguments CLI.
 
-        Renvoie un objet CompletedProcess (https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)
+        Renvoie un `CompletedProcess
+        <https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess>`_.
+        ``stdout`` et ``stderr`` sont **toujours capturés** (``PIPE``).
 
-        L'idéal est de donner une instance de cette classe à un wrapper pour l'action souhaitée
-        qui se charge d'appeler `self.executant.exec` par ex.
+        Options ``subprocess`` transmises telles quelles :
+
+        :param stdin:    entrée standard (objet fichier, ``PIPE``, ``DEVNULL``…).
+            Défaut ``None`` = **héritée** du processus parent (#66 : auparavant
+            un ``PIPE`` ouvert jamais alimenté, source de blocage).
+        :param cwd:      répertoire de travail du sous-processus.
+        :param env:      environnement (dict) du sous-processus.
+        :param timeout:  délai max en secondes ; à l'expiration, ``subprocess``
+            tue le processus et lève ``subprocess.TimeoutExpired`` (propagé).
+        :param check:    si vrai, lève ``CalledProcessError`` sur code non nul.
+        :param text:     si vrai, ``stdout``/``stderr`` sont décodés en ``str``
+            (défaut ``False`` = ``bytes``, comportement historique).
+        :param encoding: encodage utilisé quand ``text`` (ou ``encoding``) est
+            fourni.
+
+        Tout ``**kwargs`` restant est transmis à ``subprocess.run`` (échappatoire
+        pour les options non listées). ⚠️ Contrairement aux versions ≤ 0.13, les
+        ``kwargs`` ne sont **plus** convertis en arguments CLI : passer les
+        arguments du programme en positionnel via ``args``.
         """
         procargs = [self.executable, *args]
-        for k, v in kwargs.items():
-            procargs += [k, v]
 
         msg_redir = " < 'stdin'" if stdin is not None else ""
-        LOGGER.debug(f"Executant.exec : procargs={procargs}" + msg_redir )
-        pipes = subprocess.run(
+        LOGGER.debug("Executant.exec : procargs=%s%s", procargs, msg_redir)
+        return subprocess.run(
             procargs,
-            stdin=stdin if stdin is not None else subprocess.PIPE,
+            stdin=stdin,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=env,
+            timeout=timeout,
+            check=check,
+            text=text,
+            encoding=encoding,
+            **kwargs,
         )
-        return pipes
