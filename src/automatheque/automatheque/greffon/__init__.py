@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, ABCMeta
 from copy import deepcopy
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Type, Union
 
 from automatheque.conception.structures import Fabrique, Monteur
 from automatheque.configuration import ConfigParser, charge_configuration
@@ -79,7 +79,7 @@ class FabriqueGreffon(Fabrique):
         return Greffon.greffon_par_identifiant(identifiant)
 
     def charge_monteurs(
-        self, liste_monteurs: List[Union[str, Monteur, Greffon]]
+        self, liste_monteurs: List[Union[str, Type[Monteur], Type[Greffon]]]
     ) -> List[Monteur]:
         """Enregistre les monteurs de greffons disponibles dans la fabrique.
 
@@ -88,6 +88,9 @@ class FabriqueGreffon(Fabrique):
         Dans tous les cas ensuite il faut les activer un par un dans la configuration.
         """
         monteurs = []
+        # `monteur` est résolu dynamiquement (via pydoc.locate) ou fourni par
+        # l'appelant : son type statique n'est pas connu.
+        monteur: Any
         for elem in liste_monteurs:
             if isinstance(elem, str):
                 from pydoc import locate
@@ -155,17 +158,21 @@ class FabriqueGreffon(Fabrique):
         if liste_greffons is None:
             try:
                 # On laisse dans "greffon" si on veut sortir le code un jour !
-                liste_greffons = configuration.get("greffons").get("greffons")
-                liste_greffons = [i.strip() for i in liste_greffons.split(",")]
+                liste_str = configuration["greffons"]["greffons"]
+                liste_greffons = [i.strip() for i in liste_str.split(",")]
             except Exception as e:
                 LOGGER.exception(e)
                 raise ValueError(f"pas de liste de greffons dans {configuration}")
 
         greffons_actifs = []
         for identifiant in liste_greffons:
-            conf = deepcopy(configuration.get(identifiant))
+            conf = deepcopy(configuration[identifiant])
             cle = conf.pop("greffon")
-            greffons_actifs.append(self.active(cle, identifiant=identifiant, **conf))
+            greffon = self.active(cle, identifiant=identifiant, **conf)
+            # active() peut renvoyer None (greffon inactif ou échec) : on ne
+            # l'ajoute pas — la méthode renvoie bien une List[Greffon].
+            if greffon is not None:
+                greffons_actifs.append(greffon)
         return greffons_actifs
 
 

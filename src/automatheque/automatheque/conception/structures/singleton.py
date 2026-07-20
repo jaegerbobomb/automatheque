@@ -19,7 +19,7 @@ class Singleton(object):
 
     # Dictionnaire Python référençant les instances déjà créés : une pour chaque
     # sous-classe.
-    _singletons = {}
+    _singletons: dict = {}
 
     def __new__(cls, *args, **kargs):
         if Singleton._singletons.get(cls) is None:

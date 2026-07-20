@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from typing import List
+from typing import List, Type
 
 import attr
 
@@ -61,8 +61,12 @@ class Greffon(RegistreGreffons):
     config_requise = attr.ib(default=False, init=False, kw_only=True)
     config = attr.ib(init=False, factory=charge_configuration, kw_only=True)
 
+    # Liste des capacités du greffon, surchargée par chaque sous-classe
+    # (cf. greffon/capacite.py) ; vide par défaut.
+    CAPACITES: List[Capacite] = []
+
     @classproperty
-    def cle(cls) -> str:
+    def cle(cls: Type["Greffon"]) -> str:
         """Retourne le nom de la classe sans "Greffon" s'il existe, en minuscule"""
         return cls.__name__.lower().replace("greffon", "")
 
