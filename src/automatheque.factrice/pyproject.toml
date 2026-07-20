@@ -13,6 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 dependencies = [
     # >=0.14.0 : `ExpeditriceSmtp` utilise `Executant.exec(encoding=...)`,
@@ -35,3 +36,7 @@ factrice = "automatheque.factrice.app:main"
 [build-system]
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+# Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
+[tool.setuptools.package-data]
+"automatheque.factrice" = ["py.typed"]
