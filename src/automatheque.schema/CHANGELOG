@@ -12,7 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.3] - 2026-07-20
+
+> Première republication de `schema` depuis 0.9.7 : il s'aligne sur la version
+> globale du monorepo (lockstep) et embarque enfin ses métadonnées en attente
+> (licence LGPL, plancher py3.9) en plus du typage exporté.
+
 ### Added
+
+* Typage exporté : `py.typed` embarqué dans le wheel
+  (`[tool.setuptools.package-data]`) + classifier `Typing :: Typed`. — cf. #3
 
 ### Changed
 

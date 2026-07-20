@@ -1,6 +1,6 @@
 [project]
 name = "automatheque.schema"
-version = "0.9.7"
+version = "0.14.3"
 description = "Domaine pour des classes courantes et partagées"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "LGPL-3.0-or-later"}
@@ -13,6 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 dependencies = [
     "attrs",
@@ -31,6 +32,10 @@ dev = [
 [build-system]
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+# Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
+[tool.setuptools.package-data]
+"automatheque.schema" = ["py.typed"]
 
 [tool.tox]
 legacy_tox_ini = """
