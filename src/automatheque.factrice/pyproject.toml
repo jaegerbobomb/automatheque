@@ -15,7 +15,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "automatheque>=0.9.6",
+    # >=0.14.0 : `ExpeditriceSmtp` utilise `Executant.exec(encoding=...)`,
+    # ajouté dans automatheque 0.14.0 (#66).
+    "automatheque>=0.14.0",
     # 0.9.6 est la plus ancienne version publiée d'automatheque.schema ; le
     # plancher précédent (>=0.9.5) référençait une version jamais publiée. Le
     # job CI « tests-plancher » valide que factrice fonctionne contre ces

@@ -109,7 +109,9 @@ class ExpeditriceSmtp(Expeditrice):
 
         if oauth and oauth_cmd is not None and oauth_client_id is not None:
             cmd, *args = oauth_cmd.split(" ")
-            oauth_jeton = Executant(cmd).exec(*args).stdout.decode("utf-8").strip("\n")
+            oauth_jeton = (
+                Executant(cmd).exec(*args, encoding="utf-8").stdout.strip("\n")
+            )
             # LOGGER.debug("jeton oauth : " + oauth_jeton)
             self.s.ehlo(oauth_client_id)
             # On pourrait utiliser self.s.auth, mais il faut travailler
