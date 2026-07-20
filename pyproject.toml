@@ -1,6 +1,6 @@
 [tool.monas]
 packages = ["src/*"]
-version = "0.14.1"
+version = "0.14.2"
 # Interpréteur Python de l'environnement de DÉVELOPPEMENT géré par monas. À ne
 # pas confondre avec le plancher SUPPORTÉ (requires-python = ">=3.9" dans les
 # 3 paquets) : on développe sur un interpréteur récent tout en supportant 3.9.
