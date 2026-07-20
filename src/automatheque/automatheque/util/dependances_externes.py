@@ -36,7 +36,7 @@ LOGGER = logging.getLogger(__name__)
 
 MAUVAISE_CLE_ERREUR = """Aucune dépendance à ce nom n'a été trouvée.
 Vérifiez que vous avez bien chargé la dépendance précédemment."""
-registre_dependances = {}
+registre_dependances: dict = {}
 Dependance = namedtuple("Dependance", ["erreur", "presente", "executant"])
 
 

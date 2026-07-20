@@ -15,7 +15,7 @@ class Borg:
     """Classe "Singleton-like" pour partager les états de plusieurs instances."""
 
     # variable de classe contenant l'état à partager
-    __etat_partage = {}
+    __etat_partage: dict = {}
 
     def __init__(self):
         # copie de l'état lors de l'initialisation d'une nouvelle instance

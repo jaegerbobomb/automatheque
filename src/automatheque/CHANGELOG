@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `greffon.FabriqueGreffon.active_greffons_conf` ne renvoie plus d'éléments
+  `None` : les greffons dont l'activation échoue (inactifs ou en erreur) sont
+  **exclus** de la liste retournée, qui respecte enfin son type `List[Greffon]`.
+  Correction issue de la passe de typage. — cf. #71
+
+### Changed
+
+* Qualité : le code passe `ruff` **et** `mypy` sans erreur ; le job CI `qualite`
+  devient **bloquant** (fin des `continue-on-error`). Nettoyage du typage
+  (annotations manquantes, `Type[...]` des monteurs, `CAPACITES` déclaré sur
+  `Greffon`, stubs `types-PyYAML`/`types-pytz`). — cf. #71
+
 ## [0.14.0] - 2026-07-17
 
 ### Added
