@@ -34,7 +34,9 @@ class PreparatriceSmtp:
                 _msg.attach(
                     MIMEApplication(
                         fic.read(),
-                        Content_Disposition=f'attachment; filename="{piece_jointe.name}"',
+                        Content_Disposition=(
+                            f'attachment; filename="{piece_jointe.name}"'
+                        ),
                         Name=piece_jointe.name,
                     )
                 )

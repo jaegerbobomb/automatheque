@@ -14,9 +14,11 @@ T = TypeVar("T", bound=Capacite)
 
 class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
     """
-    Stocke toutes les instances des greffons qui héritent de `~automatheque.greffon.Greffon`.
+    Stocke toutes les instances des greffons qui héritent de
+    `~automatheque.greffon.Greffon`.
 
-    Fournit plusieurs méthodes de classe pour récupérer les Greffons par nom ou par capacité.
+    Fournit plusieurs méthodes de classe pour récupérer les Greffons par nom ou
+    par capacité.
     """
 
     @classmethod
@@ -31,7 +33,8 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
              On utilise `Callable[[], T]` comme correctif temporaire.
 
         TODO Pour l'instant il faut également forcer le type en retour de l'appel :
-             `greffons: CapaciteDemandeeProtocol = rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
+             `greffons: CapaciteDemandeeProtocol =
+             rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
 
         :param capacite: Protocol que doit respecter le Greffon recherché
         :return: Type _Union_, mais devrait être _Intersect_ (TODO https://github.com/python/typing/issues/213)

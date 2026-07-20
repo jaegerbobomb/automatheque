@@ -28,7 +28,8 @@ class JournalSuivi:
 
     # decorator !!
     def ni_fait_ni_à_refaire(self, nom_arg_reference: str):
-        """Décore une fonction pour qu'elle ne soit jouée qu'une fois pour un argument donné.
+        """Décore une fonction pour qu'elle ne soit jouée qu'une fois pour un
+        argument donné.
 
         Il faut donner en entrée le nom du paramètre qui contient la référence, et la
         decoration sauvegardera "nom_fonction_reference".

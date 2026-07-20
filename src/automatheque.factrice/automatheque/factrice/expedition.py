@@ -27,7 +27,8 @@ class Expeditrice(metaclass=abc.ABCMeta):
 class ExpeditriceSmtp(Expeditrice):
     """Expédie un Courriel par SMTP.
 
-    :param config: ConfigParser avec la configuration d'expédition, voir plus bas le format
+    :param config: ConfigParser avec la configuration d'expédition, voir plus bas
+        le format
     :type ConfigParser:
 
     ```ini
@@ -83,7 +84,8 @@ class ExpeditriceSmtp(Expeditrice):
         try:
             self.__connecter()
         except NoOptionError:
-            # Les identifiants ne sont pas renseignés en conf, on vérifie que c'est voulu
+            # Les identifiants ne sont pas renseignés en conf, on vérifie que
+            # c'est voulu
             if self.config.getboolean("factrice.smtp", "anonyme", fallback=False):
                 pass
             LOGGER.exception("no options")
@@ -93,7 +95,8 @@ class ExpeditriceSmtp(Expeditrice):
     def __connecter(self):
         """Identifie l'utilisateur sur le SMTP donné.
 
-        Utilise le couple login/mdp ou le jeton xoauth2 (grosso modo un Auth Bearer encodé en b64).
+        Utilise le couple login/mdp ou le jeton xoauth2 (grosso modo un Auth
+        Bearer encodé en b64).
         """
         LOGGER.debug("__connecter")
         oauth = self.config.getboolean("factrice.smtp", "oauth", fallback=False)
@@ -109,8 +112,8 @@ class ExpeditriceSmtp(Expeditrice):
             oauth_jeton = Executant(cmd).exec(*args).stdout.decode("utf-8").strip("\n")
             # LOGGER.debug("jeton oauth : " + oauth_jeton)
             self.s.ehlo(oauth_client_id)
-            # On pourrait utiliser self.s.auth, mais il faut travailler directement avec la chaine xoauth2
-            # non encodée en b64.
+            # On pourrait utiliser self.s.auth, mais il faut travailler
+            # directement avec la chaine xoauth2 non encodée en b64.
             self.s.docmd("AUTH", "XOAUTH2 " + oauth_jeton)
         else:
             self.s.login(
@@ -165,7 +168,8 @@ class ExpeditriceEsmtp:
     def expedie(self, courriel: Courriel):
         # envoi du mail si esmtp est paramétré
         # cmd = 'cat "{0}" | esmtp {1}'.format(
-        #    self__.gen_fichier(courriel), SEPARATEUR_DESTINATAIRES.join(courriel.destinataires)
+        #    self__.gen_fichier(courriel),
+        #    SEPARATEUR_DESTINATAIRES.join(courriel.destinataires)
         # )
         args = [SEPARATEUR_DESTINATAIRES.join(courriel.destinataires)]
         fic = self.__gen_fichier(courriel)

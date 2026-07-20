@@ -17,7 +17,8 @@ class Courriel:
     Cette classe est un wrapper de "email".
 
     La validité des emails est testée de manière très sommaire par défaut.
-    Si besoin, utiliser pyIsEmail ou autre librairie, à passer à "self.teste_adresse_valide".
+    Si besoin, utiliser pyIsEmail ou autre librairie, à passer à
+    "self.teste_adresse_valide".
     Pour l'instant on se contente de ça : https://stackoverflow.com/a/14485817/8721626
     """
 
