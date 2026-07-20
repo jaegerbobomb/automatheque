@@ -56,9 +56,24 @@ def verifie_dependance(cle_dependance):
         raise DependanceManquante(cle_dependance, MAUVAISE_CLE_ERREUR)
 
 
-def charge_dependance(cle, executable, executable_complet, erreur="", verifie=True):
-    """Charge la dépendance donnée, dans le registre."""
-    executable = recup_executable(executable, executable_complet)
+def charge_dependance(
+    cle,
+    executable,
+    executable_complet,
+    erreur="",
+    verifie=True,
+    teste_execution=False,
+):
+    """Charge la dépendance donnée, dans le registre.
+
+    :param teste_execution: si vrai, ne se contente pas de vérifier la présence
+        de l'exécutable mais tente réellement de le lancer (cf.
+        ``recup_executable``). Désactivé par défaut pour ne pas exécuter de
+        binaire à l'insu de l'appelant.
+    """
+    executable = recup_executable(
+        executable, executable_complet, teste_execution=teste_execution
+    )
     executant = Executant(executable)
 
     # Ajout dans le registre des dépendances :
@@ -77,19 +92,53 @@ def charge_dependance(cle, executable, executable_complet, erreur="", verifie=Tr
     return executant
 
 
-def recup_executable(nom, chemin_complet):
+def recup_executable(nom, chemin_complet, teste_execution=False):
     """Récupère le chemin vers l'exécutable demandé.
 
+    :param teste_execution: si vrai, on ne se contente pas de vérifier que le
+        fichier existe et porte le bit exécutable : on tente réellement de le
+        lancer (cf. ``_executable_fonctionne``) pour détecter un binaire
+        présent mais inutilisable (mauvaise architecture, interpréteur ou
+        bibliothèque manquante…).
     :returns: str ou False
     """
     path = shutil.which(nom)
-    # TODO(#25) : il faut aussi tester l'execution sans args pour voir si ça marche.
     # Si on ne trouve pas l'exécutable on essaie de forcer un chemin classique :
     if path is None:
         path = chemin_complet
         if not os.path.isfile(path) or not os.access(path, os.X_OK):
             return False
+    if teste_execution and not _executable_fonctionne(path):
+        return False
     return path
+
+
+def _executable_fonctionne(path, timeout=2):
+    """Vérifie qu'un exécutable démarre réellement (au-delà du bit exécutable).
+
+    On le lance sans argument, entrées/sorties neutralisées, avec un délai
+    court. Le **code de retour est ignoré** : de nombreux outils quittent en
+    erreur sans argument (affichage de l'usage). Seul compte le fait que le
+    système ait pu *démarrer* le binaire.
+
+    * démarrage impossible (``OSError`` : « Exec format error », interpréteur
+      manquant…) → ``False`` ;
+    * délai dépassé → considéré comme fonctionnel (le binaire tournait bien) ;
+    * démarrage OK (quel que soit le code de retour) → ``True``.
+    """
+    try:
+        subprocess.run(
+            [path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return True
+    except OSError:
+        return False
+    return True
 
 
 def _gen_erreur(cle):

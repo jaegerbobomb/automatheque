@@ -1,10 +1,15 @@
 """Tests de ``Executant.exec`` (options subprocess explicites, #66)."""
 
 import subprocess
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-from automatheque.util.dependances_externes import Executant
+from automatheque.util.dependances_externes import (
+    Executant,
+    _executable_fonctionne,
+    recup_executable,
+)
 
 
 def _exec(*args, **kwargs):
@@ -81,3 +86,51 @@ def test_exec_timeout_propage_timeoutexpired():
         run.side_effect = subprocess.TimeoutExpired(cmd="truc", timeout=1)
         with pytest.raises(subprocess.TimeoutExpired):
             Executant("/bin/truc").exec(timeout=1)
+
+
+# --- recup_executable / test d'exécution (#25) ------------------------------
+
+
+def test_recup_executable_absent_renvoie_false(tmp_path):
+    """Un nom introuvable et un chemin de repli inexistant → False."""
+    assert recup_executable("nom-improbable-xyz", str(tmp_path / "absent")) is False
+
+
+def test_recup_executable_sans_test_ne_lance_pas(tmp_path):
+    """Par défaut : présence + bit exécutable suffisent, sans lancer le binaire."""
+    faux = tmp_path / "faux"
+    faux.write_text("ceci n'est pas un binaire")
+    faux.chmod(0o755)
+    # Accepté sur la seule base des permissions, sans tentative d'exécution.
+    assert recup_executable("nom-improbable-xyz", str(faux)) == str(faux)
+
+
+def test_recup_executable_teste_execution_detecte_non_binaire(tmp_path):
+    """Avec ``teste_execution``, un faux exécutable (non binaire) est rejeté."""
+    faux = tmp_path / "faux"
+    faux.write_text("ceci n'est pas un binaire")
+    faux.chmod(0o755)
+    assert (
+        recup_executable("nom-improbable-xyz", str(faux), teste_execution=True) is False
+    )
+
+
+def test_recup_executable_teste_execution_accepte_vrai_binaire():
+    """Un exécutable qui démarre réellement (l'interpréteur Python) est accepté."""
+    path = recup_executable("nom-improbable-xyz", sys.executable, teste_execution=True)
+    assert path == sys.executable
+
+
+def test_executable_fonctionne_vrai_sur_binaire():
+    assert _executable_fonctionne(sys.executable) is True
+
+
+def test_executable_fonctionne_faux_sur_inexistant():
+    assert _executable_fonctionne("/chemin/qui/nexiste/pas/xyz") is False
+
+
+def test_executable_fonctionne_timeout_considere_ok():
+    """Un dépassement de délai signifie que le binaire *tournait* → True."""
+    with patch("automatheque.util.dependances_externes.subprocess.run") as run:
+        run.side_effect = subprocess.TimeoutExpired(cmd="x", timeout=2)
+        assert _executable_fonctionne("/bin/peu-importe") is True

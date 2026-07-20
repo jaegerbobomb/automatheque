@@ -66,6 +66,40 @@ def test_repertoire_sauvegarde_ecrase_le_contenu(tmp_path):
     assert (tmp_path / "maref").read_text() == "v2"
 
 
+def test_repertoire_verrou_par_instance(tmp_path):
+    """#25 : chaque adaptateur possède son propre verrou (non partagé)."""
+    a = StockageRepertoire(tmp_path)
+    b = StockageRepertoire(tmp_path)
+    assert a._verrou is not None
+    assert a._verrou is not b._verrou
+
+
+def test_repertoire_ecritures_concurrentes(tmp_path):
+    """Les accès concurrents restent cohérents (sérialisés par le verrou)."""
+    import threading
+
+    stockage = StockageRepertoire(tmp_path)
+    erreurs = []
+
+    def ecrit(n):
+        try:
+            for i in range(50):
+                stockage.sauvegarde(f"ref{n}", f"{n}-{i}")
+                stockage.existe(f"ref{n}")
+        except Exception as e:  # pragma: no cover - ne devrait pas arriver
+            erreurs.append(e)
+
+    fils = [threading.Thread(target=ecrit, args=(n,)) for n in range(8)]
+    for f in fils:
+        f.start()
+    for f in fils:
+        f.join()
+
+    assert erreurs == []
+    for n in range(8):
+        assert stockage.existe(f"ref{n}") is True
+
+
 # --- JournalSuivi ------------------------------------------------------------
 
 
