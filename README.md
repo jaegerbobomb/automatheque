@@ -2,10 +2,18 @@
 
 **Utilitaires, modèles et librairies communes.**
 
-[![PyPI](https://img.shields.io/pypi/v/automatheque.svg)](https://pypi.org/project/automatheque/)
-[![Python](https://img.shields.io/pypi/pyversions/automatheque.svg)](https://pypi.org/project/automatheque/)
-[![Licence](https://img.shields.io/badge/licence-LGPL--3.0--or--later-blue.svg)](LICENSE)
 [![CI](https://github.com/jaegerbobomb/automatheque/actions/workflows/ci.yml/badge.svg)](https://github.com/jaegerbobomb/automatheque/actions/workflows/ci.yml)
+[![Couverture](https://img.shields.io/badge/couverture-79%25-brightgreen.svg)](https://github.com/jaegerbobomb/automatheque/actions/workflows/ci.yml)
+[![Licence](https://img.shields.io/badge/licence-LGPL--3.0--or--later-blue.svg)](LICENSE)
+
+| Paquet | Version PyPI | Python |
+| --- | --- | --- |
+| [`automatheque`](https://pypi.org/project/automatheque/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.svg)](https://pypi.org/project/automatheque/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.svg) |
+| [`automatheque.factrice`](https://pypi.org/project/automatheque.factrice/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.factrice.svg)](https://pypi.org/project/automatheque.factrice/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.factrice.svg) |
+| [`automatheque.schema`](https://pypi.org/project/automatheque.schema/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.schema.svg)](https://pypi.org/project/automatheque.schema/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.schema.svg) |
+
+> Le badge de couverture est un **snapshot** (mis à jour à la main). On peut le
+> rendre *vivant* via Codecov si besoin — cf. PR.
 
 ## Préambule
 
