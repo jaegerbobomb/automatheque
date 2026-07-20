@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Typage exporté : le marqueur `py.typed` est désormais **embarqué dans le
+  wheel** (`[tool.setuptools.package-data]`) et le classifier trove
+  `Typing :: Typed` est déclaré. Les consommateurs voient enfin le typage
+  d'automatheque via mypy (légitime depuis que le code passe mypy, #71). — cf. #3
+
 ### Fixed
 
 * `greffon.FabriqueGreffon.active_greffons_conf` ne renvoie plus d'éléments

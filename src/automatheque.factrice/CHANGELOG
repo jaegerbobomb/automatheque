@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Typage exporté : `py.typed` embarqué dans le wheel
+  (`[tool.setuptools.package-data]`) + classifier `Typing :: Typed`. — cf. #3
+
 ## [0.14.1] - 2026-07-20
 
 > Alignement sur la version globale du monorepo (règle monas : un paquet qui
