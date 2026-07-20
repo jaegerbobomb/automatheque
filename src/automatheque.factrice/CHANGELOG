@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-07-20
+
+> Alignement sur la version globale du monorepo (règle monas : un paquet qui
+> change prend la version globale). `factrice` saute de 0.12.0 à 0.14.1.
+
 ### Changed
 
 * `ExpeditriceSmtp` (OAuth) : récupération du jeton via
