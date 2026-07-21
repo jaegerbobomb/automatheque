@@ -20,3 +20,13 @@ class ArgumentManquant(AutomathequeBaseException):
     def __init__(self, argument):
         """Initialisation."""
         self.msg = "Argument '{}' manquant.".format(argument)
+
+
+class ConfigurationInvalide(AutomathequeBaseException, ValueError):
+    """Configuration syntaxiquement invalide ou inexploitable.
+
+    Hérite aussi de :class:`ValueError` : le code appelant qui attrapait
+    historiquement un ``ValueError`` continue de fonctionner, tout en
+    permettant désormais un filtrage spécifique via la hiérarchie
+    ``AutomathequeBaseException``.
+    """

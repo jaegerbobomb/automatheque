@@ -11,6 +11,7 @@ from configparser import (
 from os import path
 
 from automatheque import constantes
+from automatheque.exceptions import ConfigurationInvalide
 from automatheque.log import configure_logging
 
 
@@ -132,8 +133,9 @@ def _dictconfig_depuis_ini(config):
 
     Renvoie ``None`` si aucune de ces clés n'est présente (rien à configurer).
 
-    :raise ValueError: si une valeur contient un ``%`` non échappé (message
-        explicite invitant à doubler le ``%``).
+    :raise ConfigurationInvalide: si une valeur contient un ``%`` non échappé
+        (message explicite invitant à doubler le ``%``). Cette exception hérite
+        aussi de ``ValueError`` (rétro-compat des appelants existants).
     """
     cles = ("niveau", "fichier", "format", "names")
     if not any(config.has_option("log", c) for c in cles):
@@ -149,7 +151,7 @@ def _dictconfig_depuis_ini(config):
         fichier = config.get("log", "fichier", fallback=None)
         names_brut = config.get("log", "names", fallback="")
     except InterpolationError as exc:
-        raise ValueError(
+        raise ConfigurationInvalide(
             "Section [log] : un '%' non échappé. Doublez-le en '%%' (convention "
             "ConfigParser), p. ex. format = %%(asctime)s %%(message)s. [{}]".format(exc)
         ) from exc

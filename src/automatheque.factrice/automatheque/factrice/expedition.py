@@ -2,6 +2,7 @@
 import abc
 import logging
 import smtplib
+import subprocess
 from configparser import ConfigParser
 from datetime import datetime
 from pathlib import Path
@@ -179,9 +180,16 @@ class ExpeditriceEsmtp:
             # On execute : `esmtp courriel1,courriel2 < fic`
             process = self.executant.exec(*args, stdin=f)
 
+        # `check_returncode()` lève `CalledProcessError` si esmtp a échoué. On
+        # l'attrape spécifiquement pour journaliser proprement (code + stderr)
+        # sans interrompre l'appelant : `expedie` renvoie le code de retour,
+        # charge à lui de décider quoi en faire.
         try:
-            process.check_returncode()  # TODO(#26) attention raise !
-        except Exception:
-            LOGGER.exception(process.stderr)
-            # raise e
+            process.check_returncode()
+        except subprocess.CalledProcessError:
+            LOGGER.error(
+                "Échec de l'envoi via esmtp (code %s) : %s",
+                process.returncode,
+                process.stderr,
+            )
         return process.returncode

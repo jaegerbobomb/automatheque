@@ -1,8 +1,9 @@
+import logging
 from typing import Protocol
 
 import pytest
 from automatheque.conception.structures import Monteur
-from automatheque.greffon import Greffon, fabrique_greffon
+from automatheque.greffon import Greffon, fabrique_greffon, signale_appel
 from automatheque.greffon.capacite import Capacite
 
 
@@ -103,3 +104,52 @@ def test_active_renvoie_none_si_instanciation_echoue():
     silencieusement sur une recherche dans le registre."""
     fabrique_greffon.enregistre_monteur("monteur_qui_plante", MonteurQuiPlante())
     assert fabrique_greffon.active("monteur_qui_plante") is None
+
+
+# --- Décorateur signale_appel (#26) -----------------------------------------
+
+
+class GreffonInstrumente(Greffon):
+    """Greffon dont les capacités sont décorées pour être journalisées."""
+
+    CAPACITES = []
+
+    @signale_appel
+    def double(self, x):
+        return x * 2
+
+    @signale_appel
+    def echoue(self):
+        raise RuntimeError("boum")
+
+
+_LOGGER_GREFFON = "automatheque.greffon.greffon"
+
+
+def test_signale_appel_preserve_le_resultat_et_les_metadonnees():
+    g = GreffonInstrumente()
+    assert g.double(21) == 42
+    # functools.wraps préserve le nom de la méthode décorée.
+    assert g.double.__name__ == "double"
+
+
+def test_signale_appel_journalise_debut_et_fin(caplog):
+    g = GreffonInstrumente()
+    with caplog.at_level(logging.DEBUG, logger=_LOGGER_GREFFON):
+        g.double(3)
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("début appel" in m and "double" in m for m in messages)
+    assert any("fin appel" in m and "double" in m for m in messages)
+
+
+def test_signale_appel_journalise_erreur_et_la_propage(caplog):
+    g = GreffonInstrumente()
+    with caplog.at_level(logging.DEBUG, logger=_LOGGER_GREFFON):
+        with pytest.raises(RuntimeError, match="boum"):
+            g.echoue()
+    # Début journalisé, échec journalisé en ERROR, PAS de "fin appel".
+    assert any("début appel" in r.getMessage() for r in caplog.records)
+    assert any(
+        r.levelno == logging.ERROR and "échec" in r.getMessage() for r in caplog.records
+    )
+    assert not any("fin appel" in r.getMessage() for r in caplog.records)

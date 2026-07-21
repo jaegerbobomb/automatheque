@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `greffon` : décorateur `signale_appel` pour **journaliser les appels de
+  capacités** d'un greffon. Posé sur une méthode, il journalise début/fin
+  (avec durée) au niveau `DEBUG`, préfixés par `cle||identifiant`, et
+  l'échec au niveau `ERROR` (avec trace) avant de **propager** l'exception.
+  Exporté depuis `automatheque.greffon`. Remplace le `_signale_appel` mort
+  (jamais appelé). — cf. #26
+* `exceptions.ConfigurationInvalide` : exception dédiée à une configuration
+  inexploitable. Hérite d'`AutomathequeBaseException` **et** de `ValueError`
+  (rétro-compat des appelants existants). — cf. #26
 * `util.dependances_externes` : `recup_executable` (et `charge_dependance`)
   acceptent `teste_execution=False`. Activé, on ne se contente plus de vérifier
   la présence et le bit exécutable : on **lance réellement** le binaire (E/S
@@ -20,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* `configuration._dictconfig_depuis_ini` lève désormais
+  `ConfigurationInvalide` (au lieu d'un `ValueError` générique) quand la
+  section `[log]` contient un `%` non échappé. — cf. #26
 * `util.fichier.enleve_caracteres_invalides` tient compte de la **plateforme** :
   l'ensemble étendu des caractères interdits n'est retiré que sous Windows
   (`os.name == "nt"`) ; POSIX ne retire que le séparateur. — cf. #25
