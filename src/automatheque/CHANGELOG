@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `util.dependances_externes` : `recup_executable` (et `charge_dependance`)
+  acceptent `teste_execution=False`. Activé, on ne se contente plus de vérifier
+  la présence et le bit exécutable : on **lance réellement** le binaire (E/S
+  neutralisées, court délai, code de retour ignoré) pour détecter un exécutable
+  présent mais inutilisable (mauvaise architecture, interpréteur manquant…).
+  Désactivé par défaut : aucun changement de comportement. — cf. #25
+
+### Changed
+
+* `util.fichier.enleve_caracteres_invalides` tient compte de la **plateforme** :
+  l'ensemble étendu des caractères interdits n'est retiré que sous Windows
+  (`os.name == "nt"`) ; POSIX ne retire que le séparateur. — cf. #25
+* `suivi.adaptateurs.repertoire.StockageRepertoire` sérialise ses accès au
+  système de fichiers derrière un **verrou** (`threading.Lock`), le rendant sûr
+  en contexte multi-thread. — cf. #25
+
 ## [0.14.2] - 2026-07-20
 
 ### Added

@@ -1,13 +1,23 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
+from datetime import datetime, timezone
 from email.header import Header
-from email.utils import formataddr, formatdate, parseaddr
+from email.utils import format_datetime, formataddr, formatdate, parseaddr
 from pathlib import Path
 from typing import Callable, List, Sequence, Tuple, Union
 
 import attr
 
 # from automatheque.schema.medium import Medium
+
+
+def maintenant() -> datetime:
+    """Horodatage courant, **tz-aware** (UTC).
+
+    Renvoyer un ``datetime`` conscient du fuseau évite les ambiguïtés lors du
+    formatage RFC 5322 (l'offset est explicite) et les comparaisons avec
+    d'autres dates naïves. Cf. #25.
+    """
+    return datetime.now(timezone.utc)
 
 
 @attr.s
@@ -27,9 +37,12 @@ class Courriel:
     _destinataires: Sequence[Union[tuple, str]] = attr.ib(factory=list, kw_only=True)
     contenu: str = attr.ib(init=False, default="", kw_only=True)
     pieces_jointes: List[Path] = attr.ib(init=False, factory=list, kw_only=True)
-    _date_envoi: datetime = attr.ib(
-        init=False, default=datetime.now(), kw_only=True
-    )  # TODO(#25) vérifier les timezones
+    # ATTENTION : ``factory`` (et non ``default=datetime.now()``) est
+    # indispensable. Un ``default`` est évalué **une seule fois**, à la
+    # définition de la classe : toutes les instances partageraient alors
+    # l'horodatage figé de l'import. La fabrique est rappelée à chaque
+    # instanciation. Cf. #25.
+    _date_envoi: datetime = attr.ib(init=False, factory=maintenant, kw_only=True)
     teste_adresse_valide: Callable[[str], Tuple[bool, str]] = attr.ib(
         init=False, default=lambda e: ("@" in e, ""), kw_only=True
     )
@@ -96,5 +109,10 @@ class Courriel:
 
     @property
     def date_envoi(self):
+        """Date d'envoi au format RFC 5322 (en-tête ``Date`` d'un courriel)."""
         if self._date_envoi and isinstance(self._date_envoi, datetime):
-            return formatdate(datetime.timestamp(self._date_envoi))
+            if self._date_envoi.tzinfo is not None:
+                # datetime tz-aware : l'offset est écrit explicitement.
+                return format_datetime(self._date_envoi)
+            # Rétro-compat : un datetime naïf est supposé être en heure locale.
+            return formatdate(datetime.timestamp(self._date_envoi), localtime=True)

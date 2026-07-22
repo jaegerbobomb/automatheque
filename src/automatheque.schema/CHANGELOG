@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `courriel` : correction d'un bug d'horodatage figé. `_date_envoi` utilisait
+  `default=datetime.now()`, évalué **une seule fois** à la définition de la
+  classe : tous les courriels partageaient la date de l'import. Remplacé par
+  une **fabrique** (`attr.ib(factory=maintenant)`) réévaluée à chaque
+  instanciation. — cf. #25
+
+### Changed
+
+* `courriel` : les dates sont désormais **tz-aware** (UTC). Nouvelle fabrique
+  `maintenant()` (`datetime.now(timezone.utc)`) et `date_envoi` émet un offset
+  RFC 5322 explicite (`+0000`) via `email.utils.format_datetime` ; un
+  `datetime` naïf affecté à la main reste formaté en heure locale
+  (rétro-compat). — cf. #25
+
 ## [0.14.3] - 2026-07-20
 
 > Première republication de `schema` depuis 0.9.7 : il s'aligne sur la version
