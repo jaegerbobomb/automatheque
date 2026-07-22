@@ -13,8 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `app` : le corps du mail peut venir de l'**entrée standard**
+  (`cat contenu | factrice sujet adresse`). `<texte_du_mail>` devient optionnel
+  dans l'usage ; s'il est omis, le corps est lu sur `stdin`. — cf. #27
+* `expedition` (esmtp) : l'**émetteur par défaut** est configurable via
+  `[factrice.esmtp] emetteur` (repli historique `osuser@localhost`). — cf. #27
+
 ### Changed
 
+* `app` : le câblage `@script_automatheque` est **différé dans `main()`** (au
+  lieu de s'exécuter à l'import). Importer `automatheque.factrice.app` ne
+  déclenche donc plus le parsing d'`argv` ni la (re)configuration du logging :
+  le module redevient importable et testable. — cf. #27
+* `expedition` (esmtp) : le fichier temporaire remis à esmtp est créé via
+  `tempfile.mkstemp` (nom **unique**, répertoire temporaire système) avec un
+  sujet **assaini** (`enleve_caracteres_invalides`). Fini le `/tmp` codé en dur
+  et le plantage sur un sujet contenant un `/`. — cf. #27
 * `expedition` : `ExpeditriceSmtp` et `ExpeditriceEsmtp` **valident** leur
   paramètre `config` (validator attrs : `optional(instance_of(ConfigParser))`).
   Un `config` du mauvais type est rejeté dès la construction (`TypeError`) au
