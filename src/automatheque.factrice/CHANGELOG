@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* `expedition` : `ExpeditriceSmtp` et `ExpeditriceEsmtp` **valident** leur
+  paramètre `config` (validator attrs : `optional(instance_of(ConfigParser))`).
+  Un `config` du mauvais type est rejeté dès la construction (`TypeError`) au
+  lieu d'échouer plus loin ; `config=None` reste accepté. — cf. #24
+
 ## [0.15.0] - 2026-07-22
 
 ### Fixed

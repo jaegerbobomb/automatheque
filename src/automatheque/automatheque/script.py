@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
 """API phare d'automatheque : faciliter la création de scripts.
 
-Il faut pouvoir l'utiliser aussi dans les modules, pas juste dans les scripts.
-TODO(#24)
+Utilisable aussi **hors** d'un ``__main__`` (module, test, REPL) : passer
+``argv`` (et éventuellement ``nom``) à ``script_automatheque`` au lieu de
+dépendre de ``sys.argv``. Cf. #24.
 
 Le format que l'on souhaite est le suivant :
 ```
@@ -84,6 +85,7 @@ import re
 import sys
 from functools import wraps
 
+import attr
 import docopt
 
 # Ré-exportés pour offrir une seule surface d'import aux scripts
@@ -112,14 +114,23 @@ OPTIONS_INTERNES = frozenset(
 commande = commandopt
 
 
-def script_automatheque(chaine_docopt, version=None):
+def script_automatheque(chaine_docopt, version=None, argv=None, nom=None):
     """Decorateur pour ScriptAutomatheque.
 
     - signale le début et la fin du traitement
     - passe un objet ScriptAutomatheque à la fonction appelante
+
+    :param argv: arguments de ligne de commande (**sans** le nom du programme).
+        Défaut ``None`` = ``sys.argv``. Le fournir permet d'utiliser le
+        décorateur hors d'un ``__main__`` (module, test, REPL). Cf. #24.
+    :param nom: nom du programme (utilisé pour ``nom_court`` et les logs). Défaut
+        ``None`` = ``sys.argv[0]``. Cf. #24.
     """
     s = ScriptAutomatheque(
-        nom=sys.argv[0], chaine_docopt=chaine_docopt, version=version
+        nom=nom if nom is not None else sys.argv[0],
+        chaine_docopt=chaine_docopt,
+        version=version,
+        argv=argv,
     )
     s.initialise()
 
@@ -153,7 +164,8 @@ def script_automatheque(chaine_docopt, version=None):
     return decorateur
 
 
-class ScriptAutomatheque(object):
+@attr.s(eq=False)
+class ScriptAutomatheque:
     """Objet ScriptAutomatheque qui automatise la creation de scripts.
 
     Cet objet contient :
@@ -163,27 +175,32 @@ class ScriptAutomatheque(object):
     - self.parametres : merge de arguments avec config
     - self.logger : logger pour les appels internes de ScriptAutomatheque
 
+    ``eq=False`` : l'objet garde une sémantique d'**identité** (comparaison et
+    hachage par référence), comme avant le passage à attrs — deux scripts ne
+    sont jamais « égaux » par valeur, et l'objet reste hachable. Cf. #24.
     """
 
-    def __init__(self, nom, chaine_docopt, version=None):
-        self.nom = nom
-        self.nom_court = re.sub(r"\.py$", "", os.path.basename(nom))
-        self.chaine_docopt = chaine_docopt
-        self.version = version
-        self.arguments = None
-        self.config = None
-        #: Vrai si le script a été appelé avec ``--dry-run`` (câblé
-        #: automatiquement si l'option figure dans l'usage docopt). Au script
-        #: d'en tenir compte pour ne rien modifier de définitif.
-        self.dry_run = False
-        self._debut = None
-        self._logger = None
+    nom = attr.ib()
+    chaine_docopt = attr.ib(repr=False)  # trop longue pour le repr
+    version = attr.ib(default=None)
+    #: ``argv`` explicite (liste d'arguments **sans** le nom du programme) pour
+    #: piloter le script hors ``__main__`` : depuis un module, un test ou un
+    #: REPL. Défaut ``None`` = docopt lit ``sys.argv``. Cf. #24.
+    argv = attr.ib(default=None)
+    nom_court = attr.ib(init=False)
+    arguments = attr.ib(init=False, default=None)
+    config = attr.ib(init=False, default=None)
+    #: Vrai si le script a été appelé avec ``--dry-run`` (câblé automatiquement
+    #: si l'option figure dans l'usage docopt). Au script d'en tenir compte pour
+    #: ne rien modifier de définitif.
+    dry_run = attr.ib(init=False, default=False)
+    _debut = attr.ib(init=False, default=None, repr=False)
+    _logger = attr.ib(init=False, default=None, repr=False)
 
-    def __repr__(self):
-        """TODO(#24) utiliser attrs."""
-        return "<ScriptAutomatheque {} {} {}>".format(
-            self.nom, self.arguments, self.config
-        )
+    @nom_court.default
+    def _defaut_nom_court(self):
+        """Dérive le nom court du script depuis ``nom`` (sans ``.py``)."""
+        return re.sub(r"\.py$", "", os.path.basename(self.nom))
 
     @property
     def logger(self):
@@ -216,7 +233,11 @@ class ScriptAutomatheque(object):
         # Un script EST une application : c'est le bon endroit pour activer le
         # logging console par défaut (la lib, elle, ne configure rien à l'import).
         configure_logging_defaut()
-        self.arguments = docopt.docopt(self.chaine_docopt, version=self.version)
+        # ``argv`` explicite (usage module/test) ou ``sys.argv`` par défaut
+        # (``argv=None`` → docopt lit ``sys.argv[1:]``). Cf. #24.
+        self.arguments = docopt.docopt(
+            self.chaine_docopt, argv=self.argv, version=self.version
+        )
         # Configuration en couches, de la plus générale à la plus spécifique
         # (chaque couche surcharge la précédente) :
         #   1. config.ini partagé d'automatheque  (chargé par ecraser=True)

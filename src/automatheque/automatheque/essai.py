@@ -29,7 +29,6 @@ Exemple ::
     assert script.arguments["--action"] is True
 """
 
-import sys
 from collections import namedtuple
 from pathlib import Path
 
@@ -91,15 +90,11 @@ def execute_script(doc, fonction, argv=None, version=None, reinitialise=True):
         capture["script"] = _script
         return fonction(*args, _script=_script, **kwds)
 
-    # `script_automatheque` lit sys.argv et charge la config dès la décoration,
-    # d'où le pilotage de sys.argv autour de cette ligne.
-    faux_argv = ["script-de-test", *(argv or [])]
-    ancien_argv = sys.argv
-    sys.argv = faux_argv
-    try:
-        decoree = script_automatheque(doc, version)(fonction_capturante)
-        resultat = decoree()
-    finally:
-        sys.argv = ancien_argv
+    # `script_automatheque` accepte désormais `argv`/`nom` explicites (#24) :
+    # plus besoin de bricoler `sys.argv` pour piloter le script depuis un test.
+    decoree = script_automatheque(
+        doc, version, argv=list(argv or []), nom="script-de-test"
+    )(fonction_capturante)
+    resultat = decoree()
 
     return ResultatScript(resultat=resultat, script=capture.get("script"))

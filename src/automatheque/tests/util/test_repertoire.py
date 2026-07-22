@@ -12,10 +12,17 @@ from automatheque.util.repertoire import (
 )
 
 
+def test_mkdir_p_est_deprecie(tmp_path):
+    """#24 : mkdir_p émet un DeprecationWarning renvoyant vers Path.mkdir."""
+    with pytest.warns(DeprecationWarning, match="Path"):
+        mkdir_p(str(tmp_path / "x"))
+
+
 def test_mkdir_p_cree_arborescence(tmp_path):
     """mkdir_p crée toute l'arborescence manquante."""
     cible = tmp_path / "a" / "b" / "c"
-    mkdir_p(str(cible))
+    with pytest.warns(DeprecationWarning):
+        mkdir_p(str(cible))
     assert cible.is_dir()
 
 
@@ -23,7 +30,8 @@ def test_mkdir_p_idempotent_sur_repertoire_existant(tmp_path):
     """Recréer un répertoire existant ne lève pas d'erreur."""
     cible = tmp_path / "deja"
     cible.mkdir()
-    mkdir_p(str(cible))  # ne doit pas lever
+    with pytest.warns(DeprecationWarning):
+        mkdir_p(str(cible))  # ne doit pas lever
     assert cible.is_dir()
 
 
