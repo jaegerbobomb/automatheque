@@ -12,9 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * `script` : `script_automatheque` / `ScriptAutomatheque` acceptent désormais
-  **`argv`** et **`nom`** explicites → l'API phare est utilisable **hors** d'un
-  `__main__` (module, test, REPL) sans dépendre de `sys.argv`. En conséquence,
-  `essai.execute_script` n'a plus besoin de bricoler `sys.argv`. — cf. #24
+  **`argv`** et **`nom`** explicites (défaut = `sys.argv`) → un script se pilote
+  sans dépendre de `sys.argv`, ce qui sert surtout à le **tester** : le harness
+  `essai.execute_script` n'a plus à bricoler `sys.argv`. — cf. #24
 
 ### Changed
 

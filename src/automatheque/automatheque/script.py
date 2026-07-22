@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 """API phare d'automatheque : faciliter la création de scripts.
 
-Utilisable aussi **hors** d'un ``__main__`` (module, test, REPL) : passer
-``argv`` (et éventuellement ``nom``) à ``script_automatheque`` au lieu de
-dépendre de ``sys.argv``. Cf. #24.
+``script_automatheque`` accepte un ``argv`` (et un ``nom``) explicites pour ne
+pas dépendre de ``sys.argv`` — utile **surtout pour tester** un script sans
+bricoler cette variable globale (cf. :mod:`automatheque.essai`). Cf. #24.
 
 Le format que l'on souhaite est le suivant :
 ```
@@ -121,8 +121,9 @@ def script_automatheque(chaine_docopt, version=None, argv=None, nom=None):
     - passe un objet ScriptAutomatheque à la fonction appelante
 
     :param argv: arguments de ligne de commande (**sans** le nom du programme).
-        Défaut ``None`` = ``sys.argv``. Le fournir permet d'utiliser le
-        décorateur hors d'un ``__main__`` (module, test, REPL). Cf. #24.
+        Défaut ``None`` = ``sys.argv``. Le fournir sert surtout à **tester** un
+        script sans bricoler ``sys.argv`` (cf. :mod:`automatheque.essai`).
+        Cf. #24.
     :param nom: nom du programme (utilisé pour ``nom_court`` et les logs). Défaut
         ``None`` = ``sys.argv[0]``. Cf. #24.
     """
@@ -184,8 +185,9 @@ class ScriptAutomatheque:
     chaine_docopt = attr.ib(repr=False)  # trop longue pour le repr
     version = attr.ib(default=None)
     #: ``argv`` explicite (liste d'arguments **sans** le nom du programme) pour
-    #: piloter le script hors ``__main__`` : depuis un module, un test ou un
-    #: REPL. Défaut ``None`` = docopt lit ``sys.argv``. Cf. #24.
+    #: piloter le script sans dépendre de ``sys.argv`` — surtout pour le test
+    #: (cf. :mod:`automatheque.essai`). Défaut ``None`` = docopt lit
+    #: ``sys.argv``. Cf. #24.
     argv = attr.ib(default=None)
     nom_court = attr.ib(init=False)
     arguments = attr.ib(init=False, default=None)
