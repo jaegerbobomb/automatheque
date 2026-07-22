@@ -1,7 +1,9 @@
 # -*- coding=utf-8 -*-
 """Gestion des Greffons et de leur capacités."""
 
+import functools
 import logging
+import time
 import uuid
 from typing import List, Type
 
@@ -13,6 +15,45 @@ from automatheque.greffon.registre import RegistreGreffons
 from automatheque.util.classe import classproperty
 
 LOGGER = logging.getLogger(__name__)
+
+
+def signale_appel(methode):
+    """Décorateur journalisant l'appel d'une méthode de **capacité** d'un Greffon.
+
+    À poser sur les méthodes qui implémentent une :class:`Capacite`. Journalise
+    (niveau ``DEBUG``) le début et la fin de l'appel — avec sa durée — préfixés
+    par l'identité du greffon (``cle||identifiant``). En cas d'exception,
+    journalise l'échec (niveau ``ERROR``, avec la trace) **puis la propage** :
+    le décorateur n'avale aucune erreur.
+
+    .. code-block:: python
+
+       class LecteurGreffon(Greffon):
+           CAPACITES = [LireCapacite]
+
+           @signale_appel
+           def lire(self) -> bool:
+               ...
+    """
+
+    @functools.wraps(methode)
+    def _enveloppe(self, *args, **kwargs):
+        self._signale_appel(methode.__name__)
+        debut = time.monotonic()
+        try:
+            resultat = methode(self, *args, **kwargs)
+        except Exception:
+            LOGGER.exception(
+                "Greffon %s||%s - échec de l'appel « %s »",
+                self.cle,
+                self.identifiant,
+                methode.__name__,
+            )
+            raise
+        self._signale_fin_appel(methode.__name__, time.monotonic() - debut)
+        return resultat
+
+    return _enveloppe
 
 
 @attr.s(eq=False)  # pour rendre la classe hashable pour le set du registre
@@ -84,7 +125,21 @@ class Greffon(RegistreGreffons):
             return True
         return False
 
-    def _signale_appel(self):
-        # TODO(#26) log !!!
-        # TODO(#26) annoter tous les appels de type "capacites"
-        LOGGER.debug(f"Greffon : {self.cle}||{self.identifiant} - debut appel")
+    def _signale_appel(self, nom_appel=None):
+        """Journalise le **début** d'un appel de capacité (cf. `signale_appel`)."""
+        suffixe = f" « {nom_appel} »" if nom_appel else ""
+        LOGGER.debug(
+            "Greffon %s||%s - début appel%s", self.cle, self.identifiant, suffixe
+        )
+
+    def _signale_fin_appel(self, nom_appel=None, duree=None):
+        """Journalise la **fin** d'un appel de capacité (cf. `signale_appel`)."""
+        suffixe = f" « {nom_appel} »" if nom_appel else ""
+        detail = f" ({duree * 1000:.1f} ms)" if duree is not None else ""
+        LOGGER.debug(
+            "Greffon %s||%s - fin appel%s%s",
+            self.cle,
+            self.identifiant,
+            suffixe,
+            detail,
+        )

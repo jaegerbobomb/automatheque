@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `expedition.ExpeditriceEsmtp.expedie` : `process.check_returncode()` peut
+  lever `CalledProcessError`. On l'attrape désormais **spécifiquement** (au lieu
+  d'un `except Exception` fourre-tout) et on journalise proprement le code de
+  retour et `stderr` ; l'appelant récupère toujours le code de retour. — cf. #26
+
 ## [0.14.2] - 2026-07-20
 
 ### Added

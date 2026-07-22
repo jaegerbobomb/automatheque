@@ -1,10 +1,13 @@
+import logging
 import smtplib
+import subprocess
 from configparser import ConfigParser
 from unittest.mock import MagicMock
 
 import pytest
 from automatheque.factrice import expedition
-from automatheque.factrice.expedition import ExpeditriceSmtp
+from automatheque.factrice.expedition import ExpeditriceEsmtp, ExpeditriceSmtp
+from automatheque.schema.texte import Courriel
 
 
 def _config_smtp():
@@ -41,3 +44,38 @@ def test_erreur_non_smtp_pendant_connexion_se_propage(monkeypatch):
 
     with pytest.raises(ValueError):
         ExpeditriceSmtp(config=_config_smtp())
+
+
+# --- ExpeditriceEsmtp : gestion du code de retour (#26) ---------------------
+
+
+def _esmtp(monkeypatch, process):
+    """Construit une ExpeditriceEsmtp dont l'exécutant renvoie ``process``."""
+    executant = MagicMock()
+    executant.exec.return_value = process
+    monkeypatch.setattr(expedition, "charge_dependance", lambda *a, **k: executant)
+    return ExpeditriceEsmtp(config=ConfigParser())
+
+
+def _courriel():
+    return Courriel(emetteur="exp@ex.fr", sujet="sujet", destinataires=["dest@ex.fr"])
+
+
+def test_esmtp_succes_renvoie_le_code_retour(monkeypatch, tmp_path):
+    process = MagicMock(returncode=0, stderr=b"")
+    process.check_returncode.return_value = None
+    exp = _esmtp(monkeypatch, process)
+    assert exp.expedie(_courriel()) == 0
+
+
+def test_esmtp_echec_journalise_et_renvoie_le_code(monkeypatch, caplog):
+    """`check_returncode` peut lever : l'erreur est journalisée, pas propagée."""
+    process = MagicMock(returncode=42, stderr=b"boum esmtp")
+    process.check_returncode.side_effect = subprocess.CalledProcessError(
+        42, "esmtp", stderr=b"boum esmtp"
+    )
+    exp = _esmtp(monkeypatch, process)
+    with caplog.at_level(logging.ERROR, logger="automatheque.factrice.expedition"):
+        code = exp.expedie(_courriel())
+    assert code == 42
+    assert any("esmtp" in r.getMessage() for r in caplog.records)

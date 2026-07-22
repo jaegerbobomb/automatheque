@@ -6,6 +6,7 @@ from typing import Any, List, Optional, Type, Union
 from automatheque.conception.structures import Fabrique, Monteur
 from automatheque.configuration import ConfigParser, charge_configuration
 from automatheque.greffon.greffon import Greffon
+from automatheque.greffon.greffon import signale_appel as signale_appel  # noqa: F401
 from automatheque.greffon.registre import MetaInstancePersistanteRegistre
 
 LOGGER = logging.getLogger(__name__)

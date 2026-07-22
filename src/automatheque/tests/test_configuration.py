@@ -144,12 +144,29 @@ def test_dictconfig_depuis_ini_names_seul_suffit():
 
 
 def test_dictconfig_depuis_ini_pourcent_non_echappe_message_clair():
-    """Un `%` non échappé dans [log] lève un ValueError qui invite à doubler."""
+    """Un `%` non échappé dans [log] lève une erreur claire invitant à doubler."""
     config = ConfigParser()
     config.read_string("[log]\nformat = %(asctime)s\n")
 
     with pytest.raises(ValueError, match="%%"):
         _dictconfig_depuis_ini(config)
+
+
+def test_dictconfig_depuis_ini_pourcent_leve_configuration_invalide():
+    """#26 : l'exception est `ConfigurationInvalide` (compatible ValueError)."""
+    from automatheque.exceptions import (
+        AutomathequeBaseException,
+        ConfigurationInvalide,
+    )
+
+    config = ConfigParser()
+    config.read_string("[log]\nformat = %(asctime)s\n")
+
+    with pytest.raises(ConfigurationInvalide) as info:
+        _dictconfig_depuis_ini(config)
+    # Reste attrapable comme ValueError (rétro-compat) et via la hiérarchie maison.
+    assert isinstance(info.value, ValueError)
+    assert isinstance(info.value, AutomathequeBaseException)
 
 
 def test_configure_logging_couvre_un_logger_quelconque():
