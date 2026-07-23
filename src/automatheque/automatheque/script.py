@@ -258,17 +258,14 @@ class ScriptAutomatheque:
         # usage docopt (sinon `.get` renvoie None → comportement par défaut).
         self.dry_run = bool(self.arguments.get("--dry-run"))
         self._applique_verbosite()
-        # TODO(#27) ici on pourrait aussi merger la conf et les arguments ...
-        # dans self.parametres ?
-        """
-        def merge(dict_1, dict_2):
-            ""Merge two dictionaries.
-            Values that evaluate to true take priority over falsy values.
-            `dict_1` takes priority over `dict_2`.
-            ""
-            return dict((str(key), dict_1.get(key) or dict_2.get(key))
-        for key in set(dict_2) | set(dict_1))
-        """
+        # DÉCISION (#27) : on ne fusionne PAS `config` et `arguments` dans un
+        # `parametres` unique. `config` est structuré (sections → clés) et
+        # persistant ; `arguments` est plat, avec des sigils docopt (`--x`,
+        # `<y>`), et propre à cet appel. Les aplatir ensemble inventerait une
+        # convention de nommage fragile et créerait des collisions entre
+        # sections. La précédence « la CLI l'emporte sur la conf » se traite
+        # explicitement au point d'usage, p. ex. :
+        #     valeur = self.arguments["--x"] or self.config.get("section", "x")
 
     def execute_commande(self, registry=None):
         """Aiguille vers la commande commandopt correspondant aux arguments.

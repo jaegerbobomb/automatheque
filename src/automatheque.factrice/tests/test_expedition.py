@@ -32,6 +32,47 @@ def test_smtp_exception_pendant_connexion_est_capturee(monkeypatch):
     fake.login.assert_called_once()
 
 
+def _config_oauth():
+    """Config SMTP en mode OAuth (BYO oauth_cmd)."""
+    c = _config_smtp()
+    c.set("factrice.smtp", "oauth", "1")
+    c.set("factrice.smtp", "oauth_client_id", "cid")
+    return c
+
+
+def test_oauth_cmd_absent_leve_dependance_manquante(monkeypatch):
+    """#27 : un `oauth_cmd` introuvable → `DependanceManquante` claire."""
+    from automatheque.exceptions import DependanceManquante
+
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+    c = _config_oauth()
+    c.set("factrice.smtp", "oauth_cmd", "outil-oauth-inexistant-xyz")
+
+    with pytest.raises(DependanceManquante):
+        ExpeditriceSmtp(config=c)
+
+
+def test_oauth_cmd_present_utilise_le_jeton(monkeypatch):
+    """#27 : le jeton produit par `oauth_cmd` est envoyé via AUTH XOAUTH2."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+    faux_exec = MagicMock()
+    faux_exec.exec.return_value = MagicMock(stdout="LE-JETON\n")
+    monkeypatch.setattr(expedition, "charge_dependance", lambda *a, **k: faux_exec)
+
+    c = _config_oauth()
+    c.set("factrice.smtp", "oauth_cmd", "oama access user")
+    ExpeditriceSmtp(config=c)
+
+    # cmd/args découpés, jeton nettoyé, envoyé en XOAUTH2.
+    assert faux_exec.exec.call_args.args == ("access", "user")
+    fake.ehlo.assert_called_once_with("cid")
+    methode, charge = fake.docmd.call_args.args
+    assert methode == "AUTH"
+    assert charge == "XOAUTH2 LE-JETON"
+
+
 def test_erreur_non_smtp_pendant_connexion_se_propage(monkeypatch):
     """Une erreur non-SMTP n'est plus avalée silencieusement : elle remonte.
 
