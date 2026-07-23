@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* `expedition` (smtp/oauth) : la commande `oauth_cmd` (générateur de jeton
+  OAuth2 **fourni par l'utilisateur** — p. ex. `oama` — automatheque n'en
+  embarque pas) est désormais chargée via `charge_dependance` : sa présence est
+  **vérifiée** et une erreur claire (`DependanceManquante`) est levée si elle
+  est introuvable, au lieu d'un échec `subprocess` obscur. — cf. #27
+
 ## [0.16.0] - 2026-07-23
 
 ### Added
