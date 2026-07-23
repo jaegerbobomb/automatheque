@@ -48,7 +48,14 @@ def charge_configuration(fichiers_supplementaires=None, ecraser=False, recharger
                 continue
 
             _charge_fichier_configuration(fichier, charge_configuration.config)
-            break  # TODO(#27) sauf si on veut charger les 2 fichiers ?
+            # On s'arrête au PREMIER emplacement trouvé : `paths_a_tester` est un
+            # mécanisme de *résolution* (« où se trouve `f` ? »), pas de fusion.
+            # Les deux chemins désignent le même nom de fichier à deux endroits ;
+            # les charger tous les deux fusionnerait deux fichiers homonymes sans
+            # lien voulu. Pour superposer plusieurs configurations, passer
+            # plusieurs entrées dans `fichiers_supplementaires` (traitées dans
+            # l'ordre, chacune surchargeant la précédente). Cf. #27.
+            break
     # Si on veut conserver la configuration de automatheque, alors on charge
     # sa configuration en dernier :
     if not ecraser:
