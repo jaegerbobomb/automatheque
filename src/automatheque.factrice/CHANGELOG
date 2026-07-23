@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paramètre `config` (validator attrs : `optional(instance_of(ConfigParser))`).
   Un `config` du mauvais type est rejeté dès la construction (`TypeError`) au
   lieu d'échouer plus loin ; `config=None` reste accepté. — cf. #24
+* Dépendance : plancher `automatheque.schema` relevé de `>=0.9.6` à `>=0.9.7`.
+  factrice construit un `Courriel` sans émetteur (rempli ensuite par
+  l'expéditrice) ; l'émetteur n'est facultatif que depuis schema 0.9.7. Le
+  plancher annoncé était donc faux (bug latent révélé par les nouveaux tests
+  d'`app`). — cf. #27
 
 ## [0.15.0] - 2026-07-22
 

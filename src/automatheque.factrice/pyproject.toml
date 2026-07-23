@@ -19,11 +19,12 @@ dependencies = [
     # >=0.14.0 : `ExpeditriceSmtp` utilise `Executant.exec(encoding=...)`,
     # ajouté dans automatheque 0.14.0 (#66).
     "automatheque>=0.14.0",
-    # 0.9.6 est la plus ancienne version publiée d'automatheque.schema ; le
-    # plancher précédent (>=0.9.5) référençait une version jamais publiée. Le
-    # job CI « tests-plancher » valide que factrice fonctionne contre ces
-    # planchers.
-    "automatheque.schema>=0.9.6",
+    # >=0.9.7 : factrice construit un `Courriel` SANS émetteur (celui-ci est
+    # rempli ensuite par l'expéditrice, depuis la configuration). Or l'émetteur
+    # n'est devenu **facultatif** dans le constructeur de `Courriel` qu'en
+    # schema 0.9.7 ; avec 0.9.6 la construction lève `TypeError`. Le job CI
+    # « tests-plancher » éprouve réellement ce plancher.
+    "automatheque.schema>=0.9.7",
 ]
 
 [project.urls]
