@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import abc
 import logging
+import os
 import smtplib
 import subprocess
+import tempfile
 from configparser import ConfigParser
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,7 @@ from automatheque.configuration import NoOptionError, charge_configuration
 from automatheque.factrice.preparation import SEPARATEUR_DESTINATAIRES, PreparatriceSmtp
 from automatheque.schema.texte import Courriel
 from automatheque.util.dependances_externes import Executant, charge_dependance
+from automatheque.util.fichier import enleve_caracteres_invalides
 
 LOGGER = logging.getLogger(__name__)
 
@@ -158,21 +160,35 @@ class ExpeditriceEsmtp:
     def __gen_fichier(
         self, courriel: Courriel, fichier_sortie: Optional[Path] = None
     ) -> Path:
-        """Génère un fichier temporaire à donner à esmtp.
+        """Génère un fichier à donner à esmtp (contenu du courriel préparé).
+
+        L'émetteur par défaut est configurable via ``[factrice.esmtp] emetteur``
+        (repli historique ``osuser@localhost``). Cf. #27.
+
+        Sans ``fichier_sortie`` explicite, un fichier temporaire **unique** est
+        créé via :func:`tempfile.mkstemp` dans le répertoire temporaire système
+        (fini le ``/tmp`` codé en dur et les collisions de noms) ; le sujet,
+        assaini, ne sert que de préfixe lisible. Cf. #27.
 
         :return: Path du fichier
         """
         if courriel.emetteur is None:
-            courriel.emetteur = "osuser@localhost"  # TODO(#27) émetteur configurable
+            courriel.emetteur = self.config.get(
+                "factrice.esmtp", "emetteur", fallback="osuser@localhost"
+            )
 
-        date = datetime.now().strftime("%Y%m%d-%H%M%s")
-        # TODO(#27) nom fic
-        fic = fichier_sortie or Path("/tmp/") / f"{date}_{courriel.sujet}.txt"
-        with open(fic, "w") as f:
-            contenu = PreparatriceSmtp().prepare(courriel).as_string()
+        contenu = PreparatriceSmtp().prepare(courriel).as_string()
+
+        if fichier_sortie is not None:
+            fic = Path(fichier_sortie)
+            fic.write_text(contenu)
+            return fic
+
+        sujet_sain = enleve_caracteres_invalides(courriel.sujet or "courriel")
+        fd, chemin = tempfile.mkstemp(prefix=f"factrice_{sujet_sain}_", suffix=".txt")
+        with os.fdopen(fd, "w") as f:
             f.write(contenu)
-
-        return fic
+        return Path(chemin)
 
     def expedie(self, courriel: Courriel):
         # envoi du mail si esmtp est paramétré

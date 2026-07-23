@@ -99,3 +99,52 @@ def test_config_none_reste_accepte(monkeypatch):
         expedition, "charge_configuration", lambda *a, **k: _config_smtp()
     )
     ExpeditriceSmtp()  # ne doit pas lever au titre du validator
+
+
+# --- #27 : émetteur par défaut configurable + nom de fichier temporaire sûr --
+
+
+def _esmtp_avec_config(monkeypatch, config):
+    """ExpeditriceEsmtp dont l'exécutant réussit, avec la ``config`` donnée."""
+    process = MagicMock(returncode=0, stderr=b"")
+    process.check_returncode.return_value = None
+    executant = MagicMock()
+    executant.exec.return_value = process
+    monkeypatch.setattr(expedition, "charge_dependance", lambda *a, **k: executant)
+    return ExpeditriceEsmtp(config=config)
+
+
+def test_esmtp_emetteur_par_defaut_configurable(monkeypatch):
+    """L'émetteur par défaut vient de `[factrice.esmtp] emetteur`."""
+    conf = ConfigParser()
+    conf.add_section("factrice.esmtp")
+    conf.set("factrice.esmtp", "emetteur", "boite@ex.fr")
+    exp = _esmtp_avec_config(monkeypatch, conf)
+
+    courriel = Courriel(sujet="sujet", destinataires=["dest@ex.fr"])  # emetteur None
+    exp.expedie(courriel)
+    assert courriel.emetteur == "boite@ex.fr"
+
+
+def test_esmtp_emetteur_par_defaut_repli_historique(monkeypatch):
+    """Sans configuration, l'émetteur retombe sur `osuser@localhost`."""
+    exp = _esmtp_avec_config(monkeypatch, ConfigParser())
+
+    courriel = Courriel(sujet="sujet", destinataires=["dest@ex.fr"])
+    exp.expedie(courriel)
+    assert courriel.emetteur == "osuser@localhost"
+
+
+def test_esmtp_sujet_avec_separateur_ne_casse_pas_le_chemin(monkeypatch):
+    """Un sujet contenant un `/` ne crée plus de sous-répertoire inexistant.
+
+    L'ancien nommage `/tmp/<date>_<sujet>.txt` plantait (`FileNotFoundError`)
+    pour un sujet du type `rapport/2026`. Le fichier temporaire assaini règle
+    le problème.
+    """
+    exp = _esmtp_avec_config(monkeypatch, ConfigParser())
+
+    courriel = Courriel(
+        emetteur="exp@ex.fr", sujet="rapport/2026", destinataires=["dest@ex.fr"]
+    )
+    assert exp.expedie(courriel) == 0

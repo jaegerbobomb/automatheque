@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `script.ScriptAutomatheque` est convertie en **classe attrs** (`eq=False` :
   sémantique d'identité préservée, objet hachable) ; le `repr` masque la chaîne
   docopt (verbeuse) et le logger. — cf. #24
+* `configuration.charge_configuration` : documentation du choix de charger le
+  **premier** emplacement trouvé pour un fichier supplémentaire (mécanisme de
+  *résolution*, pas de fusion). Pour superposer plusieurs configurations,
+  passer plusieurs entrées dans `fichiers_supplementaires`. — cf. #27
 
 ### Deprecated
 
