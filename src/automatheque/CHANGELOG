@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `script` : `script_automatheque` / `ScriptAutomatheque` acceptent désormais
+  **`argv`** et **`nom`** explicites (défaut = `sys.argv`) → un script se pilote
+  sans dépendre de `sys.argv`, ce qui sert surtout à le **tester** : le harness
+  `essai.execute_script` n'a plus à bricoler `sys.argv`. — cf. #24
+
+### Changed
+
+* `script.ScriptAutomatheque` est convertie en **classe attrs** (`eq=False` :
+  sémantique d'identité préservée, objet hachable) ; le `repr` masque la chaîne
+  docopt (verbeuse) et le logger. — cf. #24
+
+### Deprecated
+
+* `util.repertoire.mkdir_p` est **déprécié** (émet un `DeprecationWarning`) au
+  profit de `Path(path).mkdir(parents=True, exist_ok=True)`. Le comportement est
+  conservé jusqu'à son retrait ultérieur. — cf. #24
+
 ## [0.15.0] - 2026-07-22
 
 ### Added

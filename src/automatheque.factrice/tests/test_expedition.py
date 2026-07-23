@@ -79,3 +79,23 @@ def test_esmtp_echec_journalise_et_renvoie_le_code(monkeypatch, caplog):
         code = exp.expedie(_courriel())
     assert code == 42
     assert any("esmtp" in r.getMessage() for r in caplog.records)
+
+
+# --- #24 : validator attrs sur `config` -------------------------------------
+
+
+def test_config_non_configparser_leve(monkeypatch):
+    """#24 : un `config` qui n'est pas un ConfigParser est rejeté à la construction."""
+    with pytest.raises(TypeError):
+        ExpeditriceSmtp(config="pas-un-configparser")
+
+
+def test_config_none_reste_accepte(monkeypatch):
+    """`config=None` reste valide (le validator est `optional`)."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+    # config non fourni → charge_configuration() ; on le neutralise.
+    monkeypatch.setattr(
+        expedition, "charge_configuration", lambda *a, **k: _config_smtp()
+    )
+    ExpeditriceSmtp()  # ne doit pas lever au titre du validator

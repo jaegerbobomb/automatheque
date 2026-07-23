@@ -8,12 +8,19 @@ rétrocompatibilité qui ré-exporte les mêmes objets et émet un
 
 import importlib
 import logging
+import sys
 import warnings
 
+import attr
 import commandopt
 import pytest
-from automatheque.essai import execute_script
-from automatheque.script import OPTIONS_INTERNES, commande
+from automatheque.essai import execute_script, reinitialise_configuration
+from automatheque.script import (
+    OPTIONS_INTERNES,
+    ScriptAutomatheque,
+    commande,
+    script_automatheque,
+)
 from commandopt import NoCommandFoundError, Registry
 
 #: Usage docopt déclarant les commodités câblées par #5.
@@ -75,6 +82,60 @@ def test_shim_reexporte_les_memes_objets():
     assert ancien.script_automatheque is nouveau.script_automatheque
     assert ancien.ScriptAutomatheque is nouveau.ScriptAutomatheque
     assert ancien.script is nouveau.script
+
+
+# --- #24 : ScriptAutomatheque en attrs + pilotage hors sys.argv ----------------
+
+
+def test_script_est_une_classe_attrs():
+    """#24 : ScriptAutomatheque est désormais une classe attrs."""
+    assert attr.has(ScriptAutomatheque)
+
+
+def test_nom_court_derive_du_nom():
+    """`nom_court` est dérivé de `nom` (basename sans `.py`)."""
+    s = ScriptAutomatheque(nom="/chemin/mon_script.py", chaine_docopt="doc")
+    assert s.nom_court == "mon_script"
+
+
+def test_repr_ne_deverse_pas_la_chaine_docopt():
+    """Le repr attrs masque la chaîne docopt (verbeuse) et le logger."""
+    s = ScriptAutomatheque(nom="x.py", chaine_docopt="USAGE ENORME " * 50)
+    rendu = repr(s)
+    assert "chaine_docopt" not in rendu
+    assert "ENORME" not in rendu
+    assert "x.py" in rendu  # les champs utiles restent visibles
+
+
+def test_script_reste_hachable_et_par_identite():
+    """`eq=False` : identité préservée (hachable, pas d'égalité par valeur)."""
+    a = ScriptAutomatheque(nom="x.py", chaine_docopt="doc")
+    b = ScriptAutomatheque(nom="x.py", chaine_docopt="doc")
+    assert a != b  # deux instances distinctes ne sont pas égales
+    assert len({a, b}) == 2  # hachables
+
+
+def test_pilotable_par_argv_explicite_sans_sys_argv(monkeypatch):
+    """#24 : argv/nom explicites permettent d'exécuter hors d'un __main__.
+
+    On casse `sys.argv` pour prouver qu'il n'est plus consulté.
+    """
+    monkeypatch.setattr(sys, "argv", ["NE-DOIT-PAS-ETRE-LU", "--introuvable"])
+    reinitialise_configuration()
+
+    capture = {}
+
+    def main(_script=None):
+        capture["script"] = _script
+        return _script.arguments["--dry-run"]
+
+    decoree = script_automatheque(DOC_OPTIONS, argv=["--dry-run"], nom="mon_module")(
+        main
+    )
+    resultat = decoree()
+
+    assert resultat is True
+    assert capture["script"].nom_court == "mon_module"
 
 
 # --- #5 : enrichissement de @script_automatheque -------------------------------

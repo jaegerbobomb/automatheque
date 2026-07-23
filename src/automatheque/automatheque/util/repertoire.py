@@ -8,6 +8,7 @@ Divers utilitaires.
 import errno
 import logging
 import os
+import warnings
 from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
@@ -18,15 +19,24 @@ def mkdir_p(path):
 
     Renvoie une erreur si la cible existe et n'est pas un répertoire.
 
-    TODO(#24) déprécier pour Path.mkdir()
+    .. deprecated::
+        Utiliser directement :meth:`pathlib.Path.mkdir` ::
+
+            Path(path).mkdir(parents=True, exist_ok=True)
+
+        Ce raccourci maison n'apporte plus rien face à ``pathlib`` (Python 3) et
+        sera retiré dans une version ultérieure. Cf. #24.
     """
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
+    warnings.warn(
+        "mkdir_p est déprécié : utilisez "
+        "Path(path).mkdir(parents=True, exist_ok=True).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    # Comportement conservé : crée l'arborescence, ne lève pas si le répertoire
+    # existe déjà, mais lève si la cible est un fichier existant
+    # (``FileExistsError``, sous-classe d'``OSError``).
+    Path(path).mkdir(parents=True, exist_ok=True)
 
 
 def supprime(repertoire, force=False):

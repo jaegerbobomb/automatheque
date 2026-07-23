@@ -56,7 +56,10 @@ class ExpeditriceSmtp(Expeditrice):
     ```
     """
 
-    config: ConfigParser = attr.ib(default=None)  # TODO(#24) validator
+    config: ConfigParser = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(ConfigParser)),
+    )
     s: smtplib.SMTP = attr.ib(init=False)
     preparatrice = attr.ib(init=False, default=PreparatriceSmtp)
 
@@ -143,7 +146,10 @@ class ExpeditriceSmtp(Expeditrice):
 
 @attr.s
 class ExpeditriceEsmtp:
-    config: ConfigParser = attr.ib(default=None)  # TODO(#24) validator
+    config: ConfigParser = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(ConfigParser)),
+    )
 
     def __attrs_post_init__(self):
         self.config = self.config if self.config else charge_configuration()
