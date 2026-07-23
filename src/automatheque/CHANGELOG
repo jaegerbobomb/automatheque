@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `suivi.journal.JournalSuivi.ni_fait_ni_à_refaire` est **implémenté** : un
+  décorateur qui ne joue une fonction qu'une fois par référence (lue dans un
+  argument nommé), et **rejouable par période** via `periode=`
+  (`"jour"`/`"semaine"`/`"mois"`/`"annee"`) — un sceau de date entre alors dans
+  la clé de suivi. La clé est assainie (nom de fichier). Auparavant un simple
+  `pass`. — cf. #27
+
 ## [0.16.0] - 2026-07-23
 
 ### Added
