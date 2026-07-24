@@ -127,10 +127,108 @@ def test_journal_references_independantes(tmp_path):
     assert journal.deja_fait("pas_faite") is False
 
 
-def test_journal_ni_fait_ni_a_refaire_est_neutre(tmp_path):
-    """La méthode ``ni_fait_ni_à_refaire`` n'est pas implémentée (renvoie None)."""
+# --- #27 : décorateur ni_fait_ni_à_refaire (idempotence + option date) -------
+
+
+def test_ni_fait_ni_a_refaire_joue_une_seule_fois(tmp_path):
+    """La fonction n'est jouée qu'une fois par référence ; ensuite → None."""
     journal = JournalSuivi(StockageRepertoire(tmp_path))
-    assert journal.ni_fait_ni_à_refaire("arg") is None
+    appels = []
+
+    @journal.ni_fait_ni_à_refaire("ref")
+    def action(ref):
+        appels.append(ref)
+        return "fait"
+
+    assert action(ref="a") == "fait"
+    assert action(ref="a") is None  # déjà fait → non rejoué
+    assert appels == ["a"]
+
+
+def test_ni_fait_ni_a_refaire_references_distinctes(tmp_path):
+    """Deux références différentes sont suivies indépendamment."""
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+    appels = []
+
+    @journal.ni_fait_ni_à_refaire("ref")
+    def action(ref):
+        appels.append(ref)
+
+    action(ref="a")
+    action(ref="b")
+    assert appels == ["a", "b"]
+
+
+def test_ni_fait_ni_a_refaire_reference_positionnelle(tmp_path):
+    """La référence est aussi extraite d'un argument positionnel."""
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+    appels = []
+
+    @journal.ni_fait_ni_à_refaire("ref")
+    def action(ref, autre=None):
+        appels.append(ref)
+
+    action("x")
+    action("x")
+    assert appels == ["x"]
+
+
+def test_ni_fait_ni_a_refaire_periode_rejoue_a_chaque_jour(tmp_path):
+    """Avec ``periode``, l'action redevient rejouable à chaque nouvelle date."""
+    import datetime
+
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+    appels = []
+
+    def fabrique(jour):
+        @journal.ni_fait_ni_à_refaire("ref", periode="jour", date=jour)
+        def action(ref):
+            appels.append((ref, jour))
+
+        return action
+
+    j1 = datetime.date(2026, 7, 23)
+    j2 = datetime.date(2026, 7, 24)
+    fabrique(j1)(ref="a")
+    fabrique(j1)(ref="a")  # même jour → non rejoué
+    fabrique(j2)(ref="a")  # nouveau jour → rejoué
+    assert appels == [("a", j1), ("a", j2)]
+
+
+def test_ni_fait_ni_a_refaire_periode_inconnue_leve(tmp_path):
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+
+    @journal.ni_fait_ni_à_refaire("ref", periode="decennie")
+    def action(ref):
+        pass
+
+    with pytest.raises(ValueError, match="période inconnue"):
+        action(ref="a")
+
+
+def test_ni_fait_ni_a_refaire_argument_absent_leve(tmp_path):
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+
+    @journal.ni_fait_ni_à_refaire("inexistant")
+    def action(ref):
+        pass
+
+    with pytest.raises(KeyError, match="inexistant"):
+        action(ref="a")
+
+
+def test_ni_fait_ni_a_refaire_reference_avec_separateur(tmp_path):
+    """Une référence contenant un `/` est assainie (pas de sous-répertoire)."""
+    journal = JournalSuivi(StockageRepertoire(tmp_path))
+    appels = []
+
+    @journal.ni_fait_ni_à_refaire("ref")
+    def action(ref):
+        appels.append(ref)
+
+    action(ref="rapport/2026")  # ne doit pas lever
+    action(ref="rapport/2026")
+    assert appels == ["rapport/2026"]
 
 
 def test_journal_stockage_par_defaut(tmp_path):
