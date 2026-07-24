@@ -22,11 +22,11 @@ donner des exemples pour l'héritage de renommable etc. qu'on ne va plus intégr
 
 ```py
 class ChansonRenommable(Chanson, Renommable):
-  def liste_champs():
-    pass
+    def liste_champs():
+        pass
 
-  def gabarits():
-    pass
+    def gabarits():
+        pass
 ```
 
 ## Requirement

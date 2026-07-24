@@ -23,11 +23,13 @@ pip install automatheque
 ```python
 from automatheque.script import script  # alias court de script_automatheque
 
+
 @script(__doc__, __version__)
 def main(_script):
     print(_script.config)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
 ```
 
@@ -52,21 +54,24 @@ exclues de la sélection, mais restent transmises à la commande.
 Usage:
   mon_script.py (--ajouter | --supprimer) [--config=<f>] [-v]
 """
+
 from automatheque.script import script, commande
 
+
 @commande(["--ajouter"])
-def ajouter(arguments):
-    ...
+def ajouter(arguments): ...
+
 
 @commande(["--supprimer"])
-def supprimer(arguments):
-    ...
+def supprimer(arguments): ...
+
 
 @script(__doc__, __version__)
 def main(_script):
     return _script.execute_commande()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
 ```
 
