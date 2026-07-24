@@ -2,6 +2,7 @@
 import abc
 import logging
 import os
+import shlex
 import smtplib
 import subprocess
 import tempfile
@@ -40,6 +41,14 @@ class ExpeditriceSmtp(Expeditrice):
     hote=https://url_smtp
     # défaut 465 si ssl = 1, sinon 25
     port=465
+
+    # Sécurité (cf. #15)
+    # Debug SMTP : dumpe TOUT le trafic (dont AUTH/jeton) en clair dans les logs.
+    # Désactivé par défaut. N'activer que pour du diagnostic ponctuel.
+    debug=0
+    # Si le serveur ne gère pas STARTTLS (mode non-ssl), refuser d'envoyer par
+    # défaut (identifiants exposés). Mettre à 1 pour autoriser l'envoi EN CLAIR.
+    autorise_clair=0
 
     # Connexion
     # Cas 1 : anonyme
@@ -87,7 +96,21 @@ class ExpeditriceSmtp(Expeditrice):
             try:
                 self.s.starttls()
             except smtplib.SMTPNotSupportedError:
-                LOGGER.warning("Attention le smtp ne gère pas le TLS.")
+                # S3 (#15) : un serveur sans STARTTLS ferait transiter les
+                # identifiants EN CLAIR. On refuse par défaut ; autorisation
+                # explicite via [factrice.smtp] autorise_clair=1.
+                if self.config.getboolean(
+                    "factrice.smtp", "autorise_clair", fallback=False
+                ):
+                    LOGGER.warning(
+                        "SMTP sans STARTTLS : envoi EN CLAIR (autorise_clair=1)."
+                    )
+                else:
+                    raise smtplib.SMTPNotSupportedError(
+                        "Le serveur SMTP ne gère pas STARTTLS ; refus d'envoyer "
+                        "en clair (identifiants exposés). Pour l'autoriser "
+                        "explicitement : [factrice.smtp] autorise_clair=1."
+                    )
 
         try:
             self.__connecter()
@@ -113,10 +136,17 @@ class ExpeditriceSmtp(Expeditrice):
             "factrice.smtp", "oauth_client_id", fallback=None
         )
 
-        self.s.set_debuglevel(1)
+        # S1 (#15) : le debug SMTP dumpe tout le trafic — dont AUTH et le jeton
+        # OAuth — EN CLAIR dans les logs. Désactivé par défaut ; activable via
+        # [factrice.smtp] debug=1 pour du diagnostic ponctuel.
+        if self.config.getboolean("factrice.smtp", "debug", fallback=False):
+            self.s.set_debuglevel(1)
 
         if oauth and oauth_cmd is not None and oauth_client_id is not None:
-            cmd, *args = oauth_cmd.split(" ")
+            # S5 (#15) : shlex.split gère guillemets/espaces (un chemin ou un
+            # argument peut en contenir). Pas d'injection shell : Executant.exec
+            # utilise subprocess.run(liste), sans shell=True.
+            cmd, *args = shlex.split(oauth_cmd)
             # `oauth_cmd` est **fourni par l'utilisateur** (BYO) : un générateur
             # de jeton OAuth2 pour le mail (p. ex. `oama`) ou un script perso —
             # automatheque n'embarque pas d'outil OAuth. On passe par
