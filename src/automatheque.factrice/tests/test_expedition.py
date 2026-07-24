@@ -189,3 +189,73 @@ def test_esmtp_sujet_avec_separateur_ne_casse_pas_le_chemin(monkeypatch):
         emetteur="exp@ex.fr", sujet="rapport/2026", destinataires=["dest@ex.fr"]
     )
     assert exp.expedie(courriel) == 0
+
+
+# --- #15 : durcissement (S1 debug, S3 TLS fatal, S5 shlex) -------------------
+
+
+def _config_smtp_clair():
+    """Config SMTP **sans** ssl → branche `smtplib.SMTP` + STARTTLS."""
+    c = ConfigParser()
+    c.add_section("factrice.smtp")
+    c.set("factrice.smtp", "hote", "localhost")
+    c.set("factrice.smtp", "identifiant", "user")
+    c.set("factrice.smtp", "mdp", "secret")
+    return c
+
+
+def test_s3_starttls_non_supporte_est_fatal(monkeypatch):
+    """#15 S3 : sans STARTTLS, on refuse d'envoyer en clair par défaut."""
+    fake = MagicMock()
+    fake.starttls.side_effect = smtplib.SMTPNotSupportedError("no tls")
+    monkeypatch.setattr(expedition.smtplib, "SMTP", lambda *a, **k: fake)
+
+    with pytest.raises(smtplib.SMTPNotSupportedError, match="autorise_clair"):
+        ExpeditriceSmtp(config=_config_smtp_clair())
+
+
+def test_s3_clair_autorise_explicitement(monkeypatch):
+    """#15 S3 : `autorise_clair=1` permet l'envoi sans STARTTLS."""
+    fake = MagicMock()
+    fake.starttls.side_effect = smtplib.SMTPNotSupportedError("no tls")
+    monkeypatch.setattr(expedition.smtplib, "SMTP", lambda *a, **k: fake)
+    c = _config_smtp_clair()
+    c.set("factrice.smtp", "autorise_clair", "1")
+
+    ExpeditriceSmtp(config=c)  # ne doit pas lever
+    fake.login.assert_called_once()
+
+
+def test_s1_debug_smtp_off_par_defaut(monkeypatch):
+    """#15 S1 : le debug SMTP (qui fuite AUTH/jeton) est off par défaut."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+
+    ExpeditriceSmtp(config=_config_smtp())
+    fake.set_debuglevel.assert_not_called()
+
+
+def test_s1_debug_smtp_activable(monkeypatch):
+    """#15 S1 : `debug=1` active explicitement le debug SMTP."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+    c = _config_smtp()
+    c.set("factrice.smtp", "debug", "1")
+
+    ExpeditriceSmtp(config=c)
+    fake.set_debuglevel.assert_called_once_with(1)
+
+
+def test_s5_oauth_cmd_shlex_gere_les_guillemets(monkeypatch):
+    """#15 S5 : `oauth_cmd` est découpé avec shlex (guillemets/espaces)."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+    faux_exec = MagicMock()
+    faux_exec.exec.return_value = MagicMock(stdout="JETON\n")
+    monkeypatch.setattr(expedition, "charge_dependance", lambda *a, **k: faux_exec)
+    c = _config_oauth()
+    c.set("factrice.smtp", "oauth_cmd", 'oama access "user name"')
+
+    ExpeditriceSmtp(config=c)
+    # "user name" reste un seul argument grâce à shlex.
+    assert faux_exec.exec.call_args.args == ("access", "user name")

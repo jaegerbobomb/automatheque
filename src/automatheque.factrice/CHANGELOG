@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+* `expedition.ExpeditriceSmtp` — durcissement (cf. #15) :
+  * **S3 — STARTTLS obligatoire par défaut** : en mode non-`ssl`, si le serveur
+    ne gère pas STARTTLS, on **refuse d'envoyer en clair** (identifiants
+    exposés) au lieu d'un simple warning. ⚠️ **Changement de comportement** :
+    autoriser explicitement l'envoi en clair via `[factrice.smtp]
+    autorise_clair=1`.
+  * **S1 — debug SMTP off par défaut** : `set_debuglevel(1)` (qui dumpe le
+    trafic SMTP, dont `AUTH`/le jeton OAuth, **en clair dans les logs**) n'est
+    plus câblé en dur ; il s'active via `[factrice.smtp] debug=1`.
+  * **S5 — `oauth_cmd`** est découpé avec `shlex.split` (guillemets/espaces
+    gérés) au lieu de `str.split(" ")`. (Pas d'injection shell : `Executant`
+    utilise `subprocess.run(liste)`.)
+
 ## [0.17.0] - 2026-07-24
 
 ### Changed
