@@ -297,3 +297,76 @@ def test_parseur_est_docopt_ng():
     import importlib.metadata as md
 
     assert md.version("docopt-ng")  # lève PackageNotFoundError si absent
+
+
+# --- #93 : conf.d drop-in + --config répétable ---------------------------------
+
+
+#: Usage déclarant `--config` **répétable** (`...`).
+DOC_MULTICONF = """Script de démonstration du --config répétable.
+
+Usage:
+  demo [--config=<c>...]
+
+Options:
+  --config=<c>  Fichier de configuration (répétable, empilé dans l'ordre).
+"""
+
+
+def _prepare_dossier_script(tmp_path, monkeypatch):
+    """Pointe la config sur ``tmp_path`` et crée ``<racine>/script-de-test/``.
+
+    ``essai.execute_script`` nomme le script « script-de-test » → son répertoire
+    de config est ``$XDG_CONFIG_HOME/script-de-test/``.
+    """
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    dossier = tmp_path / "script-de-test"
+    (dossier / "conf.d").mkdir(parents=True)
+    return dossier
+
+
+def test_conf_d_fragments_superposes_tries(tmp_path, monkeypatch):
+    """Les fragments `conf.d/*.ini` sont lus triés, après le config.ini."""
+    dossier = _prepare_dossier_script(tmp_path, monkeypatch)
+    (dossier / "config.ini").write_text("[demo]\ncle = base\n")
+    (dossier / "conf.d" / "10-a.ini").write_text("[demo]\ncle = a\ndepuisA = 1\n")
+    (dossier / "conf.d" / "20-b.ini").write_text("[demo]\ncle = b\n")  # 20 > 10
+
+    def main(_script=None):
+        return (
+            _script.config.get("demo", "cle"),
+            _script.config.get("demo", "depuisA"),
+        )
+
+    # 20-b surcharge 10-a (tri), qui surcharge config.ini ; depuisA survit.
+    assert execute_script(DOC_OPTIONS, main, argv=[]).resultat == ("b", "1")
+
+
+def test_conf_d_absent_est_neutre(tmp_path, monkeypatch):
+    """Sans répertoire `conf.d/`, le chargement fonctionne (no-op)."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    dossier = tmp_path / "script-de-test"
+    dossier.mkdir(parents=True)  # pas de conf.d/
+    (dossier / "config.ini").write_text("[demo]\ncle = base\n")
+
+    def main(_script=None):
+        return _script.config.get("demo", "cle")
+
+    assert execute_script(DOC_OPTIONS, main, argv=[]).resultat == "base"
+
+
+def test_config_repetable_empile_dans_l_ordre(tmp_path, monkeypatch):
+    """#93 : `--config` répété empile les fichiers (le dernier surcharge)."""
+    _prepare_dossier_script(tmp_path, monkeypatch)
+    a = tmp_path / "a.ini"
+    a.write_text("[demo]\nx = a\ny = A\n")
+    b = tmp_path / "b.ini"
+    b.write_text("[demo]\nx = b\n")  # b après a → x = b, mais y = A survit
+
+    def main(_script=None):
+        return (_script.config.get("demo", "x"), _script.config.get("demo", "y"))
+
+    res = execute_script(
+        DOC_MULTICONF, main, argv=["--config", str(a), "--config", str(b)]
+    )
+    assert res.resultat == ("b", "A")

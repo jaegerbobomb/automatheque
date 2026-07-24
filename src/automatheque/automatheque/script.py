@@ -22,9 +22,10 @@ Options:
 __version__ = '0.1a'  # ou importer depuis mon_package.__version__
 
 # La configuration est chargée en couches, sans rien déclarer ici :
-#   ~/.config/automatheque/config.ini   (partagé entre scripts)
-#   ~/.config/<mon_script>/config.ini   (propre à ce script ; surcharge)
-#   --config <fichier>                  (ponctuel ; surcharge)
+#   ~/.config/automatheque/config.ini      (partagé entre scripts)
+#   ~/.config/<mon_script>/config.ini      (propre à ce script ; surcharge)
+#   ~/.config/<mon_script>/conf.d/*.ini    (fragments triés ; surcharge) — #93
+#   --config <fichier> (répétable)         (ponctuel ; surcharge) — #93
 
 from automatheque.script import script  # alias court de script_automatheque
 
@@ -79,6 +80,7 @@ def main(_script):
 """
 
 import datetime
+import glob
 import logging
 import os
 import re
@@ -242,17 +244,23 @@ class ScriptAutomatheque:
         )
         # Configuration en couches, de la plus générale à la plus spécifique
         # (chaque couche surcharge la précédente) :
-        #   1. config.ini partagé d'automatheque  (chargé par ecraser=True)
-        #   2. <racine>/<nom_court>/config.ini     (propre au script)
-        #   3. --config <fichier>                  (explicite, ponctuel)
-        fichiers = [
-            os.path.join(
-                constantes.repertoire_config_script(self.nom_court), "config.ini"
-            )
-        ]
+        #   1. config.ini partagé d'automatheque   (chargé par ecraser=True)
+        #   2. <racine>/<nom_court>/config.ini      (propre au script)
+        #   3. <racine>/<nom_court>/conf.d/*.ini    (fragments, triés) — cf. #93
+        #   4. --config <fichier> (répétable)       (explicite, ponctuel)
+        dossier_script = constantes.repertoire_config_script(self.nom_court)
+        fichiers = [os.path.join(dossier_script, "config.ini")]
+        # conf.d/ : chaque raccord/intégration dépose son fragment ; on les lit
+        # TRIÉS (préfixe numérique conseillé, p. ex. 10-x.ini) après le
+        # config.ini du script. Répertoire absent → glob vide → no-op. Cf. #93.
+        fichiers += sorted(glob.glob(os.path.join(dossier_script, "conf.d", "*.ini")))
+        # --config peut être répété : avec docopt `--config=<c>...` la valeur est
+        # une liste (on empile dans l'ordre) ; un `--config=<f>` simple reste une
+        # chaîne. On gère les deux pour ne rien casser. Cf. #93.
         config_cli = self.arguments.get("--config")
-        if config_cli:
-            fichiers.append(config_cli)
+        if isinstance(config_cli, str):  # `--config=<f>` simple → liste à 1 élément
+            config_cli = [config_cli]
+        fichiers += config_cli or []  # None/[] → rien ; liste docopt → empilée
         self.config = charge_configuration(fichiers, ecraser=True, recharger=True)
         # Commodités câblées automatiquement si le script les déclare dans son
         # usage docopt (sinon `.get` renvoie None → comportement par défaut).

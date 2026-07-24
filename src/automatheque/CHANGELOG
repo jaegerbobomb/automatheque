@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `script` — configuration en couches enrichie (cf. #93) :
+  * **répertoire drop-in `conf.d/`** : `~/.config/<script>/conf.d/*.ini` sont
+    lus **triés** (préfixe numérique conseillé) après le `config.ini` du script.
+    Chaque raccord/intégration dépose son fragment ; désinstallation = suppression
+    du fichier.
+  * **`--config` répétable** : avec `--config=<c>...` dans l'usage docopt, les
+    fichiers sont empilés dans l'ordre (le dernier surcharge). Un `--config=<f>`
+    simple continue de fonctionner.
+
 ## [0.17.0] - 2026-07-24
 
 ### Added
