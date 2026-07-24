@@ -19,8 +19,11 @@ que l'on peut parcourir grâce à RegistreElements._instances(inclure_enfants=Tr
 NB: On peut également utiliser Element._instances() pour avoir accès à toutes les
 instances d'Element.
 
-Il s'agit d'un set que l'on peut ensuite parcourir pour trouver celle que l'on
-souhaite.
+Le stockage se fait dans un **dict utilisé comme ensemble ordonné** (les valeurs
+sont ignorées) : on **dédoublonne** les instances tout en **préservant l'ordre
+d'insertion**. `_instances()` renvoie donc les instances dans l'ordre où elles
+ont été créées, ce qui rend déterministes les recherches qui s'appuient dessus
+(p. ex. `greffons_par_capacite`).
 
 NB: La classe fille doit être hashable. Si l'on utilise attrs il faut penser à déclarer
     @attr.s(eq=False) pour activer le hashage.
@@ -88,15 +91,17 @@ class MetaInstanceRegistre(type):
         # Lors de la création **de la classe** du registre (et pas de l'instance)
         super(MetaInstanceRegistre, cls).__init__(name, bases, attrs)
 
-        # Initialise le stockage des instances, pas besoin pour l'instant d'une
-        # "weak ref"
-        cls.__instances = weakref.WeakSet()
+        # Stockage "weak ref" **ordonné** : une WeakKeyDictionary (adossée à un
+        # dict) dédoublonne et préserve l'ordre d'insertion, là où une WeakSet
+        # perdrait l'ordre. Les instances non référencées ailleurs disparaissent
+        # au passage du ramasse-miettes.
+        cls.__instances = weakref.WeakKeyDictionary()
 
     def __call__(cls, *args, **kwargs):
         # Crée l'instance (appelle les méthodes __init__ et __new__)
         inst = super(MetaInstanceRegistre, cls).__call__(*args, **kwargs)
 
-        cls.__instances.add(inst)  # inst doit être hashable
+        cls.__instances[inst] = None  # inst doit être hashable
 
         return inst
 
@@ -104,14 +109,15 @@ class MetaInstanceRegistre(type):
         """Renvoie les instances de **cette classe** stockées dans le registre.
 
         Si inclure_enfants=True, on renvoie aussi les instances des sous-classes.
+        L'ordre d'insertion (ordre de création) est **préservé**.
         """
         instances = list(cls.__instances)
         if inclure_enfants:
             for child in cls.__subclasses__():
                 instances += child._instances(inclure_enfants=inclure_enfants)
 
-        # Remove duplicates from multiple inheritance.
-        return list(set(instances))
+        # Dédoublonne (héritage multiple) EN préservant l'ordre d'insertion.
+        return list(dict.fromkeys(instances))
 
 
 class MetaInstancePersistanteRegistre(type):
@@ -150,15 +156,16 @@ class MetaInstancePersistanteRegistre(type):
         # Lors de la création **de la classe** du registre (et pas de l'instance)
         super(MetaInstancePersistanteRegistre, cls).__init__(name, bases, attrs)
 
-        # Initialise le stockage des instances, pas besoin pour l'instant d'une
-        # "weak ref"
-        cls.__instances = set()
+        # Stockage des instances dans un dict utilisé comme **ensemble ordonné**
+        # (valeurs ignorées) : on dédoublonne SANS perdre l'ordre d'insertion
+        # (un `set` déduplique mais perd l'ordre). Pas besoin de "weak ref" ici.
+        cls.__instances = {}
 
     def __call__(cls, *args, **kwargs):
         # Crée l'instance (appelle les méthodes __init__ et __new__)
         inst = super(MetaInstancePersistanteRegistre, cls).__call__(*args, **kwargs)
 
-        cls.__instances.add(inst)  # inst doit être hashable
+        cls.__instances[inst] = None  # inst doit être hashable
 
         return inst
 
@@ -166,11 +173,12 @@ class MetaInstancePersistanteRegistre(type):
         """Renvoie les instances de **cette classe** stockées dans le registre.
 
         Si inclure_enfants=True, on renvoie aussi les instances des sous-classes.
+        L'ordre d'insertion (ordre de création) est **préservé**.
         """
         instances = list(cls.__instances)
         if inclure_enfants:
             for child in cls.__subclasses__():
                 instances += child._instances(inclure_enfants=inclure_enfants)
 
-        # Remove duplicates from multiple inheritance.
-        return list(set(instances))
+        # Dédoublonne (héritage multiple) EN préservant l'ordre d'insertion.
+        return list(dict.fromkeys(instances))
