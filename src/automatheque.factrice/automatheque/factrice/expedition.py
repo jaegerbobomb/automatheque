@@ -53,7 +53,9 @@ class ExpeditriceSmtp(Expeditrice):
     # Cas 3 : token oauth
     # défaut à false
     oauth=0
-    oauth_cmd=/chemin/vers/script/generation_token # TODO(#27) livrer en dépendances ?
+    # BYO : commande externe qui écrit le jeton OAuth2 sur stdout (p. ex. `oama`
+    # ou un script perso). Sa présence est vérifiée via charge_dependance (#27).
+    oauth_cmd=/chemin/vers/oama_ou_script_generation_token
     oauth_client_id=XyXyXyX
     ```
     """
@@ -115,9 +117,24 @@ class ExpeditriceSmtp(Expeditrice):
 
         if oauth and oauth_cmd is not None and oauth_client_id is not None:
             cmd, *args = oauth_cmd.split(" ")
-            oauth_jeton = (
-                Executant(cmd).exec(*args, encoding="utf-8").stdout.strip("\n")
+            # `oauth_cmd` est **fourni par l'utilisateur** (BYO) : un générateur
+            # de jeton OAuth2 pour le mail (p. ex. `oama`) ou un script perso —
+            # automatheque n'embarque pas d'outil OAuth. On passe par
+            # `charge_dependance` (plutôt qu'un `Executant` brut) pour **vérifier
+            # que la commande est installée** et lever une erreur claire
+            # (`DependanceManquante`) sinon, au lieu d'un échec subprocess
+            # obscur. Cf. #27.
+            executant = charge_dependance(
+                "factrice.oauth",
+                cmd,
+                cmd,
+                erreur=(
+                    f"L'outil de génération de jeton OAuth « {cmd} » (oauth_cmd) "
+                    "est introuvable. Installez-le (p. ex. oama) ou corrigez le "
+                    "chemin dans [factrice.smtp] oauth_cmd."
+                ),
             )
+            oauth_jeton = executant.exec(*args, encoding="utf-8").stdout.strip("\n")
             # LOGGER.debug("jeton oauth : " + oauth_jeton)
             self.s.ehlo(oauth_client_id)
             # On pourrait utiliser self.s.auth, mais il faut travailler
