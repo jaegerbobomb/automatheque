@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `secret` : nouveau module de **gestion des secrets** (cf. #8).
+  * objet **`Secret`** dont `repr`/`str`/f-string/logging affichent `***` — la
+    valeur réelle n'est accessible que via `.reveler()` (anti-fuite dans les
+    logs/tracebacks) ;
+  * les sources de secrets sont des **greffons** rendant la capacité
+    **`ResoudreSecret`** (cf. `automatheque.greffon`) : `GreffonSecretEnv`
+    (variable d'environnement), `GreffonSecretConfig` (configuration,
+    `section.option`), `GreffonSecretKeyring` (trousseau système, dépendance
+    optionnelle `keyring`, neutre si absente), `GreffonSecretCommande` (commande
+    externe via `Executant`) ;
+  * **`recup_secret(cle, config=, resolveurs=)`** résout un secret via des
+    greffons **ordonnés** (par défaut : variable d'environnement puis, si
+    fournie, la configuration ; premier gagnant). Ordre et sources
+    personnalisables via `resolveurs=`.
+  * documentation d'usage (README) : à quoi sert le module et exemples
+    (`Secret`, `recup_secret`, résolveurs personnalisés).
+
 ## [0.18.0] - 2026-07-24
 
 ### Added

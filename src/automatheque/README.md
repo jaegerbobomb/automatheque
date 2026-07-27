@@ -75,6 +75,79 @@ if __name__ == "__main__":
     main()
 ```
 
+## Gestion des secrets
+
+Un mot de passe ou un jeton ne doit **jamais** fuiter dans les logs ou une
+traceback, et sa **source** ne devrait pas être figée dans le code (parfois une
+variable d'environnement, parfois la config, parfois un trousseau système…).
+Le module `automatheque.secret` répond aux deux besoins.
+
+### `Secret` : une valeur qui ne fuite pas
+
+`Secret` enveloppe une valeur sensible : son `repr`, son `str`, un f-string et le
+logging affichent tous `***`. La valeur réelle n'est accessible qu'au **point
+d'usage**, via `.reveler()`.
+
+```python
+from automatheque.secret import Secret
+
+mdp = Secret("s3cr3t")
+print(mdp)  # ***
+print(f"mdp={mdp}")  # mdp=***
+logging.info("mdp=%s", mdp)  # …mdp=***  (pas de fuite dans les logs)
+
+connexion.login("moi", mdp.reveler())  # .reveler() UNIQUEMENT ici
+```
+
+### `recup_secret` : d'où vient le secret ?
+
+`recup_secret(cle, config=, resolveurs=)` cherche la valeur auprès de plusieurs
+sources **essayées dans l'ordre** (premier gagnant) et renvoie un `Secret` (ou
+`None` si introuvable). Par défaut : la **variable d'environnement** puis, si on
+lui passe une `config`, la **configuration**.
+
+```python
+from automatheque.secret import recup_secret
+
+# factrice.smtp.mdp  →  variable FACTRICE_SMTP_MDP,
+#                       sinon [factrice.smtp] mdp = … dans la config
+mdp = recup_secret("factrice.smtp.mdp", config=_script.config)
+if mdp is not None:
+    serveur.login(user, mdp.reveler())
+```
+
+### Les sources sont des greffons
+
+Chaque source est un **greffon** (cf. `automatheque.greffon`) rendant la capacité
+`ResoudreSecret` — on ajoute donc une nouvelle source comme n'importe quel
+greffon. Fournis d'origine :
+
+| Greffon                 | Source                                                        |
+| ----------------------- | ------------------------------------------------------------- |
+| `GreffonSecretEnv`      | variable d'env (`factrice.smtp.mdp` → `FACTRICE_SMTP_MDP`)     |
+| `GreffonSecretConfig`   | configuration (`section.option`)                              |
+| `GreffonSecretKeyring`  | trousseau système (dépendance optionnelle `keyring`)          |
+| `GreffonSecretCommande` | sortie d'une commande externe (p. ex. `pass show {cle}`)      |
+
+Pour un ordre ou des sources personnalisés, on passe `resolveurs=` (liste
+ordonnée de greffons) — ici on interroge d'abord le trousseau, puis une commande :
+
+```python
+from automatheque.secret import (
+    recup_secret,
+    GreffonSecretKeyring,
+    GreffonSecretCommande,
+)
+
+mdp = recup_secret(
+    "factrice.smtp.mdp",
+    resolveurs=[
+        GreffonSecretKeyring(service="mon-appli"),
+        GreffonSecretCommande(gabarit="pass show {cle}"),
+    ],
+)
+```
+
 ## Configuration du logging
 
 Automathèque **ne configure rien à l'import** (une bibliothèque ne doit pas
