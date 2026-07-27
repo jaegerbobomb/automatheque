@@ -77,8 +77,24 @@ jobs:
               assert m, "Dépendance intra-dépôt sans plancher '>=' : {!r}".format(dep)
               pins.append("{}=={}".format(m.group(1), m.group(2)))
 
-          print("Planchers installés depuis PyPI :", pins)
-          subprocess.check_call([sys.executable, "-m", "pip", "install", *pins])
+          print("Planchers déclarés :", pins)
+          for pin in pins:
+              nom, _, _version = pin.partition("==")
+              try:
+                  subprocess.check_call([sys.executable, "-m", "pip", "install", pin])
+              except subprocess.CalledProcessError:
+                  # Le plancher déclaré n'est pas (encore) publié sur PyPI —
+                  # typiquement une version intra-dépôt livrée dans le MÊME cycle
+                  # (co-release). On se rabat sur le build LOCAL (qui deviendra
+                  # cette version) pour tester quand même factrice contre ce code,
+                  # en le SIGNALANT (::warning::) pour ne pas masquer un plancher
+                  # fantôme (version jamais publiée par erreur).
+                  local = "src/" + nom
+                  print(
+                      "::warning::plancher {} introuvable sur PyPI ; "
+                      "repli sur le build local {}".format(pin, local)
+                  )
+                  subprocess.check_call([sys.executable, "-m", "pip", "install", local])
           PY
 
       - name: Installe factrice depuis les sources (sans toucher aux planchers)
