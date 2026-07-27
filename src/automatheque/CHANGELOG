@@ -28,6 +28,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * documentation d'usage (README) : à quoi sert le module et exemples
     (`Secret`, `recup_secret`, résolveurs personnalisés).
 
+### Fixed
+
+* `conception.structures` — les registres d'instances (`MetaInstanceRegistre`,
+  `MetaInstancePersistanteRegistre`) **préservent l'ordre d'insertion** : le
+  stockage passe d'un `set` (ordre arbitraire) à un dict/`WeakKeyDictionary`
+  utilisé comme ensemble ordonné, et le dédoublonnage de `_instances()` conserve
+  l'ordre (`dict.fromkeys`). Les recherches qui s'appuient dessus deviennent
+  **déterministes** — notamment `Greffon.greffons_par_capacite`, dont l'ordre
+  reflète désormais l'ordre d'enregistrement des greffons.
+
 ## [0.18.0] - 2026-07-24
 
 ### Added
