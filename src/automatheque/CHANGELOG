@@ -22,6 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     **`installe_caviardage(logger=None)`** l'ajoute (idempotent) aux handlers
     d'un logger pour une configuration de log maison.
 
+### Changed
+
+* `suivi` : le dossier `suivi/adaptateurs/` est **renommé `suivi/stockage/`**.
+  Ce sont des **backends de stockage** (implémentations du port
+  `StockageAbstraite`), pas des adaptateurs au sens du patron
+  `conception.structures.Adaptateur` — le nom prêtait à confusion dans un dépôt
+  qui nomme explicitement ses patrons. L'API publique
+  `from automatheque.suivi.journal import StockageRepertoire` est inchangée.
+
+### Deprecated
+
+* `automatheque.suivi.adaptateurs.repertoire` : shim de rétro-compatibilité qui
+  ré-exporte `StockageRepertoire` en émettant un `DeprecationWarning`. Importer
+  depuis `automatheque.suivi.stockage.repertoire` (ou `automatheque.suivi.journal`).
+
 ## [0.19.0] - 2026-07-27
 
 ### Added

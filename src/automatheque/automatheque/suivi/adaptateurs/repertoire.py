@@ -1,32 +1,28 @@
-import threading
-from pathlib import Path
+# -*- coding: utf-8 -*-
+"""Shim de rétro-compatibilité : ``suivi.adaptateurs`` → ``suivi.stockage``.
 
-import attr
+Le dossier a été **renommé** ``suivi/stockage/`` : ce sont des **backends de
+stockage** (implémentations du port ``StockageAbstraite``), pas des adaptateurs
+au sens du patron :class:`automatheque.conception.structures.Adaptateur` (qui,
+lui, injecte dynamiquement des méthodes). Le nom prêtait à confusion dans un
+dépôt qui nomme explicitement ses patrons.
 
-from automatheque.suivi.ports import StockageAbstraite
+Importer depuis ce chemin émet un ``DeprecationWarning``. Préférer
+``from automatheque.suivi.stockage.repertoire import StockageRepertoire`` — ou,
+API publique, ``from automatheque.suivi.journal import StockageRepertoire``.
+"""
 
+import warnings
 
-@attr.s
-class StockageRepertoire(StockageAbstraite):
-    repertoire: Path = attr.ib(default=Path("/tmp"))
-    # Sérialise les accès au système de fichiers pour rendre l'adaptateur
-    # utilisable depuis plusieurs threads. Non passé à l'``__init__``, ni
-    # comparé/affiché. Cf. #25.
-    _verrou: threading.Lock = attr.ib(
-        factory=threading.Lock, init=False, repr=False, eq=False
-    )
+from automatheque.suivi.stockage.repertoire import StockageRepertoire  # noqa: F401
 
-    def __attrs_post_init__(self):
-        self.repertoire.mkdir(parents=True, exist_ok=True)
+__all__ = ["StockageRepertoire"]
 
-    def existe(self, reference: str):
-        fichier = self.repertoire / reference
-        with self._verrou:
-            return fichier.exists()
-
-    def sauvegarde(self, reference: str, contenu: str):
-        fichier = self.repertoire / reference
-        with self._verrou:
-            with open(fichier, "w") as f:
-                f.write(contenu)
-        return True
+warnings.warn(
+    "automatheque.suivi.adaptateurs est déprécié : le dossier a été renommé "
+    "automatheque.suivi.stockage. Importez depuis "
+    "automatheque.suivi.stockage.repertoire (ou automatheque.suivi.journal). "
+    "Ce shim sera supprimé dans une version ultérieure.",
+    DeprecationWarning,
+    stacklevel=2,
+)
