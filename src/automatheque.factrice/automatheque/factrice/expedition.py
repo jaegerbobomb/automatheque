@@ -15,6 +15,7 @@ import attr
 from automatheque.configuration import NoOptionError, charge_configuration
 from automatheque.factrice.preparation import SEPARATEUR_DESTINATAIRES, PreparatriceSmtp
 from automatheque.schema.texte import Courriel
+from automatheque.secret import recup_secret
 from automatheque.util.dependances_externes import Executant, charge_dependance
 from automatheque.util.fichier import enleve_caracteres_invalides
 
@@ -171,9 +172,19 @@ class ExpeditriceSmtp(Expeditrice):
             # directement avec la chaine xoauth2 non encodée en b64.
             self.s.docmd("AUTH", "XOAUTH2 " + oauth_jeton)
         else:
+            # Le mot de passe passe par `recup_secret` (#8) : il peut venir de la
+            # variable d'environnement `FACTRICE_SMTP_MDP` (override) ou, à défaut,
+            # de `[factrice.smtp] mdp`, et il est enveloppé dans un `Secret`
+            # (caviardé dans les logs/tracebacks). On ne `.reveler()` qu'au point
+            # d'usage : l'appel à `login`.
+            mdp = recup_secret("factrice.smtp.mdp", config=self.config)
+            if mdp is None:
+                # Cohérent avec l'ancien comportement (mdp absent → NoOptionError,
+                # rattrapé plus haut pour le cas d'un compte anonyme).
+                raise NoOptionError("mdp", "factrice.smtp")
             self.s.login(
                 self.config.get("factrice.smtp", "identifiant"),
-                self.config.get("factrice.smtp", "mdp"),
+                mdp.reveler(),
             )
 
     def expedie(self, courriel: Courriel):

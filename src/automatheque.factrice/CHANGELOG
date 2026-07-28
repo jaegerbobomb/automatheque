@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-07-27
+
 ### Security
 
 * `expedition.ExpeditriceSmtp` — durcissement (cf. #15) :
@@ -27,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * **S5 — `oauth_cmd`** est découpé avec `shlex.split` (guillemets/espaces
     gérés) au lieu de `str.split(" ")`. (Pas d'injection shell : `Executant`
     utilise `subprocess.run(liste)`.)
+
+### Changed
+
+* `expedition.ExpeditriceSmtp` — le mot de passe SMTP est désormais récupéré via
+  **`automatheque.secret.recup_secret`** (cf. #8) : il peut provenir de la
+  **variable d'environnement `FACTRICE_SMTP_MDP`** (override), sinon de
+  `[factrice.smtp] mdp`, et il est manipulé comme un **`Secret`** (caviardé dans
+  les logs/tracebacks, `.reveler()` au seul point d'usage). Comportement
+  inchangé quand `mdp` n'est défini qu'en configuration.
+* Dépendance : plancher **`automatheque>=0.19.0`** (module `secret`).
 
 ## [0.17.0] - 2026-07-24
 

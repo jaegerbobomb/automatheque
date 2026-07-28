@@ -1,6 +1,6 @@
 [project]
 name = "automatheque.factrice"
-version = "0.17.0"
+version = "0.19.0"
 description = "Librairie et app simplifiée d'envoi de mail"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "LGPL-3.0-or-later"}
@@ -16,9 +16,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    # >=0.14.0 : `ExpeditriceSmtp` utilise `Executant.exec(encoding=...)`,
-    # ajouté dans automatheque 0.14.0 (#66).
-    "automatheque>=0.14.0",
+    # >=0.19.0 : `ExpeditriceSmtp` utilise `automatheque.secret.recup_secret`
+    # pour récupérer le mot de passe SMTP (#8), module ajouté en automatheque
+    # 0.19.0. (Auparavant >=0.14.0 pour `Executant.exec(encoding=...)`, #66.)
+    "automatheque>=0.19.0",
     # >=0.9.7 : factrice construit un `Courriel` SANS émetteur (celui-ci est
     # rempli ensuite par l'expéditrice, depuis la configuration). Or l'émetteur
     # n'est devenu **facultatif** dans le constructeur de `Courriel` qu'en
