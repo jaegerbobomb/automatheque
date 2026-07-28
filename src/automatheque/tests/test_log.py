@@ -4,7 +4,9 @@ import logging
 from automatheque.log import (
     configure_logging,
     configure_logging_defaut,
+    installe_caviardage,
 )
+from automatheque.secret import FiltreCaviardage
 
 
 def _config_logging_dict(nom_logger):
@@ -24,6 +26,29 @@ def test_configure_logging_charge_fichier_json(tmp_path):
     configure_logging(str(fichier))
 
     assert logging.getLogger(nom).level == logging.DEBUG
+
+
+def test_installe_caviardage_est_idempotent():
+    """installe_caviardage pose le filtre sur les handlers, une seule fois."""
+    lg = logging.getLogger("test_caviardage_idempotent")
+    handler = logging.StreamHandler()
+    lg.addHandler(handler)
+    try:
+        installe_caviardage(lg)
+        installe_caviardage(lg)  # 2e appel : ne doit pas ajouter un doublon
+        filtres = [f for f in handler.filters if isinstance(f, FiltreCaviardage)]
+        assert len(filtres) == 1
+    finally:
+        lg.removeHandler(handler)
+
+
+def test_configure_logging_defaut_installe_le_filtre_de_caviardage():
+    """La config par défaut pose le filtre de caviardage sur le handler racine."""
+    configure_logging_defaut()
+    handlers = logging.getLogger().handlers
+    assert any(
+        any(isinstance(f, FiltreCaviardage) for f in h.filters) for h in handlers
+    )
 
 
 def test_import_pose_un_nullhandler_sur_le_logger_automatheque():

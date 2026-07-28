@@ -54,12 +54,36 @@ def logger_existe(nom):
 def configure_logging_defaut():
     """Active la configuration de logging par défaut d'automatheque.
 
-    Pose un handler console sur le logger ``automatheque``. À appeler par une
-    **application** (un script, p. ex. via ``@script_automatheque``), jamais à
-    l'import d'une bibliothèque : configurer le logging global est le rôle de
-    l'application, pas de la lib.
+    Pose un handler console sur la **racine** (root), muni du filtre de
+    caviardage des secrets (cf. :class:`automatheque.secret.FiltreCaviardage`).
+    À appeler par une **application** (un script, p. ex. via
+    ``@script_automatheque``), jamais à l'import d'une bibliothèque : configurer
+    le logging global est le rôle de l'application, pas de la lib.
     """
     configure_logging(logger_config_dict)
+
+
+def installe_caviardage(logger=None):
+    """Installe le filtre de **caviardage des secrets** sur les handlers d'un logger.
+
+    Par défaut la **racine** (root) : le filtre étant posé sur les *handlers*, il
+    couvre aussi les enregistrements **propagés** par les loggers enfants (un
+    filtre posé sur un logger, lui, ne verrait pas ces enregistrements).
+
+    À utiliser quand on configure le logging soi-même (dictConfig maison, section
+    ``[log] fichier_config`` d'un script) : la configuration par défaut
+    d'automatheque (:func:`configure_logging_defaut`) l'installe déjà.
+
+    Idempotent : n'ajoute pas deux fois le filtre sur un même handler.
+    """
+    from automatheque.secret import FiltreCaviardage
+
+    cible = logger if logger is not None else logging.getLogger()
+    if isinstance(cible, str):
+        cible = logging.getLogger(cible)
+    for handler in cible.handlers:
+        if not any(isinstance(f, FiltreCaviardage) for f in handler.filters):
+            handler.addFilter(FiltreCaviardage())
 
 
 # Une bibliothèque ne configure pas le logging global à l'import : on se

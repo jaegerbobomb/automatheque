@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `secret` / `log` — **caviardage des logs** (cf. #15) :
+  * **`FiltreCaviardage`** (`logging.Filter`) remplace par `***` la valeur de
+    tout `Secret` **vivant** qui apparaîtrait dans un message journalisé
+    (défense en profondeur : rattrape une valeur `reveler()` loggée par erreur) ;
+  * `Secret` utilise le patron **Registre d'instances faibles**
+    (`MetaInstanceRegistre`) : chaque secret créé y est référencé faiblement, le
+    filtre les retrouve via `Secret._instances()` — rien à enregistrer à la main ;
+  * `configure_logging_defaut()` installe le filtre sur le handler racine ;
+    **`installe_caviardage(logger=None)`** l'ajoute (idempotent) aux handlers
+    d'un logger pour une configuration de log maison.
+
 ## [0.19.0] - 2026-07-27
 
 ### Added
