@@ -1,9 +1,9 @@
-"""Tests du sous-système ``suivi`` : port, adaptateur répertoire et journal."""
+"""Tests du sous-système ``suivi`` : port, backend de stockage et journal."""
 
 import pytest
-from automatheque.suivi.adaptateurs.repertoire import StockageRepertoire
 from automatheque.suivi.journal import JournalSuivi
 from automatheque.suivi.ports import StockageAbstraite
+from automatheque.suivi.stockage.repertoire import StockageRepertoire
 
 # --- Port abstrait -----------------------------------------------------------
 
@@ -31,7 +31,23 @@ def test_stockage_abstraite_methodes_levent_notimplemented():
         s.sauvegarde("x", "y")
 
 
-# --- Adaptateur StockageRepertoire ------------------------------------------
+# --- Backend de stockage StockageRepertoire ---------------------------------
+
+
+def test_shim_suivi_adaptateurs_emet_un_deprecationwarning():
+    """L'ancien chemin ``suivi.adaptateurs`` reste importable mais est déprécié.
+
+    On recharge le module pour ré-exécuter son ``warnings.warn`` (l'import peut
+    déjà avoir été mis en cache par un autre test).
+    """
+    import importlib
+
+    with pytest.warns(DeprecationWarning, match="suivi.adaptateurs"):
+        ancien = importlib.reload(
+            importlib.import_module("automatheque.suivi.adaptateurs.repertoire")
+        )
+    # le shim ré-exporte bien la même classe que le nouveau chemin
+    assert ancien.StockageRepertoire is StockageRepertoire
 
 
 def test_repertoire_cree_le_dossier(tmp_path):

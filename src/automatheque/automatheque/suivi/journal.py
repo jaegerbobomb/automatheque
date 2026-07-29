@@ -4,8 +4,8 @@ import inspect
 
 import attr
 
-from automatheque.suivi.adaptateurs.repertoire import StockageRepertoire
 from automatheque.suivi.ports import StockageAbstraite
+from automatheque.suivi.stockage.repertoire import StockageRepertoire
 from automatheque.util.fichier import enleve_caracteres_invalides
 
 #: Fabriques de « sceau » de date par période : la clé de suivi inclut ce sceau,
