@@ -20,7 +20,7 @@ Options:
 
 import sys
 
-from automatheque.factrice.expedition import ExpeditriceEsmtp, ExpeditriceSmtp
+from automatheque.factrice.expedition import fabrique_expeditrice
 from automatheque.schema.texte.courriel import Courriel
 from automatheque.script import ScriptAutomatheque, script_automatheque
 
@@ -40,22 +40,20 @@ def recupere_texte(arguments):
 
 
 def envoi_mail_simple(sujet, adresse, txt, via_esmtp=False):
-    """Envoie un mail simple."""
+    """Envoie un mail simple.
+
+    Le choix du transport (SMTP direct ou ``esmtp``) est délégué à la
+    :class:`~automatheque.factrice.expedition.FabriqueExpeditrice` : plus de
+    ``if via_esmtp`` ici, et un nouveau transport s'ajoute côté fabrique sans
+    toucher cette fonction. Renvoie ce que renvoie ``expedie`` (le code de retour
+    pour ``esmtp``, ``None`` pour SMTP).
+    """
     destinataires = adresse.split(",")
     mail = Courriel(sujet=sujet, destinataires=destinataires)
     mail.contenu = txt
 
-    if not via_esmtp:
-        ExpeditriceSmtp().expedie(mail)
-        return
-
-    # envoi du mail si esmtp est paramétré
-    # cmd = 'cat "{0}" | esmtp {1}'.format(
-    #    mail.gen_fichier(), SEPARATEUR_DESTINATAIRES.join(mail.destinataires)
-    # )
-    # return_code = subprocess.call(cmd, shell=True)
-    return_code = ExpeditriceEsmtp().expedie(mail)
-    return return_code
+    transport = "esmtp" if via_esmtp else "smtp"
+    return fabrique_expeditrice.cree_expeditrice(transport).expedie(mail)
 
 
 def traite(_script: ScriptAutomatheque = None):
