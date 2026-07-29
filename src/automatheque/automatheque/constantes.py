@@ -37,10 +37,17 @@ logger_config_dict = {
     "formatters": {
         "automatheque": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"}
     },
+    # Caviardage des secrets (cf. #15) : posé sur le handler pour couvrir aussi
+    # les enregistrements propagés des loggers enfants. Résolu paresseusement
+    # par dictConfig (pas d'import de `secret` au chargement de ce module).
+    "filters": {
+        "caviardage": {"()": "automatheque.secret.FiltreCaviardage"},
+    },
     "handlers": {
         "automatheque": {
             "formatter": "automatheque",
             "class": "logging.StreamHandler",
+            "filters": ["caviardage"],
         }
     },
     # Un script EST une application : sa configuration de log vise la **racine**

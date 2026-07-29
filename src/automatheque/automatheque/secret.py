@@ -21,6 +21,7 @@ système de greffons pour toute source enfichable, plutôt qu'un mécanisme ad h
 la valeur réelle n'est accessible que via :meth:`Secret.reveler`.
 """
 
+import logging
 import os
 import shlex
 from configparser import ConfigParser, NoOptionError, NoSectionError
@@ -28,6 +29,7 @@ from typing import Any, Dict, List, Optional, Protocol
 
 import attr
 
+from automatheque.conception.structures import MetaInstanceRegistre
 from automatheque.greffon import Greffon, signale_appel
 from automatheque.greffon.capacite import Capacite
 
@@ -36,13 +38,21 @@ CAVIARDAGE = "***"
 
 
 @attr.s(repr=False, eq=False)
-class Secret:
+class Secret(metaclass=MetaInstanceRegistre):
     """Enveloppe une valeur sensible dont le ``repr``/``str`` est **caviardé**.
 
     La valeur réelle n'est accessible que via :meth:`reveler` — jamais via
     ``str()``, ``repr()``, un f-string ou le logging, qui affichent tous
     :data:`CAVIARDAGE`. Cela évite les fuites accidentelles dans les logs et les
     tracebacks.
+
+    Patron **Registre d'instances (faibles)** : via
+    :class:`~automatheque.conception.structures.MetaInstanceRegistre`, chaque
+    ``Secret`` créé est référencé **faiblement** dans un registre — sans
+    prolonger sa vie. :class:`FiltreCaviardage` s'en sert pour caviarder toute
+    valeur de secret **vivant** qui apparaîtrait dans un message de log (rien à
+    enregistrer à la main). ``eq=False`` rend l'objet hachable (identité), requis
+    par le registre.
     """
 
     _valeur: str = attr.ib()
@@ -56,6 +66,47 @@ class Secret:
 
     def __repr__(self) -> str:
         return "Secret({})".format(CAVIARDAGE)
+
+
+def _secrets_vivants() -> List["Secret"]:
+    """Renvoie les :class:`Secret` encore vivants (registre d'instances faibles)."""
+    return Secret._instances(inclure_enfants=True)
+
+
+class FiltreCaviardage(logging.Filter):
+    """Filtre de logging qui **caviarde** les valeurs des :class:`Secret` vivants.
+
+    À poser sur un **handler** (et non un logger) pour couvrir aussi les
+    enregistrements *propagés* des loggers enfants — cf. :func:`installe_caviardage`
+    dans :mod:`automatheque.log`. Si la valeur révélée d'un secret vivant apparaît
+    dans le message rendu, elle est remplacée par :data:`CAVIARDAGE`.
+
+    Défense **en profondeur** : la première ligne reste de ne jamais logger un
+    secret en clair (utiliser :class:`Secret`, dont ``str``/``repr`` sont déjà
+    caviardés). Ce filtre rattrape les fuites indirectes (une valeur brute
+    ``reveler()`` journalisée par erreur, un secret concaténé dans un message…).
+
+    Note : le filtre remplace des **sous-chaînes littérales** ; une valeur très
+    courte peut donc caviarder large. Les vrais secrets (mots de passe, jetons)
+    sont longs, ce qui rend le cas anecdotique — raison de plus pour ne pas
+    utiliser de secret trivial.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        valeurs = [v for v in (s.reveler() for s in _secrets_vivants()) if v]
+        if not valeurs:
+            return True
+        message = record.getMessage()
+        caviarde = message
+        for valeur in valeurs:
+            if valeur in caviarde:
+                caviarde = caviarde.replace(valeur, CAVIARDAGE)
+        if caviarde != message:
+            # On fige le message rendu (et on neutralise args) pour que le
+            # caviardage tienne quel que soit le handler en aval.
+            record.msg = caviarde
+            record.args = ()
+        return True
 
 
 class ResoudreSecret(Capacite, Protocol):

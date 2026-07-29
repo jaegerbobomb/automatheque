@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Tests du module secret (objet caviardé + greffons résolveurs, #8)."""
 
+import logging
 from configparser import ConfigParser
 from typing import Optional
 from unittest.mock import MagicMock
 
 from automatheque.secret import (
+    FiltreCaviardage,
     GreffonSecretCommande,
     GreffonSecretConfig,
     GreffonSecretEnv,
@@ -156,3 +158,47 @@ def test_recup_secret_resolveurs_personnalises():
 
     s = recup_secret("x", resolveurs=[ResolveurMuet(), ResolveurFixe()])
     assert s.reveler() == "depuis-b2"
+
+
+# --- FiltreCaviardage : redaction des logs (#15) -----------------------------
+
+
+def _record(msg, *args):
+    return logging.LogRecord("t", logging.INFO, __file__, 1, msg, args, None)
+
+
+def _fixe_secrets(monkeypatch, *secrets):
+    """Fige la liste des secrets vivants vue par le filtre (isolation du test)."""
+    from automatheque import secret as secret_mod
+
+    monkeypatch.setattr(secret_mod, "_secrets_vivants", lambda: list(secrets))
+
+
+def test_secret_est_enregistre_dans_le_registre_dinstances():
+    """Patron Registre : un Secret créé est référencé dans Secret._instances()."""
+    s = Secret("abc-registre")
+    assert s in Secret._instances(inclure_enfants=True)
+
+
+def test_filtre_caviarde_la_valeur_dun_secret_vivant(monkeypatch):
+    s = Secret("motdepasse-tres-long-42")
+    _fixe_secrets(monkeypatch, s)
+    rec = _record("connexion mdp=%s ok", "motdepasse-tres-long-42")
+    assert FiltreCaviardage().filter(rec) is True
+    assert "motdepasse-tres-long-42" not in rec.getMessage()
+    assert rec.getMessage() == "connexion mdp=*** ok"
+
+
+def test_filtre_neutre_si_aucun_secret_vivant(monkeypatch):
+    _fixe_secrets(monkeypatch)  # aucun secret
+    rec = _record("message %s sans secret", "anodin")
+    assert FiltreCaviardage().filter(rec) is True
+    assert rec.getMessage() == "message anodin sans secret"
+
+
+def test_filtre_preserve_le_record_sans_fuite(monkeypatch):
+    _fixe_secrets(monkeypatch, Secret("un-secret-absent-du-message"))
+    rec = _record("valeur=%s", "publique")
+    assert FiltreCaviardage().filter(rec) is True
+    # pas de fuite → args préservés (rendu paresseux conservé)
+    assert rec.args == ("publique",)

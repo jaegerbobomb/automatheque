@@ -15,7 +15,7 @@ import attr
 from automatheque.configuration import NoOptionError, charge_configuration
 from automatheque.factrice.preparation import SEPARATEUR_DESTINATAIRES, PreparatriceSmtp
 from automatheque.schema.texte import Courriel
-from automatheque.secret import recup_secret
+from automatheque.secret import Secret, recup_secret
 from automatheque.util.dependances_externes import Executant, charge_dependance
 from automatheque.util.fichier import enleve_caracteres_invalides
 
@@ -165,12 +165,17 @@ class ExpeditriceSmtp(Expeditrice):
                     "chemin dans [factrice.smtp] oauth_cmd."
                 ),
             )
-            oauth_jeton = executant.exec(*args, encoding="utf-8").stdout.strip("\n")
-            # LOGGER.debug("jeton oauth : " + oauth_jeton)
+            # Jeton OAuth enveloppé dans un `Secret` (#8/#15) : caviardé dans les
+            # logs/tracebacks et pris en compte par le filtre de caviardage. On
+            # ne `.reveler()` qu'au point d'usage (la commande AUTH).
+            oauth_jeton = Secret(
+                executant.exec(*args, encoding="utf-8").stdout.strip("\n")
+            )
+            # LOGGER.debug("jeton oauth : %s", oauth_jeton)  # affiche « *** »
             self.s.ehlo(oauth_client_id)
             # On pourrait utiliser self.s.auth, mais il faut travailler
             # directement avec la chaine xoauth2 non encodée en b64.
-            self.s.docmd("AUTH", "XOAUTH2 " + oauth_jeton)
+            self.s.docmd("AUTH", "XOAUTH2 " + oauth_jeton.reveler())
         else:
             # Le mot de passe passe par `recup_secret` (#8) : il peut venir de la
             # variable d'environnement `FACTRICE_SMTP_MDP` (override) ou, à défaut,

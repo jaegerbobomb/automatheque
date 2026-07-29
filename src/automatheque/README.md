@@ -148,6 +148,30 @@ mdp = recup_secret(
 )
 ```
 
+### Caviardage des logs (défense en profondeur)
+
+La configuration de log par défaut (`configure_logging_defaut()`, appelée par un
+script `@script_automatheque`) installe un **filtre de caviardage** : si la
+valeur d'un `Secret` vivant apparaît dans un message de log, elle est remplacée
+par `***`.
+
+```python
+mdp = recup_secret("factrice.smtp.mdp", config=_script.config)
+logging.getLogger(__name__).info("connexion mdp=%s", mdp.reveler())
+# → journalisé : « connexion mdp=*** »  (même la valeur révélée est rattrapée)
+```
+
+La première ligne de défense reste de ne jamais logger un secret en clair
+(`Secret` est déjà caviardé par `str`/`repr`) ; le filtre rattrape les fuites
+indirectes. Si tu configures le logging toi-même (dictConfig maison), pose le
+filtre sur tes handlers avec `installe_caviardage()` :
+
+```python
+from automatheque.log import installe_caviardage
+
+installe_caviardage()  # racine par défaut (couvre les loggers enfants)
+```
+
 ## Configuration du logging
 
 Automathèque **ne configure rien à l'import** (une bibliothèque ne doit pas
