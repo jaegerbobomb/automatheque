@@ -22,6 +22,11 @@ def test_recupere_texte_depuis_stdin(monkeypatch):
     assert recupere_texte({"<texte_du_mail>": None}) == "depuis le tuyau"
 
 
+def _remplace_transport(monkeypatch, transport, classe):
+    """Remplace le monteur d'un transport dans la fabrique (restauré après le test)."""
+    monkeypatch.setitem(app.fabrique_expeditrice.recup_monteurs(), transport, classe)
+
+
 def test_envoi_mail_simple_smtp_construit_le_courriel(monkeypatch):
     """Sans `--via-esmtp` : route vers SMTP et construit un Courriel cohérent."""
     envoye = {}
@@ -33,7 +38,7 @@ def test_envoi_mail_simple_smtp_construit_le_courriel(monkeypatch):
         def expedie(self, mail):
             envoye["mail"] = mail
 
-    monkeypatch.setattr(app, "ExpeditriceSmtp", FakeSmtp)
+    _remplace_transport(monkeypatch, "smtp", FakeSmtp)
     app.envoi_mail_simple("sujet", "a@b.c,d@e.f", "corps", via_esmtp=False)
 
     mail = envoye["mail"]
@@ -52,5 +57,5 @@ def test_envoi_mail_simple_esmtp_renvoie_le_code(monkeypatch):
         def expedie(self, mail):
             return 7
 
-    monkeypatch.setattr(app, "ExpeditriceEsmtp", FakeEsmtp)
+    _remplace_transport(monkeypatch, "esmtp", FakeEsmtp)
     assert envoi_mail_simple("s", "a@b.c", "corps", via_esmtp=True) == 7

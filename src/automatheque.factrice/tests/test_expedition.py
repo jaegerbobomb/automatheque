@@ -259,3 +259,34 @@ def test_s5_oauth_cmd_shlex_gere_les_guillemets(monkeypatch):
     ExpeditriceSmtp(config=c)
     # "user name" reste un seul argument grâce à shlex.
     assert faux_exec.exec.call_args.args == ("access", "user name")
+
+
+# --- FabriqueExpeditrice (patron Fabrique) ----------------------------------
+
+
+def test_fabrique_enregistre_les_transports_usuels():
+    """La fabrique prête à l'emploi connaît « smtp » et « esmtp »."""
+    monteurs = expedition.fabrique_expeditrice.recup_monteurs()
+    assert monteurs["smtp"] is ExpeditriceSmtp
+    assert monteurs["esmtp"] is ExpeditriceEsmtp
+
+
+def test_fabrique_transport_inconnu_leve_valueerror():
+    with pytest.raises(ValueError):
+        expedition.fabrique_expeditrice.cree_expeditrice("pigeon-voyageur")
+
+
+def test_esmtp_est_une_expeditrice():
+    """ExpeditriceEsmtp fait bien partie de la famille Expeditrice (interface)."""
+    assert issubclass(ExpeditriceEsmtp, expedition.Expeditrice)
+
+
+def test_fabrique_cree_le_bon_transport(monkeypatch):
+    """cree_expeditrice(« smtp ») construit une ExpeditriceSmtp (SMTP mocké)."""
+    fake = MagicMock()
+    monkeypatch.setattr(expedition.smtplib, "SMTP_SSL", lambda *a, **k: fake)
+
+    expeditrice = expedition.fabrique_expeditrice.cree_expeditrice(
+        "smtp", config=_config_smtp()
+    )
+    assert isinstance(expeditrice, ExpeditriceSmtp)

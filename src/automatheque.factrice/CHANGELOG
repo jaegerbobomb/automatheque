@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `expedition.FabriqueExpeditrice` : **fabrique d'expéditrices** (patron
+  **Fabrique**, comme `FabriqueGreffon`). Le choix du transport (`"smtp"` /
+  `"esmtp"`) passe par `fabrique_expeditrice.cree_expeditrice(transport)` plutôt
+  qu'un `if via_esmtp` dans l'app — un nouveau transport s'ajoute par un
+  `enregistre_monteur` sans toucher les appelants.
+
+### Changed
+
+* `expedition.ExpeditriceEsmtp` **hérite désormais de `Expeditrice`** (famille de
+  transports homogène derrière l'interface commune).
+* `app.envoi_mail_simple` délègue le choix du transport à la fabrique (plus de
+  dispatch booléen).
+
 ### Security
 
 * `expedition.ExpeditriceSmtp` — le **jeton OAuth** est désormais enveloppé dans

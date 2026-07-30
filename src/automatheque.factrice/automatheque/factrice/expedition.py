@@ -12,6 +12,7 @@ from typing import Optional
 
 import attr
 
+from automatheque.conception.structures import Fabrique
 from automatheque.configuration import NoOptionError, charge_configuration
 from automatheque.factrice.preparation import SEPARATEUR_DESTINATAIRES, PreparatriceSmtp
 from automatheque.schema.texte import Courriel
@@ -210,7 +211,7 @@ class ExpeditriceSmtp(Expeditrice):
 
 
 @attr.s
-class ExpeditriceEsmtp:
+class ExpeditriceEsmtp(Expeditrice):
     config: ConfigParser = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(ConfigParser)),
@@ -278,3 +279,38 @@ class ExpeditriceEsmtp:
                 process.stderr,
             )
         return process.returncode
+
+
+class FabriqueExpeditrice(Fabrique):
+    """Fabrique d':class:`Expeditrice` : choisit le **transport** par sa clé.
+
+    Patron **Fabrique** (cf. :class:`automatheque.conception.structures.Fabrique`,
+    même approche que ``FabriqueGreffon``) : au lieu d'un ``if via_esmtp: … else:
+    …`` dans l'appelant, on enregistre chaque transport comme monteur et on
+    demande l'expéditrice voulue par sa clé. Ajouter un transport = un
+    ``enregistre_monteur`` de plus, sans toucher aux appelants.
+
+    Les classes ``Expeditrice`` sont enregistrées **directement** comme monteurs
+    (elles sont ``callable`` : ``cree(cle, config=…)`` fait ``Classe(config=…)``).
+
+    .. code-block:: python
+
+        expeditrice = fabrique_expeditrice.cree_expeditrice("smtp")
+        expeditrice.expedie(courriel)
+    """
+
+    def cree_expeditrice(
+        self, transport: str, config: Optional[ConfigParser] = None
+    ) -> Expeditrice:
+        """Renvoie l'expéditrice du ``transport`` demandé (``"smtp"``/``"esmtp"``).
+
+        Enveloppe métier autour de :meth:`Fabrique.cree` (comme conseillé par la
+        classe mère). Lève ``ValueError`` si le transport est inconnu.
+        """
+        return self.cree(transport, config=config)
+
+
+#: Fabrique d'expéditrices prête à l'emploi, transports usuels enregistrés.
+fabrique_expeditrice = FabriqueExpeditrice()
+fabrique_expeditrice.enregistre_monteur("smtp", ExpeditriceSmtp)
+fabrique_expeditrice.enregistre_monteur("esmtp", ExpeditriceEsmtp)
