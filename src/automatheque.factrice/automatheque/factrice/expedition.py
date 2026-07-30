@@ -76,7 +76,7 @@ class ExpeditriceSmtp(Expeditrice):
         validator=attr.validators.optional(attr.validators.instance_of(ConfigParser)),
     )
     s: smtplib.SMTP = attr.ib(init=False)
-    preparatrice = attr.ib(init=False, default=PreparatriceSmtp)
+    preparatrice = attr.ib(init=False, factory=PreparatriceSmtp)
 
     def __attrs_post_init__(self):
         self.config: ConfigParser = (
@@ -203,7 +203,7 @@ class ExpeditriceSmtp(Expeditrice):
         res = self.s.sendmail(
             courriel.emetteur,
             courriel.destinataires,
-            self.preparatrice.prepare(courriel).as_string(),
+            self.preparatrice.construit(courriel).as_string(),
         )
         if res:
             LOGGER.warning(res)
@@ -241,7 +241,7 @@ class ExpeditriceEsmtp(Expeditrice):
                 "factrice.esmtp", "emetteur", fallback="osuser@localhost"
             )
 
-        contenu = PreparatriceSmtp().prepare(courriel).as_string()
+        contenu = PreparatriceSmtp().construit(courriel).as_string()
 
         if fichier_sortie is not None:
             fic = Path(fichier_sortie)
