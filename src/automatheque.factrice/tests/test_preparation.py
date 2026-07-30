@@ -28,7 +28,7 @@ def _courriel(**kwargs):
 def test_preparatrice_base_non_implementee():
     """La classe de base ne sait rien préparer."""
     with pytest.raises(NotImplementedError):
-        Preparatrice.prepare(_courriel())
+        Preparatrice().construit(_courriel())
 
 
 def test_prepare_construit_entetes():
@@ -36,7 +36,7 @@ def test_prepare_construit_entetes():
     c = _courriel()
     c.ajouter_destinataire("Toto <toto@tld.com>")
 
-    msg = PreparatriceSmtp.prepare(c)
+    msg = PreparatriceSmtp().construit(c)
 
     assert isinstance(msg, Message)
     assert msg["Subject"] == "Sujet du mail"
@@ -52,7 +52,7 @@ def test_prepare_corps_texte_plain():
     c = _courriel()
     c.contenu = "Bonjour"
 
-    msg = PreparatriceSmtp.prepare(c)
+    msg = PreparatriceSmtp().construit(c)
 
     parties = msg.get_payload()
     assert parties[0].get_content_type() == "text/plain"
@@ -64,7 +64,7 @@ def test_prepare_corps_html():
     c = _courriel()
     c.contenu = "<html><body>Salut</body></html>"
 
-    msg = PreparatriceSmtp.prepare(c)
+    msg = PreparatriceSmtp().construit(c)
 
     partie = msg.get_payload()[0]
     assert partie.get_content_type() == "text/html"
@@ -79,7 +79,7 @@ def test_prepare_avec_piece_jointe(tmp_path):
     c.contenu = "Voir pièce jointe"
     c.ajouter_piece_jointe(fichier)
 
-    msg = PreparatriceSmtp.prepare(c)
+    msg = PreparatriceSmtp().construit(c)
 
     parties = msg.get_payload()
     assert len(parties) == 2  # corps + 1 pièce jointe

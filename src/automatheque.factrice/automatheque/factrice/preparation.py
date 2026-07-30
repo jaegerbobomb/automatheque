@@ -4,22 +4,30 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from automatheque.conception.structures import Monteur
 from automatheque.schema.texte import Courriel
 
 SEPARATEUR_DESTINATAIRES = ", "
 
 
-class Preparatrice:
-    @classmethod
-    def prepare(cls, courriel: Courriel):
-        """Prépare le courriel pour le rendre expedit"able" ?"""
+class Preparatrice(Monteur):
+    """**Monteur** de la représentation transportable d'un :class:`Courriel`.
+
+    Patron **Monteur** (cf. :class:`automatheque.conception.structures.Monteur`) :
+    la construction du message (sujet, expéditeur, date, corps, pièces jointes —
+    beaucoup de champs optionnels, cas d'usage type du Monteur) est séparée de sa
+    représentation. Une sous-classe concrète implémente :meth:`construit` pour un
+    format donné (ici MIME multipart pour SMTP).
+    """
+
+    def construit(self, courriel: Courriel):
+        """Construit la représentation transportable du courriel."""
         raise NotImplementedError
 
 
-class PreparatriceSmtp:
-    @classmethod
-    def prepare(cls, courriel: Courriel):
-        """Construit l'objet Multipart à envoyer et le retourne."""
+class PreparatriceSmtp(Preparatrice):
+    def construit(self, courriel: Courriel):
+        """Construit l'objet Multipart (MIME) à envoyer et le retourne."""
         _msg = MIMEMultipart()
         _msg["Subject"] = courriel.sujet
         _msg["From"] = courriel.emetteur

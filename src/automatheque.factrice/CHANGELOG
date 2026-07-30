@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* `preparation.Preparatrice` est désormais un **`Monteur`** (patron **Monteur**) :
+  la construction de la représentation transportable d'un `Courriel` (message MIME)
+  passe par `PreparatriceSmtp().construit(courriel)` (auparavant la *classmethod*
+  `prepare`). `PreparatriceSmtp` **hérite** maintenant de `Preparatrice`.
 * `expedition.ExpeditriceEsmtp` **hérite désormais de `Expeditrice`** (famille de
   transports homogène derrière l'interface commune).
 * `app.envoi_mail_simple` délègue le choix du transport à la fabrique (plus de
