@@ -25,12 +25,12 @@ import logging
 import os
 import shlex
 from configparser import ConfigParser, NoOptionError, NoSectionError
-from typing import Any, Dict, List, Optional, Protocol
+from typing import List, Optional, Protocol, cast
 
 import attr
 
 from automatheque.conception.structures import MetaInstanceRegistre
-from automatheque.greffon import Greffon, signale_appel
+from automatheque.greffon import FabriqueGreffon, Greffon, signale_appel
 from automatheque.greffon.capacite import Capacite
 
 #: Chaîne affichée à la place d'un secret dans les représentations textuelles.
@@ -210,18 +210,25 @@ class GreffonSecretCommande(Greffon):
         return sortie.strip("\n") or None
 
 
-#: Cache des greffons résolveurs *par défaut* : le registre des greffons est
-#: **persistant** (toute instance y reste), donc on réutilise un unique greffon
-#: par configuration plutôt que d'en créer un à chaque appel de :func:`recup_secret`.
-_RESOLVEURS: Dict[Any, ResoudreSecret] = {}
+#: **Fabrique locale** des greffons résolveurs par défaut (patron **Fabrique**,
+#: comme ``fabrique_greffon``). Locale pour ne pas encombrer la fabrique globale
+#: des greffons applicatifs. ``active(cle, identifiant=…)`` **dédoublonne par
+#: identifiant** : on réutilise ainsi un unique greffon par source, plutôt que
+#: d'en recréer un à chaque appel de :func:`recup_secret` (le registre des
+#: greffons est persistant).
+_fabrique = FabriqueGreffon()
+_fabrique.charge_monteurs(
+    [GreffonSecretEnv, GreffonSecretConfig, GreffonSecretKeyring, GreffonSecretCommande]
+)
 
 
-def _resolveur(cle_cache: Any, fabrique) -> ResoudreSecret:
-    """Renvoie le greffon résolveur mis en cache pour ``cle_cache`` (le crée sinon)."""
-    resolveur = _RESOLVEURS.get(cle_cache)
-    if resolveur is None:
-        resolveur = _RESOLVEURS[cle_cache] = fabrique()
-    return resolveur
+def _resolveur_defaut(cle_monteur: str, **kwargs) -> Optional[ResoudreSecret]:
+    """Active (une fois, dédup par ``identifiant``) un greffon résolveur par défaut.
+
+    ``active`` renvoie ``None`` si l'activation échoue — cas défensif : ces
+    greffons ne peuvent pas échouer à la construction.
+    """
+    return cast("Optional[ResoudreSecret]", _fabrique.active(cle_monteur, **kwargs))
 
 
 def recup_secret(
@@ -242,14 +249,16 @@ def recup_secret(
         fournit la clé.
     """
     if resolveurs is None:
-        resolveurs = [_resolveur("env", GreffonSecretEnv)]
+        defauts = [_resolveur_defaut("secretenv", identifiant="secret:env")]
         if config is not None:
-            resolveurs.append(
-                _resolveur(
-                    ("config", id(config)),
-                    lambda: GreffonSecretConfig(source=config),
+            defauts.append(
+                _resolveur_defaut(
+                    "secretconfig",
+                    identifiant="secret:config:{}".format(id(config)),
+                    source=config,
                 )
             )
+        resolveurs = [r for r in defauts if r is not None]
     for resolveur in resolveurs:
         valeur = resolveur.resout_secret(cle)
         if valeur is not None:
