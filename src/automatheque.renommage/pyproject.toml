@@ -1,7 +1,7 @@
 [project]
-name = "automatheque.schema"
-version = "0.15.0"
-description = "Domaine pour des classes courantes et partagées"
+name = "automatheque.renommage"
+version = "0.19.0"
+description = "Renommage et rangement de fichiers par gabarits"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "LGPL-3.0-or-later"}
 requires-python = ">=3.9"
@@ -16,25 +16,21 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "attrs",
+    # >=0.19.0 : plancher aligné sur la version courante du cœur, dont ce
+    # paquet utilise `exceptions.AutomathequeBaseException`. Le cœur ne sert
+    # plus qu'à ça ici : la configuration est désormais *reçue* et non chargée,
+    # et `mkdir_p` — déprécié en 0.19.0 — a laissé place à `Path.mkdir`.
+    "automatheque>=0.19.0",
+    "attrs>=19.2",
 ]
 
 [project.urls]
-Home = "https://github.com/jaegerbobomb/automatheque"
+Home = "https://github.com/jaegerbobomb/automatheque/tree/main/src/automatheque.renommage/"
 Repository = "https://github.com/jaegerbobomb/automatheque.git"
 
 [project.optional-dependencies]
-# `schema.calendrier` ne réclame vobject que pour convertir depuis/vers un
-# VEVENT iCalendar, à la frontière. La structure `Evenement` elle-même est
-# pure et s'utilise sans lui : la dépendance est donc optionnelle, et schema
-# reste installable sans rien tirer de plus qu'attrs.
-calendrier = [
-    "vobject",
-]
 dev = [
     "pytest",
-    "tox",
-    "vobject",
 ]
 
 [build-system]
@@ -43,15 +39,4 @@ build-backend = "setuptools.build_meta"
 
 # Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
 [tool.setuptools.package-data]
-"automatheque.schema" = ["py.typed"]
-
-[tool.tox]
-legacy_tox_ini = """
-    [tox]
-    min_version = 4.0
-    env_list = test_env
-
-    [testenv]
-    deps = pytest
-    commands = pytest -s
-"""
+"automatheque.renommage" = ["py.typed"]

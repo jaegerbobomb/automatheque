@@ -29,7 +29,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install $(printf -- '-e %s ' src/*/)
-          pip install pytest pytest-cov
+          # vobject : extra `automatheque.schema[calendrier]`. Les extras ne
+          # s'installent pas avec `-e src/…`, et sans lui les tests de
+          # conversion iCalendar se sauteraient silencieusement
+          # (`pytest.importorskip`).
+          pip install pytest pytest-cov vobject
 
       - name: Lance les tests avec couverture
         run: pytest src --cov=automatheque --cov-report=term-missing
