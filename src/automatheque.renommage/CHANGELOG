@@ -1,0 +1,85 @@
+# Changelog — automatheque.renommage
+
+<!-- markdownlint-disable MD024 -->
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+* Première version de la distribution. Le code provient de l'**ancien**
+  `automatheque` (`automatheque/lib/renommeur.py`), d'avant le découpage en
+  paquets : `Gabarit`, `Gabarits`, `Renommable` et `Renommeur`.
+* `Gabarits.depuis_configuration(config, section)` : construit les gabarits
+  depuis un objet de type `ConfigParser`, au format historique
+  `r1 = [squelette, condition, ordre]`. Le triplet est lu avec
+  `ast.literal_eval` et non `eval` — un fichier de configuration décrit des
+  données, il n'a pas à pouvoir exécuter du code.
+* Des exceptions nommées, là où le module levait des `ValueError` avec un
+  message : `AucunGabaritApplicable`, `GabaritInapplicable`,
+  `ConditionInvalide`, `TransfertIncomplet`, sous une base commune
+  `RenommageEchec`. Les trois premières héritent aussi de `ValueError`, donc
+  un appelant qui l'attrapait continue de fonctionner.
+
+### Changed
+
+* **La configuration est reçue, plus cherchée.** `Renommeur` appelait
+  `charge_configuration()` lui-même — une localisation de service : le
+  renommage dépendait d'un fichier de configuration présent au bon endroit, et
+  n'était pas testable sans lui. Il reçoit désormais ses gabarits
+  (`Renommeur(obj, gabarits=…)`), et retombe sur `obj._gabarits_par_defaut()`
+  s'il n'en reçoit pas. C'est à l'appelant de décider d'où ils viennent.
+* `renomme()` renvoie le chemin cible, et ne le renvoie plus par un détour :
+  le paramètre `cumule_gabarits` disparaît avec `_remplir_gabarits()`, la
+  composition d'un jeu de gabarits se faisant maintenant côté appelant.
+* Les noms internes perdent leur préfixe hongrois (`v_rep_cible` →
+  `rep_cible`, `v_nomfic` → `nom_fichier`).
+* `mkdir_p` (déprécié dans le cœur en 0.19.0) laisse place à
+  `Path.mkdir(parents=True, exist_ok=True)`.
+
+### Removed
+
+* **L'écriture d'attributs étendus.** `Renommeur._renomme()` posait
+  `user.automatheque.fichier_orig` et `user.automatheque.modele.classe` dans
+  les xattr du fichier, à chaque renommage, sans que ce soit annoncé nulle
+  part. Les xattr ne survivent ni à la plupart des copies, ni aux archives, ni
+  aux transferts réseau : c'est le plus fragile des supports pour de la
+  provenance, et conserver le nom d'origine relève de l'application. Cela
+  supprime du même coup la dépendance `xattr`, sensible à la plateforme et au
+  système de fichiers.
+
+### Fixed
+
+* **Injection de code par les métadonnées des fichiers traités.** La condition
+  d'un gabarit était formatée avec les champs de l'objet — un album, une
+  ville, une description, c'est-à-dire des chaînes venues des fichiers
+  eux-mêmes — puis passée à `eval()`. Un fichier soigneusement nommé suffisait
+  donc à faire exécuter du code arbitraire par un simple rangement de photos.
+  L'évaluation se fait désormais sur l'arbre syntaxique, avec une liste
+  blanche : littéraux, `and` / `or` / `not`, comparaisons. Rien d'autre. La
+  syntaxe des conditions existantes est inchangée ; au pire une chaîne
+  malveillante rend la condition fausse.
+* `_renomme()` affectait `self.obj.filename` avec le chemin cible **avant**
+  la copie, et sans revenir en arrière si rien ne bougeait. Après un appel en
+  `debug`, ou sur une cible déjà occupée, l'objet se croyait donc à un endroit
+  où son fichier n'était pas. L'objet ne déménage plus qu'une fois la cible
+  vérifiée.
+* La comparaison de taille qui valide le transfert n'était faite que dans la
+  branche `else` d'un `try`, après un `except OSError` qui laissait passer
+  `ENOTSUP` — mais le commentaire d'origine disait bien qu'il fallait
+  « le tester ensuite ». Elle est désormais faite dans tous les cas, et un
+  écart lève `TransfertIncomplet` **en laissant l'original en place**.
+* `Gabarits.gabarits_valides()` renvoyait `False` — une valeur, depuis un
+  générateur — quand une condition levait une exception, ce qui interrompait
+  silencieusement le parcours et écartait les gabarits suivants, y compris
+  celui sans condition qui sert de filet. Une condition qui ne s'évalue pas
+  est maintenant simplement fausse.
+* `Gabarits.choisit_gabarit()` attrapait `Exception` autour d'un `next()` :
+  n'importe quelle erreur d'évaluation ressortait en « pas de gabarit ». Seul
+  l'épuisement du générateur (`StopIteration`) est désormais traduit.
+* Import `filecmp` inutilisé, hérité d'une vérification d'intégrité
+  abandonnée (« filecmp marche pas sur mon serveur O_O »).
