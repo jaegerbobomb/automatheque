@@ -51,6 +51,30 @@ DECOMPOSE_ANALYSE_ARBO_COMPLETE = "analyse_arbo_complete"
 DECOMPOSE_ANALYSE_ARBO_CONCATENE = "analyse_arbo_concatene"
 
 
+# Sentinelle : distingue « pas de résultat à renvoyer, continuer l'analyse » de
+# « résultat trouvé, même **vide** » — une capture peut valoir `''`. Les
+# confondre (un résultat vide vu comme *falsy*) faisait perdre une décomposition
+# gagnante et poursuivre l'analyse sur les répertoires parents. Cf. #116.
+_CONTINUER = object()
+
+
+def _valeurs_champs(obj):
+    """Valeurs des attributs de ``obj``, que sa classe soit à *slots* ou non.
+
+    ``obj.__dict__`` n'existe pas sur une classe attrs à *slots* (`attrs.define`,
+    le style moderne, et le défaut de la bibliothèque) : on passe alors par
+    ``attr.asdict`` (sans récursion, pour rester au niveau des attributs comme le
+    faisait ``__dict__``). Repli **explicite** sur ``[]`` plutôt qu'une
+    ``AttributeError`` avalée qui faisait échouer toute la décomposition. Cf. #116.
+    """
+    if attr.has(type(obj)):
+        return list(attr.asdict(obj, recurse=False).values())
+    try:
+        return list(vars(obj).values())
+    except TypeError:
+        return []
+
+
 def _appel_source_par_defaut(obj, valeur):
     """Source de données par défaut : celle que l'objet décomposable prépare."""
     return obj._prepare_decomposition(valeur)
@@ -96,11 +120,14 @@ class Decomposeur(object):
                        :attr:`appel_source` qui prépare les données à
                        décomposer.
         """
+        # `pos is not None` et non `if pos` : 0 est une position valide (début de
+        # chaîne), qu'un test de véracité écarterait. Et `endpos` fourni seul est
+        # respecté au lieu d'être silencieusement jeté.
         kwargs = {}
-        if pos and endpos:
-            kwargs = {"pos": pos, "endpos": endpos}
-        elif pos:
-            kwargs = {"pos": pos}
+        if pos is not None:
+            kwargs["pos"] = pos
+        if endpos is not None:
+            kwargs["endpos"] = endpos
 
         return self.compile.findall(self.appel_source(obj, valeur), **kwargs)
 
@@ -255,11 +282,11 @@ class Identificateur(object):
         """Joue tous les décomposeurs sur la valeur donnée.
 
         :return: tuple `(decomposition_reussie, sortir)` où `sortir` porte le
-                 résultat à renvoyer immédiatement, ou False s'il faut
-                 continuer l'analyse.
+                 résultat à renvoyer immédiatement (y compris une chaîne vide),
+                 ou la sentinelle `_CONTINUER` s'il faut poursuivre l'analyse.
         """
         decomposition_reussie = False
-        sortir = False
+        sortir = _CONTINUER
         for decomposeur in self.decomposeurs:
             LOGGER.debug(
                 "exec_decomposition : {} // {}".format(
@@ -340,7 +367,7 @@ class Identificateur(object):
         """
         modificateur = 2 if poids is None else poids
 
-        nb_champs_non_vides = 2 * len([k for k, v in obj.__dict__.items() if v])
+        nb_champs_non_vides = 2 * len([v for v in _valeurs_champs(obj) if v])
 
         longueur_relative = len(pickle.dumps(obj)) / len(pickle.dumps(self.obj_temoin))
         return longueur_relative + modificateur + nb_champs_non_vides
@@ -375,29 +402,40 @@ class Identificateur(object):
 
         # Première décomposition :
         succes, sortir = self._exec_decomposition(options_resultat=options_resultat)
-        if sortir:
+        if sortir is not _CONTINUER:
             return sortir
 
         # TODO par défaut on prend self.obj.filename et basename comme valeurs
         # on pourrait en prendre d'autres et/ou le rendre paramétrable
+        #
+        # `remonte_arborescence` lève `ValueError` si le fichier n'est pas sous
+        # `racine` : c'est un échec d'**analyse** (cette racine ne s'applique
+        # pas), pas une panne. On le traduit donc en « rien trouvé par cette
+        # option » plutôt que de laisser l'exception interrompre la boucle. #116
         if DECOMPOSE_ANALYSE_ARBO_COMPLETE in options_analyse:
-            for parent in remonte_arborescence(self.obj.filename, racine):
-                succes_, sortir = self._exec_decomposition(
-                    options_resultat=options_resultat, valeur=parent.name
-                )
-                succes = succes if succes else succes_
-                if sortir:
-                    return sortir
+            try:
+                for parent in remonte_arborescence(self.obj.filename, racine):
+                    succes_, sortir = self._exec_decomposition(
+                        options_resultat=options_resultat, valeur=parent.name
+                    )
+                    succes = succes if succes else succes_
+                    if sortir is not _CONTINUER:
+                        return sortir
+            except ValueError:
+                LOGGER.debug("racine %r ne contient pas le fichier", racine)
         if DECOMPOSE_ANALYSE_ARBO_CONCATENE in options_analyse:
             valeur_orig = self.obj.basename
-            for parent in remonte_arborescence(self.obj.filename, racine):
-                valeur_orig = "{} {}".format(parent.name, valeur_orig)
-                succes_, sortir = self._exec_decomposition(
-                    options_resultat=options_resultat, valeur=valeur_orig
-                )
-                succes = succes if succes else succes_
-                if sortir:
-                    return sortir
+            try:
+                for parent in remonte_arborescence(self.obj.filename, racine):
+                    valeur_orig = "{} {}".format(parent.name, valeur_orig)
+                    succes_, sortir = self._exec_decomposition(
+                        options_resultat=options_resultat, valeur=valeur_orig
+                    )
+                    succes = succes if succes else succes_
+                    if sortir is not _CONTINUER:
+                        return sortir
+            except ValueError:
+                LOGGER.debug("racine %r ne contient pas le fichier", racine)
         # TODO comparer les infos trouvées et ne garder que la meilleure
         # Pour l'instant on fait comme filebot : on s'arrête à la première.
 

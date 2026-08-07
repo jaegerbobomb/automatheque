@@ -22,6 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **`MAX_INFOS` inutilisable sur une classe `attrs` à *slots*** (`attrs.define`,
+  le style moderne) : le score lisait `obj.__dict__`, absent des slots ;
+  l'`AttributeError` était avalée et ressortait en `DecompositionEchecTousPatrons`
+  alors que le patron matchait. On passe par `attr.asdict` (repli explicite).
+  Cf. #116.
+* **Le `ValueError` de `remonte_arborescence` traversait `auto_decompose`** :
+  une racine qui ne contient pas le fichier interrompait la boucle dès la
+  première combinaison au lieu d'être un échec d'analyse. Attrapé et traduit.
+  Cf. #116.
+* **Une capture vide faisait perdre le résultat** : `sortir` servait de résultat
+  *et* de drapeau ; une capture `''` (objet bien rempli) donnait un retour `None`
+  et l'analyse continuait sur les répertoires parents, écrasant la décomposition.
+  Drapeau et résultat sont désormais distincts (sentinelle). Cf. #116.
+* `Decomposeur._decomposer` : `pos=0` (position de début, *falsy*) n'était plus
+  ignoré, et un `endpos` fourni seul n'est plus silencieusement jeté. Cf. #116.
 * `Decomposeur` : passer un `appel_source` explicite levait
   systématiquement un `UnboundLocalError`. `__attrs_post_init__` définissait la
   fonction par défaut dans une branche `if`, puis l'assignait **hors** de la
