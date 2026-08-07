@@ -11,9 +11,29 @@ on:
       - "[0-9]*"
 
 jobs:
+  matrice:
+    # La liste des paquets est **dérivée de `src/*`**, comme
+    # `[tool.monas] packages` à la racine. Elle était auparavant codée en dur
+    # dans `matrix.package` : une distribution ajoutée à `src/` n'était jamais
+    # publiée, en silence, sans message d'erreur. Cf. #106.
+    name: Recense les paquets de src/
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.recense.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Liste les répertoires de src/
+        id: recense
+        run: |
+          PACKAGES=$(ls -d src/*/ | xargs -n1 basename | jq -R . | jq -sc .)
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+          echo "::notice::paquets recensés : $PACKAGES"
+
   publish:
     name: Publie ${{ matrix.package }} sur PyPI
     runs-on: ubuntu-latest
+    needs: matrice
     # Trusted Publishing (OIDC) : aucun secret, GitHub s'authentifie auprès de
     # PyPI. Chaque projet PyPI doit déclarer un « trusted publisher » pointant
     # vers ce dépôt et ce workflow (release.yml).
@@ -23,10 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - automatheque
-          - automatheque.schema
-          - automatheque.factrice
+        package: ${{ fromJSON(needs.matrice.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
 
