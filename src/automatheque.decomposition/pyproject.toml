@@ -1,0 +1,43 @@
+[project]
+name = "automatheque.decomposition"
+version = "0.19.0"
+description = "Décomposition de chaînes et d'arborescences par patrons"
+authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
+license = {text = "LGPL-3.0-or-later"}
+requires-python = ">=3.9"
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+    # >=0.19.0 : plancher aligné sur la version courante du cœur, dont ce
+    # paquet utilise `log.recup_logger`, `util.repertoire.remonte_arborescence`
+    # et `exceptions.AutomathequeBaseException`. Aucune de ces API n'est
+    # récente, mais rien ne justifie d'annoncer un plancher plus bas que ce que
+    # la CI éprouve réellement.
+    "automatheque>=0.19.0",
+    "attrs>=19.2",
+]
+
+[project.urls]
+Home = "https://github.com/jaegerbobomb/automatheque/tree/main/src/automatheque.decomposition/"
+Repository = "https://github.com/jaegerbobomb/automatheque.git"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
+[tool.setuptools.package-data]
+"automatheque.decomposition" = ["py.typed"]
