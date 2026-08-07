@@ -1,0 +1,54 @@
+# Changelog — automatheque.decomposition
+
+<!-- markdownlint-disable MD024 -->
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+* Première version de la distribution. Le code provient de l'**ancien**
+  `automatheque` (`automatheque/lib/decomposeur.py`), d'avant le découpage en
+  paquets : `Decomposeur`, `Decomposeurs`, `Decomposable`, `Identificateur` et
+  les constantes `DECOMPOSE_*`. Cf. #43.
+* `exceptions` : `DecompositionEchecPatron` et `DecompositionEchecTousPatrons`,
+  qui vivaient dans les exceptions du cœur alors qu'elles ne concernent que la
+  décomposition. Elles héritent toujours de `AutomathequeBaseException`, donc
+  un `except` global continue de les attraper.
+
+### Fixed
+
+* `Decomposeur` : passer un `appel_source` explicite levait
+  systématiquement un `UnboundLocalError`. `__attrs_post_init__` définissait la
+  fonction par défaut dans une branche `if`, puis l'assignait **hors** de la
+  branche : quand l'appelant fournissait la sienne, le nom n'était pas lié.
+  Seul le cas par défaut fonctionnait donc.
+* `Identificateur` : la résolution des décomposeurs par défaut attrapait
+  `Exception` et la retraduisait en `ArgumentManquant`, ce qui masquait toute
+  erreur réelle du `_decomposeurs_par_defaut()` de l'appelant. Seuls
+  `AttributeError` et `NotImplementedError` sont désormais traduits.
+* `Identificateur` : un chemin d'import de décomposeurs introuvable donnait un
+  `TypeError: 'NoneType' object is not callable` (`pydoc.locate` renvoie
+  `None`) au lieu d'`ArgumentManquant`.
+* `Identificateur.identifie()` : `options_analyse` reçue sous forme de chaîne
+  était testée par `in`, soit une recherche de **sous-chaîne** et non une
+  appartenance. Les constantes livrées ne se contiennent pas l'une l'autre —
+  le résultat était donc correct par chance. La valeur est désormais
+  normalisée, et une collection de constantes est acceptée explicitement.
+
+### Removed
+
+* `Decomposeur.decomposer()` : méthode morte, dont le corps se réduisait à
+  `return None` sous une docstring décrivant ce qu'elle aurait dû faire.
+
+### Changed
+
+* Le calcul de score de `DECOMPOSE_RESULTAT_MAX_INFOS` passe d'une fonction
+  imbriquée à la méthode `Identificateur._score_max_infos()`. Le score est
+  inchangé — y compris son « bonus de longueur » calculé mais jamais ajouté à
+  la somme (variable morte relevée par ruff, documentée sur place : l'intégrer
+  changerait le classement des décompositions et relève d'un arbitrage à part).
