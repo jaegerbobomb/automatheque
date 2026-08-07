@@ -21,7 +21,10 @@ import attr
 class BaseTags:
     """Les étiquettes d'une image, sans rien savoir de leur stockage.
 
-    :param source: chemin du fichier décrit, quand il y en a un
+    Les étiquettes ne **portent pas** le chemin du fichier décrit : ce serait
+    une troisième vérité (après `Media.source`), qui divergerait après un
+    renommage. La source est **reçue** au moment du chargement — `charge(source)`
+    — et jamais mémorisée ici.
     """
 
     # Extensions reconnues, à déclarer par les familles qui spécialisent.
@@ -56,10 +59,6 @@ class BaseTags:
     # chemin, dans un sens comme dans l'autre.
     TIMEZONE_SEPARATEUR = "%"
 
-    # Nom du fichier décrit. Une chaîne, rien de plus : la classe ne l'ouvre
-    # jamais.
-    source: Optional[str] = attr.ib(default=None, repr=False)
-
     # Quoi, et de qui :
     album: Optional[str] = attr.ib(default=None, kw_only=True)
     evenement: Optional[object] = attr.ib(default=None, kw_only=True)
@@ -91,11 +90,16 @@ class BaseTags:
     fabriquant_appareil: Optional[str] = attr.ib(default=None, kw_only=True)
     modele_appareil: Optional[str] = attr.ib(default=None, kw_only=True)
 
-    def charge(self) -> "BaseTags":
-        """Remplit les étiquettes depuis la source. À surcharger.
+    def charge(self, source: Optional[str] = None) -> "BaseTags":
+        """Remplit les étiquettes depuis ``source``. À surcharger.
+
+        La source (le chemin du fichier décrit) est **reçue** à l'appel — elle
+        n'est pas mémorisée par la classe, pour ne pas devenir une vérité qui se
+        périme après un renommage. Un adaptateur — exiftool, un fichier
+        « sidecar », une base — surcharge cette méthode, lit/écrit à côté de
+        ``source``, et renvoie ``self``.
 
         Ici, il n'y a rien à charger : la classe ne sait pas d'où viendraient
-        les valeurs. Un adaptateur — exiftool, un fichier « sidecar », une
-        base — surcharge cette méthode et renvoie `self`.
+        les valeurs. ``source`` est donc ignorée.
         """
         return self

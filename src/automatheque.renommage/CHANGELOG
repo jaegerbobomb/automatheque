@@ -40,6 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `rep_cible`, `v_nomfic` → `nom_fichier`).
 * `mkdir_p` (déprécié dans le cœur en 0.19.0) laisse place à
   `Path.mkdir(parents=True, exist_ok=True)`.
+* **`Renommable` attend un attribut `source`, plus son propre `filename`.**
+  L'ancien `filename` (`attr.ib(default="")`) faisait doublon avec `Media.source`
+  et **divergeait** après un rangement (seul `filename` était mis à jour). Le
+  renommage lit et **écrit** désormais dans `source` — un seul porteur de vérité,
+  dont dérivent nom de base, extension, étiquettes rechargées. C'est une
+  convention (nom d'attribut attendu), sans dépendance vers `schema`, comme le
+  contrat de `decomposition`. Cf. #117. *(Rupture — mais la distribution n'est
+  pas encore publiée.)*
+* Un `Renommable` **sans `source`** est refusé **explicitement** (`ValueError`)
+  au lieu d'un `shutil.copy(None, …)` obscur au fond de la pile. Cf. #117.
 
 ### Removed
 

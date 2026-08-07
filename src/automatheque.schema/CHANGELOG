@@ -102,6 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   décomposition — autant de politiques produit, pas de vocabulaire.
 * `Photo.basename` devient une propriété dérivée de `source`, au lieu d'un
   attribut rempli à l'initialisation.
+* **`BaseTags` ne porte plus de `source`.** C'était une troisième copie du
+  chemin (après `Media.source`), figée à la construction, qui restait en arrière
+  après un renommage — un adaptateur « sidecar » aurait écrit à côté de l'ancien
+  emplacement. La source est désormais **reçue** au chargement :
+  `charge(source)` (au lieu de `charge()`), et `Photo.charge_tags()` lui passe
+  la source **courante** de la photo. Cf. #117. *(Rupture — distribution non
+  encore publiée.)*
 
 ### Removed
 

@@ -220,15 +220,18 @@ class Gabarits:
 class Renommable:
     """Classe à hériter/surcharger pour être facilement renommable.
 
-    L'objet doit exposer `filename`, le chemin du fichier à déplacer, et
-    surcharger les deux méthodes ci-dessous.
+    L'objet doit **exposer un attribut `source`** — le chemin du fichier à
+    déplacer — et surcharger les deux méthodes ci-dessous. `Renommable` ne
+    déclare pas `source` lui-même : c'est le consommateur qui le fournit (par
+    exemple `automatheque.schema.media.Media`, dont c'est déjà l'attribut). Le
+    renommage lit et **écrit** dans `source` : après un rangement, `source`
+    pointe la cible, et tout ce qui en dérive (nom de base, extension…) suit.
 
-    TODO : `filename` fait doublon avec `source` de `automatheque.schema.media`
-    quand les deux sont mêlées par sous-classage — les deux noms désignent le
-    même fichier et peuvent diverger après un renommage. À arbitrer.
+    C'est une **convention** — un nom d'attribut attendu — sans dépendance vers
+    `schema`, comme le contrat de `automatheque.decomposition`. On évite ainsi
+    deux vérités pour un même fichier (l'ancien `filename` propre à `Renommable`
+    divergeait de `source` après un renommage).
     """
-
-    filename: str = attr.ib(default="")  # TODO nom_fichier au lieu de filename
 
     @classmethod
     def _gabarits_par_defaut(cls) -> Gabarits:
@@ -305,7 +308,16 @@ class Renommeur:
         :returns: le chemin cible, qu'il ait été atteint ou non
         """
         fichier_cible = _cible_contenue(rep_cible, nom_fichier)
-        fichier_orig = self.obj.filename
+        fichier_orig = self.obj.source
+        if not fichier_orig:
+            # Refus explicite : sans `source`, il n'y a rien à déplacer. Mieux
+            # vaut le dire ici qu'un `shutil.copy(None, …)` obscur au fond de la
+            # pile (l'ancien défaut `filename=""` donnait le même genre d'échec
+            # tardif). Cf. #117.
+            raise ValueError(
+                "Renommable sans `source` : rien à déplacer. L'objet doit "
+                "exposer le chemin du fichier dans son attribut `source`."
+            )
 
         if debug or (os.path.exists(fichier_cible) and not force):
             LOGGER.warning(
@@ -347,7 +359,9 @@ class Renommeur:
             raise TransfertIncomplet(fichier_orig, fichier_cible)
 
         # La cible est bonne : c'est seulement maintenant que l'objet déménage.
-        self.obj.filename = fichier_cible
+        # On écrit dans `source` — le seul porteur de vérité du chemin : nom de
+        # base, extension, étiquettes rechargées… tout en dérive et suit.
+        self.obj.source = fichier_cible
         if not copier:
             os.remove(fichier_orig)
         return fichier_cible
