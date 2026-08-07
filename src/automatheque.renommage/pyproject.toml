@@ -1,0 +1,42 @@
+[project]
+name = "automatheque.renommage"
+version = "0.19.0"
+description = "Renommage et rangement de fichiers par gabarits"
+authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
+license = {text = "LGPL-3.0-or-later"}
+requires-python = ">=3.9"
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+    # >=0.19.0 : plancher aligné sur la version courante du cœur, dont ce
+    # paquet utilise `exceptions.AutomathequeBaseException`. Le cœur ne sert
+    # plus qu'à ça ici : la configuration est désormais *reçue* et non chargée,
+    # et `mkdir_p` — déprécié en 0.19.0 — a laissé place à `Path.mkdir`.
+    "automatheque>=0.19.0",
+    "attrs>=19.2",
+]
+
+[project.urls]
+Home = "https://github.com/jaegerbobomb/automatheque/tree/main/src/automatheque.renommage/"
+Repository = "https://github.com/jaegerbobomb/automatheque.git"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
+[tool.setuptools.package-data]
+"automatheque.renommage" = ["py.typed"]
