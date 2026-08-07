@@ -99,7 +99,25 @@ d'un fichier de configuration présent au bon endroit, et intestable sans lui.
 Le déplacement est une copie, suivie d'une vérification de taille, suivie de
 la suppression de l'original. `shutil.move` seul ne dirait pas si la copie
 s'est mal passée d'un système de fichiers à l'autre ; ici, une cible qui ne
-correspond pas lève `TransfertIncomplet` **et laisse l'original en place**.
+correspond pas lève `TransfertIncomplet`, **efface la cible douteuse** et
+**laisse l'original en place**.
+
+## Les champs ne peuvent pas sortir du répertoire cible
+
+Les champs d'un squelette viennent des métadonnées des fichiers traités — un
+album, une ville, un titre. Substitués tels quels, ils sortiraient du
+répertoire demandé : `os.path.join` jette son premier argument dès que le
+second est absolu, et `..` remonte d'un niveau.
+
+Chaque champ **chaîne** est donc assaini avant substitution — séparateurs
+neutralisés, segments `.` et `..` remplacés. Les valeurs non-chaînes passent
+intactes, sans quoi `{date:%Y}` cesserait de fonctionner. Les séparateurs du
+**squelette**, eux, sont conservés : c'est par eux que tu décris ton
+arborescence.
+
+En dernier recours, le chemin final est vérifié comme contenu dans le
+répertoire cible ; sinon `CibleHorsRepertoire` est levée sans rien déplacer.
+Un squelette **absolu** tombe donc sous cette garde.
 
 ## Requirement
 

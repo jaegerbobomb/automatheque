@@ -13,6 +13,7 @@ import attr
 import pytest
 from automatheque.renommage import (
     AucunGabaritApplicable,
+    CibleHorsRepertoire,
     ConditionInvalide,
     Gabarit,
     GabaritInapplicable,
@@ -339,3 +340,115 @@ def test_aucun_attribut_etendu_n_est_ecrit(photo, tmp_path):
     """Le renommage n'écrit plus de xattr : la provenance va ailleurs."""
     cible = photo.renomme(str(tmp_path / "cible"))
     assert not os.listxattr(cible)
+
+
+#
+# Chemins : les champs viennent des métadonnées des fichiers traités
+#
+
+
+def test_champ_absolu_ne_sort_pas_du_repertoire_cible(photo, tmp_path):
+    """Régression : `os.path.join` jette son 1er argument si le 2e est absolu.
+
+    Un album valant `/tmp/ailleurs` déplaçait le fichier hors de `rep_cible`,
+    puis supprimait l'original.
+    """
+    ailleurs = str(tmp_path / "AILLEURS")
+    photo.album = ailleurs
+    cible = photo.renomme(
+        str(tmp_path / "range"), gabarits=Gabarits([Gabarit(squelette="{album}/{nom}")])
+    )
+
+    assert cible.startswith(str(tmp_path / "range"))
+    assert not os.path.exists(ailleurs)
+    assert os.path.exists(cible)
+
+
+def test_champ_avec_traversee_ne_remonte_pas(photo, tmp_path):
+    photo.album = "../../EVADE"
+    cible = photo.renomme(
+        str(tmp_path / "range"), gabarits=Gabarits([Gabarit(squelette="{album}/{nom}")])
+    )
+
+    assert os.path.normpath(cible).startswith(str(tmp_path / "range"))
+    assert "EVADE" in os.path.basename(os.path.dirname(cible))
+
+
+def test_champ_point_point_seul_est_neutralise(photo, tmp_path):
+    photo.album = ".."
+    cible = photo.renomme(
+        str(tmp_path / "range"), gabarits=Gabarits([Gabarit(squelette="{album}/{nom}")])
+    )
+    assert os.path.normpath(cible).startswith(str(tmp_path / "range"))
+
+
+def test_les_separateurs_du_squelette_sont_conserves(photo, tmp_path):
+    """L'assainissement porte sur les champs, pas sur le gabarit lui-même."""
+    cible = photo.renomme(str(tmp_path / "range"))
+    assert cible == str(tmp_path / "range" / "2013" / "Japon" / "DSC_0001.jpg")
+
+
+def test_les_champs_non_chaines_passent_intacts(photo, tmp_path):
+    """Sinon les spécificateurs de format (`{date:%Y}`) cesseraient de marcher."""
+    from datetime import datetime
+
+    @attr.s
+    class PhotoDatee(Photo):
+        prise = attr.ib(default=datetime(2013, 3, 17), kw_only=True)
+
+        def _liste_champs_dispo(self):
+            champs = super()._liste_champs_dispo()
+            champs["prise"] = self.prise
+            return champs
+
+    p = PhotoDatee(filename=photo.filename)
+    cible = p.renomme(
+        str(tmp_path / "range"),
+        gabarits=Gabarits([Gabarit(squelette="{prise:%Y}/{nom}")]),
+    )
+    assert os.path.dirname(cible).endswith("2013")
+
+
+def test_squelette_absolu_est_refuse(photo, tmp_path):
+    """Garde-fou de dernier recours, après l'assainissement des champs."""
+    gabarits = Gabarits([Gabarit(squelette="/etc/{nom}")])
+    with pytest.raises(CibleHorsRepertoire):
+        photo.renomme(str(tmp_path / "range"), gabarits=gabarits)
+    assert os.path.exists(photo.filename)
+
+
+#
+# Transfert incomplet : la cible ne doit pas survivre
+#
+
+
+def test_transfert_incomplet_efface_la_cible(photo, tmp_path, monkeypatch):
+    monkeypatch.setattr("shutil.copy", lambda s, d: open(d, "wb").write(b"TRONQ"))
+
+    with pytest.raises(TransfertIncomplet):
+        photo.renomme(str(tmp_path / "cible"))
+
+    corrompu = tmp_path / "cible" / "2013" / "Japon" / "DSC_0001.jpg"
+    assert not corrompu.exists()
+    assert os.path.exists(photo.filename)
+
+
+def test_apres_transfert_incomplet_le_second_essai_reussit(
+    photo, tmp_path, monkeypatch
+):
+    """Régression : la cible tronquée faisait passer le 2e essai pour un succès."""
+    monkeypatch.setattr("shutil.copy", lambda s, d: open(d, "wb").write(b"TRONQ"))
+    with pytest.raises(TransfertIncomplet):
+        photo.renomme(str(tmp_path / "cible"))
+
+    monkeypatch.undo()  # la copie remarche
+    cible = photo.renomme(str(tmp_path / "cible"))
+    assert open(cible, "rb").read() == b"des octets de photo"
+
+
+def test_copie_disparue_leve_transfert_incomplet(photo, tmp_path, monkeypatch):
+    """Une copie qui n'a rien écrit ne doit pas donner un FileNotFoundError."""
+    monkeypatch.setattr("shutil.copy", lambda s, d: None)
+    with pytest.raises(TransfertIncomplet):
+        photo.renomme(str(tmp_path / "cible"))
+    assert os.path.exists(photo.filename)
