@@ -13,11 +13,14 @@ Le paquet est découpé par famille de média, comme l'était l'ancien `modele/`
 
 | Espace | Contenu |
 |---|---|
+| `schema.media` | `Media` — le socle commun aux familles |
 | `schema.texte` | `Courriel` |
+| `schema.image` | `BaseTags` (les étiquettes d'une image), `Photo` |
 | `schema.geolocalisation` | `Emplacement` — une position GPS et/ou une adresse |
 | `schema.calendrier` | `Evenement` — ce qui a eu lieu, quand, et où |
 
-`schema.video` et `schema.audio` viendront s'y ajouter.
+`schema.video` et `schema.audio` viendront s'y ajouter. `schema.media` est
+réservé à ce qui est **commun** aux familles.
 
 ## Ce qui entre ici, et ce qui n'y entre pas
 
@@ -48,24 +51,43 @@ Classe "StockageMedium" de base = classe avec un nom_fichier éventuel pour la s
 L'idée c'est d'avoir un autre module automatheque pour gérer les xattrs , les extensions
 et la sauvegarde en fichier par ex., deviner le type de media (même pour meta données ou étiquettes, qui peuvent être enregistrées dans un fichier) ...
 
-## TODO
+## Sous-classage : ajouter des comportements
 
-donner des exemples pour l'héritage de renommable etc. qu'on ne va plus intégrer ici
+Les *comportements* — se renommer, se décomposer — n'entrent pas ici : ce sont
+des grammaires d'application, pas du vocabulaire, et les cuire dans les classes
+de schéma reviendrait à imposer à tous les consommateurs l'arborescence de
+rangement d'un seul.
 
-=> encourager le sous classage :
+La classe utilisable se compose donc **chez l'appelant**, par sous-classage :
 
 ```py
-class ChansonRenommable(Chanson, Renommable):
-    def liste_champs():
-        pass
+from automatheque.decomposition import Decomposable
+from automatheque.renommage import Gabarit, Gabarits, Renommable
+from automatheque.schema.image import Photo
 
-    def gabarits():
-        pass
+
+class PhotoRangeable(Photo, Renommable, Decomposable):
+    @classmethod
+    def _gabarits_par_defaut(cls):
+        """L'arborescence que *cette* application veut."""
+        gabarits = Gabarits()
+        gabarits.append(
+            Gabarit(squelette="{date:%Y}/{date:%Y-%m-%d} {album}/{nom_fichier}")
+        )
+        return gabarits
+
+    def _liste_champs_dispo(self):
+        """La projection des étiquettes vers les champs des gabarits."""
+        return {
+            "date": self.tags.date_prise_de_vue,
+            "album": self.tags.album or "",
+            "nom_fichier": self.basename,
+        }
 ```
 
 ## Requirement
 
-Python >=3.8
+Python >=3.9
 
 ## Installation
 
@@ -75,4 +97,4 @@ pip install automatheque.schema
 
 ## License
 
-GPLv3.0
+LGPLv3.0 ou ultérieure

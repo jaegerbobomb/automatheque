@@ -28,9 +28,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Evenement.date_fin_abregee` : les composantes de la date de fin qui
   diffèrent de la date de début (ex. `[4, 12]` pour un événement du 2018-03-14
   au 2018-04-12), pour abréger l'affichage d'une période.
+* `schema.media` : classe **`Media`**, socle commun des familles `image`,
+  `video`, `audio` et `texte`. Elle porte le chemin du fichier, son empreinte,
+  et ce qu'on peut dire de lui **sans l'ouvrir** — extension, type MIME
+  deviné, appartenance à la famille. Même origine, nettoyée. Cf. #42.
+* `schema.image` : **`BaseTags`** (le vocabulaire des étiquettes d'une image —
+  20 attributs : quoi, quand, où, avec quel appareil) et **`Photo`** réduite au
+  vocabulaire (extensions reconnues, étiquettes, validité).
 
 ### Fixed
 
+* `Media` : `is_valid()` et `get_mimetype()` lisaient `self.filename`, un
+  attribut que la classe **ne définit pas** — elle a `source`. Les deux
+  méthodes levaient donc systématiquement `AttributeError` sur un `Media` ;
+  seules les sous-classes qui apportaient un `filename` par ailleurs (via
+  `Renommable`) fonctionnaient.
+* `Media.__attr_post_init__` : le point d'entrée d'attrs s'écrit
+  `__attrs_post_init__` (avec un `s`). La méthode n'a jamais été appelée. Son
+  corps se réduisait à `raz_cache()`, dont le corps était entièrement commenté
+  — les deux sont retirées.
+* `BaseTags` : chaque étiquette était déclarée **deux fois**, en `attr.ib(
+  init=False)` puis en `@property` renvoyant `self._album` — 22 redéfinitions
+  (ruff F811). Le motif n'existait que pour forcer le passage par le
+  `__getattr__` de l'adaptateur exiftool ; il masquait les valeurs dans le
+  `repr` (d'où un `_pprint()` maison) et empêchait toute construction directe.
+  Les étiquettes sont désormais de simples attributs `attrs` ; un adaptateur
+  les surcharge en sous-classe, ce qui marche aussi bien sans le détour.
 * `Emplacement.decimal_en_dms()` : la conversion en degrés / minutes /
   secondes ne pouvait pas fonctionner — les deux `divmod` avaient disparu, il
   restait `minutes, seconds = (decimal_abs * 3600 / 60)`, soit le dépaquetage
@@ -57,11 +80,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Migration : `Evenement(etag=…, url=…, vevent=…)` devient
   `Evenement.depuis_vevent(vevent, etag=…, url=…)`, et `ev.vevent.serialize()`
   devient `ev.vers_vevent().serialize()`.
+* `Media` : `is_valid()` devient `valide()` — comme `Emplacement.valide()` — et
+  `get_mimetype()` devient la propriété `mimetype`. C'étaient les derniers noms
+  anglais de la classe.
+* `Photo` : plus d'héritage de `Renommable` ni de `Decomposable`. Le README de
+  `schema` le demandait explicitement (« qu'on ne va plus intégrer ici => encourager
+  le sous-classage ») : ces comportements s'ajoutent côté application, par
+  `class PhotoRangeable(Photo, Renommable, Decomposable)`. Restent donc chez
+  l'application les gabarits de renommage par défaut, la projection des
+  étiquettes vers les champs de gabarit, et les identificateurs de
+  décomposition — autant de politiques produit, pas de vocabulaire.
+* `Photo.basename` devient une propriété dérivée de `source`, au lieu d'un
+  attribut rempli à l'initialisation.
 
 ### Removed
 
 * `Emplacement.depuis_decimal()` : fabrique morte, qui ignorait son argument
   et renvoyait un `Emplacement()` vide sous une docstring « TODO ».
+* `Media.get_metadata()` : n'avait jamais pu s'exécuter. Il appelait
+  `self.tags.coordonnees("latitude")` puis `self.tags.get_coordinate("longitude")`
+  — deux API différentes, dont une n'existe pas — ainsi que
+  `self.tags.get_original_name()`, absente de `BaseTags`, et lisait un cache
+  `self.metadata` jamais initialisé. Le reprendre aurait été reprendre un bug.
+* `Photo.is_valid()` ne s'appuie plus sur `imghdr`, retiré de Python 3.13, et
+  ne lit donc plus le fichier : `valide()` contrôle l'extension. Reconnaître un
+  contenu réel relève d'un adaptateur.
+* `BaseTags._pprint()` : contournement du `repr` masqué par le motif
+  `attr.ib` + `@property` (« fonction sale en attendant que attr puisse
+  utiliser des callables »). Le motif ayant disparu, le `repr` généré par
+  `attrs` montre de nouveau les valeurs.
 * Les fonctions de conversion d'un export **Google Calendar** en vobject
   (`json_en_vobject`, `decompose_un`, `decompose_date`) ne sont pas reprises :
   ce sont des adaptateurs vers une source précise, pas du vocabulaire. Elles
