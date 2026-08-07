@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **Parsing des gabarits en configuration trop permissif.** `except (ValueError,
+  SyntaxError)` ne couvrait pas le dépaquetage : `r1 = 5` donnait un `TypeError`
+  obscur, et surtout `r1 = 'abc'` était **accepté** (dépaqueté en
+  `('a', 'b', 'c')`) pour ne casser que bien plus loin, sans rapport. On exige
+  désormais explicitement une séquence (hors chaîne) de trois éléments. Cf. #116.
 * **Évasion du répertoire cible par les métadonnées des fichiers traités.**
   Même canal non fiable que l'injection ci-dessous, laissé ouvert côté chemin :
   les champs d'un squelette viennent des métadonnées, et

@@ -158,14 +158,25 @@ class Gabarits:
         gabarits = cls()
         for option in config.options(section):
             brut = config.get(section, option)
+            erreur = "[{}] {} : attendu [squelette, condition, ordre], lu {!r}".format(
+                section, option, brut
+            )
             try:
-                squelette, condition, ordre = ast.literal_eval(brut)
+                triplet = ast.literal_eval(brut)
             except (ValueError, SyntaxError) as exc:
-                raise ValueError(
-                    "[{}] {} : attendu [squelette, condition, ordre], lu {!r}".format(
-                        section, option, brut
-                    )
-                ) from exc
+                raise ValueError(erreur) from exc
+            # `literal_eval` accepte bien plus qu'un triplet : `5` (dépaquetage
+            # `TypeError` obscur plus loin) ou surtout `'abc'` — une chaîne de 3
+            # caractères se dépaquette en `('a', 'b', 'c')` et **passe**, pour ne
+            # casser que dans un `sorted(key=…)` sans rapport. On exige donc
+            # explicitement une séquence (hors chaîne) de trois éléments.
+            if isinstance(triplet, (str, bytes)) or not isinstance(
+                triplet, (list, tuple)
+            ):
+                raise ValueError(erreur)
+            if len(triplet) != 3:
+                raise ValueError(erreur)
+            squelette, condition, ordre = triplet
             gabarits.append(
                 Gabarit(squelette=squelette, condition=condition, ordre=ordre)
             )
