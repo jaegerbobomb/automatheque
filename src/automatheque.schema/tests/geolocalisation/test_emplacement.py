@@ -66,6 +66,12 @@ def test_dms_en_chaine():
     assert Emplacement.dms_en_chaine(2.5, "longitude").endswith(" E")
 
 
+def test_dms_en_chaine_produit_le_format_exiftool_exact():
+    """#116-4 : degrés/minutes entiers, secondes arrondies — avant on obtenait
+    « 38.0 deg 14.0' 27.8199…" »."""
+    assert Emplacement.dms_en_chaine(-38.2410611, "latitude") == "38 deg 14' 27.82\" S"
+
+
 def test_dms_en_chaine_refuse_un_axe_inconnu():
     with pytest.raises(ValueError):
         Emplacement.dms_en_chaine(2.5, "altitude")

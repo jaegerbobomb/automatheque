@@ -101,7 +101,12 @@ class Emplacement:
             direction = "E" if float(decimal) >= 0 else "W"
         else:
             raise ValueError("axe doit valoir 'latitude' ou 'longitude'")
-        return "{} deg {}' {}\" {}".format(degres, minutes, secondes, direction)
+        # `decimal_en_dms` rend des flottants (divmod sur flottants) : degrés et
+        # minutes sont entiers par nature, les secondes s'arrondissent — sinon on
+        # obtient « 38.0 deg 14.0' 27.8199…" » au lieu du format exiftool.
+        return "{} deg {}' {}\" {}".format(
+            int(degres), int(minutes), round(secondes, 2), direction
+        )
 
     def distance(self, lat, lon) -> float:
         """Renvoie une distance approximative, en mètres, avec une autre paire.

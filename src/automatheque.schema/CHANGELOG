@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **`Media` explosait sur `source=None`** (le défaut) : `extension`, `mimetype`
+  et `valide()` levaient `TypeError` là où `Photo.basename` gère le cas. Ils
+  renvoient désormais `""` / `None` / `False`. Cf. #116.
+* **`Emplacement.dms_en_chaine` ne produisait pas le format annoncé** :
+  `divmod` sur des flottants rendait « 38.0 deg 14.0' 27.8199…" ». Degrés et
+  minutes sont désormais entiers, les secondes arrondies → format exiftool
+  (`38 deg 14' 27.82" S`). Cf. #116.
 * `Emplacement.valide()` : un point sur l'**équateur** ou sur le **méridien de
   Greenwich** était déclaré invalide. Le test s'écrivait
   `if (self.latitude and self.longitude)`, et zéro est *falsy* — or `0.0` est
