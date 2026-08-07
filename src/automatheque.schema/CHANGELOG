@@ -38,6 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* `Emplacement.valide()` : un point sur l'**équateur** ou sur le **méridien de
+  Greenwich** était déclaré invalide. Le test s'écrivait
+  `if (self.latitude and self.longitude)`, et zéro est *falsy* — or `0.0` est
+  une coordonnée parfaitement valide. Le test porte désormais sur la
+  **présence** (`is not None`), et les coordonnées ont `None` pour défaut au
+  lieu de `0` : « pas de coordonnée » se distingue enfin de « coordonnée
+  nulle ». `distance()` lève un `ValueError` explicite si l'emplacement de
+  départ n'en a pas, plutôt qu'un `TypeError` obscur.
+  *Migration :* un `Emplacement()` sans coordonnées expose `latitude is None`
+  là où il exposait `0.0`.
 * `Media` : `is_valid()` et `get_mimetype()` lisaient `self.filename`, un
   attribut que la classe **ne définit pas** — elle a `source`. Les deux
   méthodes levaient donc systématiquement `AttributeError` sur un `Media` ;

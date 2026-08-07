@@ -21,9 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   données, il n'a pas à pouvoir exécuter du code.
 * Des exceptions nommées, là où le module levait des `ValueError` avec un
   message : `AucunGabaritApplicable`, `GabaritInapplicable`,
-  `ConditionInvalide`, `TransfertIncomplet`, sous une base commune
-  `RenommageEchec`. Les trois premières héritent aussi de `ValueError`, donc
-  un appelant qui l'attrapait continue de fonctionner.
+  `ConditionInvalide`, `CibleHorsRepertoire`, `TransfertIncomplet`, sous une
+  base commune `RenommageEchec`. Toutes sauf la dernière héritent aussi de
+  `ValueError`, donc un appelant qui l'attrapait continue de fonctionner.
 
 ### Changed
 
@@ -54,6 +54,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **Évasion du répertoire cible par les métadonnées des fichiers traités.**
+  Même canal non fiable que l'injection ci-dessous, laissé ouvert côté chemin :
+  les champs d'un squelette viennent des métadonnées, et
+  `os.path.join(rep_cible, nom)` **jette `rep_cible`** dès que `nom` est
+  absolu. Un album valant `/tmp/ailleurs` déplaçait donc le fichier hors du
+  répertoire demandé, puis supprimait l'original ; un album valant `../..`
+  remontait l'arborescence. Deux défenses désormais : chaque champ **chaîne**
+  est assaini (séparateurs neutralisés par `enleve_caracteres_invalides`,
+  segments `.` et `..` remplacés) — les valeurs non-chaînes passent intactes
+  pour que `{date:%Y}` continue de fonctionner, et les séparateurs du
+  *squelette* sont conservés puisque c'est par eux que l'auteur décrit son
+  arborescence ; puis le chemin final est vérifié comme contenu dans
+  `rep_cible`, faute de quoi `CibleHorsRepertoire` est levée sans rien
+  déplacer.
+* **Une cible corrompue survivait à `TransfertIncomplet`.** Le fichier
+  tronqué restait sur le disque ; l'essai suivant tombait sur la garde
+  « fichier existe », renvoyait le chemin **sans erreur**, et l'appelant
+  croyait le fichier rangé alors qu'il était corrompu. La cible est maintenant
+  effacée avant de lever — l'original, lui, n'est jamais touché.
+* Une copie qui n'a rien écrit (cible absente après un `ENOTSUP` avalé) donnait
+  un `FileNotFoundError` au lieu de `TransfertIncomplet`.
 * **Injection de code par les métadonnées des fichiers traités.** La condition
   d'un gabarit était formatée avec les champs de l'objet — un album, une
   ville, une description, c'est-à-dire des chaînes venues des fichiers

@@ -8,7 +8,7 @@ connecteur — par exemple `localisation_gps`.
 """
 
 from math import cos, radians, sqrt
-from typing import Tuple
+from typing import Optional, Tuple
 
 import attr
 
@@ -21,8 +21,16 @@ class Emplacement:
     elles sont remplies par un géocodage inverse quand il y en a un.
     """
 
-    latitude: float = attr.ib(default=0, converter=float)
-    longitude: float = attr.ib(default=0, converter=float)
+    # `None` — et non `0` — pour « pas de coordonnée » : zéro est une latitude
+    # et une longitude parfaitement valides (l'équateur, le méridien de
+    # Greenwich), qu'on ne peut pas distinguer d'une absence si on les
+    # confond.
+    latitude: Optional[float] = attr.ib(
+        default=None, converter=attr.converters.optional(float)
+    )
+    longitude: Optional[float] = attr.ib(
+        default=None, converter=attr.converters.optional(float)
+    )
     adresse: str = attr.ib(default="")
 
     precision: str = attr.ib(kw_only=True, default="")
@@ -44,8 +52,13 @@ class Emplacement:
 
         Un emplacement vaut par ses coordonnées **ou** par son adresse : l'un
         des deux suffit à le situer.
+
+        Le test porte sur la **présence** des coordonnées, pas sur leur
+        valeur : un point sur l'équateur ou sur le méridien de Greenwich a une
+        coordonnée nulle et n'en est pas moins situé.
         """
-        return bool((self.latitude and self.longitude) or self.adresse)
+        a_des_coordonnees = self.latitude is not None and self.longitude is not None
+        return a_des_coordonnees or bool(self.adresse)
 
     @staticmethod
     def decimal_en_dms(decimal) -> Tuple[float, float, float, int]:
@@ -101,7 +114,13 @@ class Emplacement:
 
         :param lat: latitude du point à mesurer
         :param lon: longitude du point à mesurer
+        :raise ValueError: si cet emplacement n'a pas de coordonnées
         """
+        if self.latitude is None or self.longitude is None:
+            raise ValueError(
+                "Emplacement sans coordonnées : distance incalculable "
+                "(latitude={!r}, longitude={!r})".format(self.latitude, self.longitude)
+            )
         # Conversion degrés "décimaux" en radians
         lon1, lat1, lon2, lat2 = list(
             map(radians, [lon, lat, self.longitude, self.latitude])

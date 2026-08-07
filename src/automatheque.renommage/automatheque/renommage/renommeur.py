@@ -22,9 +22,12 @@ from typing import Iterator, List, Optional
 
 import attr
 
+from automatheque.util.fichier import enleve_caracteres_invalides
+
 from .condition import evalue_condition
 from .exceptions import (
     AucunGabaritApplicable,
+    CibleHorsRepertoire,
     GabaritInapplicable,
     TransfertIncomplet,
 )
@@ -33,6 +36,58 @@ LOGGER = logging.getLogger(__name__)
 
 # Section de configuration lue par défaut par `Gabarits.depuis_configuration`.
 SECTION_CONFIG_PAR_DEFAUT = "renommage"
+
+# Valeurs de champ qui, laissées telles quelles, désignent un répertoire au
+# lieu d'un nom : elles feraient remonter l'arborescence.
+_SEGMENTS_RELATIFS = (".", "..")
+
+
+def _assainit_champ(valeur):
+    """Neutralise ce qu'une valeur de champ pourrait faire au chemin.
+
+    Les champs d'un squelette viennent des **métadonnées des fichiers
+    traités** — un album, une ville, un titre. Substitués tels quels, ils
+    peuvent sortir du répertoire cible : `os.path.join` jette son premier
+    argument dès que le second est absolu, et `..` remonte d'un niveau.
+
+    Seules les chaînes sont assainies. Les autres valeurs — dates, nombres,
+    objets — passent intactes, sans quoi les spécificateurs de format des
+    squelettes (`{date:%Y}`) cesseraient de fonctionner ; elles n'ont de toute
+    façon pas de séparateur à porter avant leur propre formatage.
+
+    Les séparateurs présents dans le **squelette**, eux, sont conservés :
+    c'est par eux que l'auteur du gabarit décrit son arborescence.
+    """
+    if not isinstance(valeur, str):
+        return valeur
+    valeur = enleve_caracteres_invalides(valeur)
+    if valeur.strip() in _SEGMENTS_RELATIFS:
+        return "_" * len(valeur.strip())
+    return valeur
+
+
+def _cible_contenue(rep_cible, nom_fichier):
+    """Renvoie le chemin cible, après avoir vérifié qu'il reste dans le répertoire.
+
+    Deuxième ligne de défense, après l'assainissement des champs : un squelette
+    absolu, ou une combinaison qu'on n'avait pas prévue, ne doit pas pouvoir
+    écrire ailleurs que sous `rep_cible`.
+
+    :raise CibleHorsRepertoire: si le chemin construit s'en échappe
+    """
+    racine = os.path.abspath(rep_cible)
+    cible = os.path.abspath(os.path.join(racine, nom_fichier))
+    if cible != racine and not cible.startswith(racine + os.sep):
+        raise CibleHorsRepertoire(cible, racine)
+    return cible
+
+
+def _efface(chemin):
+    """Supprime un fichier sans se plaindre s'il n'est pas là."""
+    try:
+        os.remove(chemin)
+    except OSError:  # pragma: no cover - dépend du système de fichiers
+        LOGGER.warning("Impossible de supprimer la cible incomplète %s", chemin)
 
 
 @attr.s
@@ -228,7 +283,10 @@ class Renommeur:
         :raise AucunGabaritApplicable: si aucun gabarit ne convient
         :raise GabaritInapplicable: si le squelette retenu ne peut être formaté
         """
-        champs = self.obj._liste_champs_dispo()
+        champs = {
+            cle: _assainit_champ(valeur)
+            for cle, valeur in self.obj._liste_champs_dispo().items()
+        }
         gabarit = self.gabarits.choisit_gabarit(self.obj)
         LOGGER.debug("Gabarit choisi : %s", gabarit)
         try:
@@ -243,9 +301,10 @@ class Renommeur:
         la suppression de l'original — `shutil.move` ne dirait pas si la copie
         s'est mal passée entre deux systèmes de fichiers.
 
+        :raise CibleHorsRepertoire: si le chemin construit sort de `rep_cible`
         :returns: le chemin cible, qu'il ait été atteint ou non
         """
-        fichier_cible = os.path.join(rep_cible, nom_fichier)
+        fichier_cible = _cible_contenue(rep_cible, nom_fichier)
         fichier_orig = self.obj.filename
 
         if debug or (os.path.exists(fichier_cible) and not force):
@@ -276,7 +335,15 @@ class Renommeur:
             # les attributs d'un fichier. Le transfert s'est peut-être bien
             # passé malgré tout : on le vérifie juste après.
 
-        if os.path.getsize(fichier_cible) != os.path.getsize(fichier_orig):
+        if not os.path.exists(fichier_cible) or os.path.getsize(
+            fichier_cible
+        ) != os.path.getsize(fichier_orig):
+            # La cible ne vaut rien : on l'efface avant de lever. La laisser
+            # ferait passer le prochain essai par la garde « fichier existe »,
+            # qui rendrait le chemin sans erreur — l'appelant croirait le
+            # fichier rangé alors qu'il est tronqué. L'original, lui, n'a
+            # jamais été touché.
+            _efface(fichier_cible)
             raise TransfertIncomplet(fichier_orig, fichier_cible)
 
         # La cible est bonne : c'est seulement maintenant que l'objet déménage.
