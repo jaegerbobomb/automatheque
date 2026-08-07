@@ -11,6 +11,8 @@
 | [`automatheque`](https://pypi.org/project/automatheque/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.svg)](https://pypi.org/project/automatheque/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.svg) |
 | [`automatheque.factrice`](https://pypi.org/project/automatheque.factrice/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.factrice.svg)](https://pypi.org/project/automatheque.factrice/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.factrice.svg) |
 | [`automatheque.schema`](https://pypi.org/project/automatheque.schema/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.schema.svg)](https://pypi.org/project/automatheque.schema/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.schema.svg) |
+| [`automatheque.decomposition`](https://pypi.org/project/automatheque.decomposition/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.decomposition.svg)](https://pypi.org/project/automatheque.decomposition/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.decomposition.svg) |
+| [`automatheque.renommage`](https://pypi.org/project/automatheque.renommage/) | [![PyPI](https://img.shields.io/pypi/v/automatheque.renommage.svg)](https://pypi.org/project/automatheque.renommage/) | ![Python](https://img.shields.io/pypi/pyversions/automatheque.renommage.svg) |
 
 > Le badge de couverture est un **snapshot** (mis à jour à la main). On peut le
 > rendre *vivant* via Codecov si besoin — cf. PR.
@@ -28,6 +30,25 @@ Nous essayons dans un mono répo de gérer des sous-paquets python, pour
 avoir un unique namespace "automatheque" et pouvoir publier les sous paquets "automatheque.schema" etc.
 
 Voir (https://packaging.python.org/en/latest/guides/packaging-namespace-packages/) pour plus d'informations.
+
+### Ajouter une distribution
+
+Un nouveau répertoire sous `src/` suffit : `monas` le voit
+(`packages = ["src/*"]`), et la CI comme la publication **dérivent la même
+liste** — un paquet ajouté est donc testé et publié d'office.
+
+Le squelette se copie depuis un paquet existant : `pyproject.toml`,
+`setup.py` (deux lignes), `MANIFEST.in`, `README.md`, `CHANGELOG`, `tests/`,
+un `automatheque/__init__.py` portant `pkgutil.extend_path`, et le marqueur
+`py.typed`.
+
+Reste **une** étape manuelle, hors dépôt : déclarer sur PyPI un *trusted
+publisher* pour le nouveau projet, pointant ce dépôt et `release.yml`. Sans
+lui, la première publication échoue au tag.
+
+Enfin, `release.yml` ne publie que les paquets dont la version **égale le
+tag** : livrer plusieurs paquets ensemble suppose de les bumper à la même
+version avant de taguer.
 
 ## Nomenclature que l'on essaie de respecter
 
