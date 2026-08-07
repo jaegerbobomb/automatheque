@@ -32,18 +32,17 @@ class Photo(Media):
     """Une photo : un fichier image, et ce qu'on sait de lui.
 
     :param source: chemin complet vers le fichier
-    :param tags: étiquettes de l'image ; par défaut des `BaseTags` vides,
-                 rattachées à la même source. Un adaptateur (exiftool, fichier
-                 « sidecar »…) se substitue à elles en passant sa propre
+    :param tags: étiquettes de l'image ; par défaut des `BaseTags` vides. Les
+                 étiquettes ne portent pas la source (cf. `BaseTags`) : c'est
+                 `charge_tags` qui la leur passe. Un adaptateur (exiftool,
+                 fichier « sidecar »…) se substitue à elles en passant sa propre
                  sous-classe de `BaseTags`.
     """
 
     # Extensions valides pour les photos. TODO que ça ?
     extensions = ("arw", "cr2", "dng", "gif", "jpeg", "jpg", "nef", "rw2")
 
-    tags: BaseTags = attr.ib(
-        default=attr.Factory(lambda self: BaseTags(source=self.source), takes_self=True)
-    )
+    tags: BaseTags = attr.ib(factory=BaseTags)
 
     @property
     def basename(self) -> Optional[str]:
@@ -53,10 +52,12 @@ class Photo(Media):
         return os.path.basename(self.source)
 
     def charge_tags(self) -> BaseTags:
-        """Demande aux étiquettes de se remplir, et les renvoie.
+        """Demande aux étiquettes de se remplir depuis la source, et les renvoie.
 
-        Sans adaptateur, c'est un aller-retour sans effet : `BaseTags.charge()`
-        ne sait pas d'où viendraient les valeurs.
+        La source est passée à `charge` au moment de l'appel — les étiquettes ne
+        la mémorisent pas — donc un rangement préalable (qui a mis à jour
+        `source`) est bien pris en compte. Sans adaptateur, c'est un aller-retour
+        sans effet : `BaseTags.charge()` ne sait pas d'où viendraient les valeurs.
         """
-        self.tags = self.tags.charge()
+        self.tags = self.tags.charge(self.source)
         return self.tags

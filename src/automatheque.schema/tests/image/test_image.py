@@ -31,10 +31,11 @@ def test_basename_sans_source():
     assert Photo().basename is None
 
 
-def test_tags_par_defaut_rattaches_a_la_source():
+def test_tags_par_defaut_est_un_basetags_vide():
+    """Les tags par défaut sont des `BaseTags` vides ; ils ne **portent pas** la
+    source — elle leur est passée au chargement (cf. `charge_tags`)."""
     photo = Photo(source="/photos/vacances.jpg")
     assert isinstance(photo.tags, BaseTags)
-    assert photo.tags.source == "/photos/vacances.jpg"
 
 
 def test_tags_par_defaut_propres_a_chaque_photo():
@@ -45,7 +46,7 @@ def test_tags_par_defaut_propres_a_chaque_photo():
 
 
 def test_tags_fournis_a_la_construction():
-    tags = BaseTags(source="/photos/vacances.jpg", album="Vacances")
+    tags = BaseTags(album="Vacances")
     assert Photo("/photos/vacances.jpg", tags).tags.album == "Vacances"
 
 
@@ -57,7 +58,6 @@ def test_tags_vides_par_defaut():
 
 def test_tags_acceptent_le_vocabulaire_complet():
     tags = BaseTags(
-        source="/photos/vacances.jpg",
         album="Japon",
         auteur="Photographe",
         titre="Osaka de nuit",
@@ -77,23 +77,30 @@ def test_tags_acceptent_le_vocabulaire_complet():
 
 
 def test_charge_sans_adaptateur_ne_fait_rien():
-    tags = BaseTags(source="/photos/vacances.jpg")
-    assert tags.charge() is tags
+    tags = BaseTags()
+    assert tags.charge("/photos/vacances.jpg") is tags
     assert tags.album is None
 
 
 def test_un_adaptateur_surcharge_charge():
-    """Le scénario visé : l'adaptateur d'I/O est une sous-classe, pas la base."""
+    """Le scénario visé : l'adaptateur d'I/O est une sous-classe, pas la base ;
+    il **reçoit** la source au chargement (les tags ne la mémorisent jamais)."""
 
     @attr.s
-    class TagsFigees(BaseTags):
-        def charge(self):
+    class TagsSidecar(BaseTags):
+        source_vue = attr.ib(default=None, kw_only=True)
+
+        def charge(self, source=None):
+            self.source_vue = source
             self.album = "Depuis l'adaptateur"
             return self
 
     photo = Photo(source="/photos/vacances.jpg")
-    photo.tags = TagsFigees(source=photo.source)
-    assert photo.charge_tags().album == "Depuis l'adaptateur"
+    photo.tags = TagsSidecar()
+    photo.charge_tags()
+    assert photo.tags.album == "Depuis l'adaptateur"
+    # l'adaptateur a bien vu la source de la photo (pas une copie figée)
+    assert photo.tags.source_vue == "/photos/vacances.jpg"
 
 
 def test_repr_montre_les_etiquettes():
