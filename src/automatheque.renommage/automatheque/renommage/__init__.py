@@ -4,6 +4,7 @@
 from .condition import evalue_condition
 from .exceptions import (
     AucunGabaritApplicable,
+    CibleHorsRepertoire,
     ConditionInvalide,
     GabaritInapplicable,
     RenommageEchec,
@@ -20,6 +21,7 @@ from .renommeur import (
 __all__ = [
     "SECTION_CONFIG_PAR_DEFAUT",
     "AucunGabaritApplicable",
+    "CibleHorsRepertoire",
     "ConditionInvalide",
     "Gabarit",
     "Gabarits",

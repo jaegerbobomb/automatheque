@@ -85,3 +85,38 @@ def test_distance_approximative_entre_deux_points_proches():
 def test_distance_croit_avec_l_ecart():
     eiffel = Emplacement(48.8584, 2.2945)
     assert eiffel.distance(48.8738, 2.2950) < eiffel.distance(48.9, 2.2950)
+
+
+def test_valide_sur_l_equateur():
+    """Régression : `if latitude and longitude` — zéro est falsy."""
+    assert Emplacement(0.0, 9.45).valide()
+
+
+def test_valide_sur_le_meridien_de_greenwich():
+    assert Emplacement(51.48, 0.0).valide()
+
+
+def test_valide_a_l_intersection_des_deux():
+    assert Emplacement(0.0, 0.0).valide()
+
+
+def test_coordonnees_absentes_par_defaut():
+    """`None` et non `0` : « pas de coordonnée » se distingue de « zéro »."""
+    e = Emplacement()
+    assert e.latitude is None and e.longitude is None
+    assert not e.valide()
+
+
+def test_une_seule_coordonnee_ne_suffit_pas():
+    assert not Emplacement(latitude=48.8584).valide()
+    assert not Emplacement(longitude=2.2945).valide()
+
+
+def test_distance_sans_coordonnees_leve_une_erreur_claire():
+    with pytest.raises(ValueError, match="sans coordonnées"):
+        Emplacement(adresse="quelque part").distance(48.8584, 2.2945)
+
+
+def test_distance_depuis_l_equateur():
+    """Le point de départ est valide : la distance doit se calculer."""
+    assert Emplacement(0.0, 0.0).distance(0.0, 0.0) == pytest.approx(0)

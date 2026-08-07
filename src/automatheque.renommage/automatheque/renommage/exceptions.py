@@ -57,6 +57,24 @@ class ConditionInvalide(RenommageEchec, ValueError):
         super().__init__("Condition invalide : '{}'. {}".format(condition, raison))
 
 
+class CibleHorsRepertoire(RenommageEchec, ValueError):
+    """Le chemin construit sort du répertoire cible demandé.
+
+    Garde-fou de dernier recours : les champs qui alimentent un squelette sont
+    déjà assainis un par un. Si malgré cela le chemin s'échappe — un squelette
+    absolu, une combinaison inattendue — le déplacement est refusé plutôt que
+    d'écrire ailleurs que là où l'appelant l'a demandé.
+    """
+
+    def __init__(self, cible, rep_cible):
+        """Initialisation."""
+        self.cible = cible
+        self.rep_cible = rep_cible
+        super().__init__(
+            "La cible '{}' sort du répertoire '{}'.".format(cible, rep_cible)
+        )
+
+
 class TransfertIncomplet(RenommageEchec):
     """La copie vers la cible n'a pas produit un fichier identique.
 
