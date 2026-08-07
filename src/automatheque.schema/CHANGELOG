@@ -12,6 +12,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `schema.geolocalisation` : classe **`Emplacement`**, qui relie une position
+  GPS et une adresse — *value object* universel, avec un second consommateur
+  déjà là (`localisation_gps`). Récupérée de l'**ancien** `automatheque`
+  (d'avant le découpage en paquets), nettoyée. Cf. #42.
+* `schema.calendrier` : classe **`Evenement`**, même origine. Elle porte le
+  titre, les dates, le lieu, la description, l'`uid`, plus l'`etag` et l'`url`
+  que CalDAV attache à la ressource.
+* `Evenement.depuis_vevent()` / `.vers_vevent()` : conversion iCalendar **à la
+  frontière**, avec `vobject` importé au moment de l'appel seulement. La
+  dépendance est donc un extra (`pip install "automatheque.schema[calendrier]"`)
+  et `schema` reste installable sans rien de plus qu'`attrs`.
+* `Evenement.date_fin_abregee` : les composantes de la date de fin qui
+  diffèrent de la date de début (ex. `[4, 12]` pour un événement du 2018-03-14
+  au 2018-04-12), pour abréger l'affichage d'une période.
+
+### Fixed
+
+* `Emplacement.decimal_en_dms()` : la conversion en degrés / minutes /
+  secondes ne pouvait pas fonctionner — les deux `divmod` avaient disparu, il
+  restait `minutes, seconds = (decimal_abs * 3600 / 60)`, soit le dépaquetage
+  d'un flottant (`TypeError` à tous les coups). Le code n'avait jamais été
+  exécuté.
+* `Emplacement.dms_en_chaine()` : aucune branche `else` ne couvrait un axe
+  autre que `latitude`/`longitude` ; `direction` restait alors non liée, pour
+  un `UnboundLocalError` au formatage. Lève désormais un `ValueError`
+  explicite.
+
+### Changed
+
+* `Emplacement` : les trois convertisseurs, seuls noms anglais du module,
+  suivent le reste du vocabulaire — `decimal_to_dms` → `decimal_en_dms`,
+  `dms_to_decimal` → `dms_en_decimal`, `dms_string` → `dms_en_chaine` (dont le
+  paramètre `type`, qui masquait la primitive, devient `axe`). Aucun
+  consommateur connu ne les appelait : ils ne fonctionnaient pas.
+* `Evenement` est une **structure pure**, là où l'ancienne classe enveloppait
+  un `VEVENT` vobject et lisait ses propriétés à travers lui
+  (`self.vevent.dtstart.value`). C'est la règle posée pour `schema` : des
+  structures `attrs`, aucun IO, aucune dépendance intra-dépôt, la conversion
+  aux frontières. Les dates sont normalisées en `datetime` tz-aware — une
+  `date` nue d'événement « journée entière » est placée à minuit UTC.
+  Migration : `Evenement(etag=…, url=…, vevent=…)` devient
+  `Evenement.depuis_vevent(vevent, etag=…, url=…)`, et `ev.vevent.serialize()`
+  devient `ev.vers_vevent().serialize()`.
+
+### Removed
+
+* `Emplacement.depuis_decimal()` : fabrique morte, qui ignorait son argument
+  et renvoyait un `Emplacement()` vide sous une docstring « TODO ».
+* Les fonctions de conversion d'un export **Google Calendar** en vobject
+  (`json_en_vobject`, `decompose_un`, `decompose_date`) ne sont pas reprises :
+  ce sont des adaptateurs vers une source précise, pas du vocabulaire. Elles
+  restent disponibles dans l'ancien dépôt pour qui en aurait besoin.
+
 ## [0.15.0] - 2026-07-22
 
 ### Fixed

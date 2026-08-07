@@ -24,9 +24,17 @@ Home = "https://github.com/jaegerbobomb/automatheque"
 Repository = "https://github.com/jaegerbobomb/automatheque.git"
 
 [project.optional-dependencies]
+# `schema.calendrier` ne réclame vobject que pour convertir depuis/vers un
+# VEVENT iCalendar, à la frontière. La structure `Evenement` elle-même est
+# pure et s'utilise sans lui : la dépendance est donc optionnelle, et schema
+# reste installable sans rien tirer de plus qu'attrs.
+calendrier = [
+    "vobject",
+]
 dev = [
     "pytest",
     "tox",
+    "vobject",
 ]
 
 [build-system]
