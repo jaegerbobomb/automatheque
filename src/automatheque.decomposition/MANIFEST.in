@@ -1,1 +1,3 @@
 include automatheque/decomposition/py.typed
+include LICENSE
+include GPL-3.0.txt

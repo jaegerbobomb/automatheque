@@ -39,6 +39,10 @@ factrice = "automatheque.factrice.app:main"
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+# Embarque LICENSE + GPL dans sdist/wheel (LGPL-3.0-or-later). Cf. #116.
+license-files = ["LICENSE", "GPL-3.0.txt"]
+
 # Embarque le marqueur py.typed dans le wheel (typage exporté). Cf. #3.
 [tool.setuptools.package-data]
 "automatheque.factrice" = ["py.typed"]

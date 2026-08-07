@@ -65,6 +65,19 @@ class EpisodeAvecDefaut(Episode):
         return SerieDecomposeurs()
 
 
+@attr.s(slots=True)
+class EpisodeSlots(Decomposable):
+    """Décomposable **à slots** (`attrs.define` / `@attr.s(slots=True)`), donc
+    sans `__dict__`. Au niveau module pour rester *picklable* (`_score_max_infos`
+    sérialise l'objet)."""
+
+    basename = attr.ib(default="")
+    filename = attr.ib(default="")
+    serie = attr.ib(default=None)
+    saison = attr.ib(default=None)
+    episode = attr.ib(default=None)
+
+
 def test_decompose_le_basename():
     ep = Episode(filename="/media/Ma.Serie.S01E02.avi", basename="Ma.Serie.S01E02.avi")
     ep.decompose(decomposeurs=SerieDecomposeurs())
@@ -234,3 +247,55 @@ def test_decomposeurs_est_iterable():
 def test_decomposable_sans_surcharge_annonce_l_absence_de_defaut():
     with pytest.raises(NotImplementedError):
         Decomposable._decomposeurs_par_defaut()
+
+
+# --- Correctifs de la revue du socle (#116) ---------------------------------
+
+
+def test_max_infos_marche_sur_une_classe_a_slots():
+    """#116-1 : `obj.__dict__` n'existe pas sur une classe attrs à *slots* ;
+    `MAX_INFOS` échouait alors que le patron matchait."""
+    ep = EpisodeSlots(basename="Ma.Serie.S01E02.avi")
+    ep.decompose(
+        decomposeurs=SerieDecomposeurs(),
+        options_resultat=DECOMPOSE_RESULTAT_MAX_INFOS,
+    )
+    assert ep.serie == "Ma.Serie"
+
+
+def test_racine_hors_chemin_donne_un_echec_d_analyse_pas_un_valueerror():
+    """#116-2 : une racine qui ne contient pas le fichier levait un `ValueError`
+    qui traversait `auto_decompose` au lieu d'un échec d'analyse propre."""
+    ep = Episode(
+        filename="/media/x/Ma.Serie.S01E02/v.avi",
+        basename="v.avi",  # ne matche pas le patron série
+    )
+    with pytest.raises(DecompositionEchecTousPatrons):
+        ep.auto_decompose(racine="/autre/racine", decomposeurs=SerieDecomposeurs())
+
+
+def test_capture_vide_est_un_resultat_pas_un_echec():
+    """#116-6 : une capture **vide** remplissait l'objet mais `decompose`
+    renvoyait `None` et l'analyse continuait, écrasant la décomposition."""
+
+    def _remplit_serie_seule(obj, resultats):
+        obj.serie = resultats
+
+    decs = SerieDecomposeurs()
+    decs.decomposeurs = [Decomposeur(r"photo(\d*)", _remplit_serie_seule)]
+
+    ep = Episode(basename="photo.jpg")
+    resultat = ep.decompose(decomposeurs=decs)
+    assert ep.serie == ""  # l'objet est bien rempli…
+    assert resultat == ""  # …et le retour est la capture vide, pas None
+
+
+def test_decomposer_respecte_pos_zero_et_endpos_seul():
+    """#116-7a : `pos=0` (falsy) était ignoré et `endpos` fourni seul était
+    silencieusement jeté."""
+    dec = Decomposeur(
+        r"(\w)", _remplit_annee, appel_source=lambda obj, valeur: "abcdef"
+    )
+    obj = Episode(basename="")
+    assert dec._decomposer(obj, pos=0, endpos=3) == ["a", "b", "c"]
+    assert dec._decomposer(obj, endpos=2) == ["a", "b"]

@@ -48,3 +48,12 @@ def test_empreinte_hors_du_constructeur():
     m = Media(source="/photos/vacances.jpg")
     m.empreinte = "abc123"
     assert m.empreinte == "abc123"
+
+
+def test_media_sans_source_ne_leve_pas():
+    """#116-3 : `source=None` (le défaut) donne des valeurs neutres au lieu d'un
+    `TypeError`, comme `Photo.basename` renvoie `None` dans ce cas."""
+    m = Media()  # source=None par défaut
+    assert m.extension == ""
+    assert m.mimetype is None
+    assert m.valide() is False

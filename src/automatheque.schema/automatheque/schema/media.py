@@ -42,7 +42,13 @@ class Media:
 
     @property
     def extension(self) -> str:
-        """Extension du fichier, en minuscules et sans le point."""
+        """Extension du fichier, en minuscules et sans le point.
+
+        `""` quand il n'y a pas de source — comme `Photo.basename` renvoie `None`
+        dans ce cas, plutôt que de lever.
+        """
+        if self.source is None:
+            return ""
         return os.path.splitext(self.source)[1][1:].lower()
 
     @property
@@ -50,12 +56,16 @@ class Media:
         """Type MIME **deviné d'après le nom**, ou None s'il est inconnu.
 
         Deviné, pas constaté : `mimetypes` lit l'extension, pas le contenu.
+        `None` aussi quand il n'y a pas de source.
         """
+        if self.source is None:
+            return None
         return mimetypes.guess_type(self.source)[0]
 
     def valide(self) -> bool:
         """Renvoie si l'extension du fichier est reconnue par la famille.
 
-        C'est un contrôle de **nom**, pas de contenu.
+        C'est un contrôle de **nom**, pas de contenu. Sans source, l'extension
+        vaut `""` — jamais dans `extensions` — donc `False`.
         """
         return self.extension in self.extensions

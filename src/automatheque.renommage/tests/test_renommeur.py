@@ -222,6 +222,26 @@ def test_gabarits_depuis_configuration_option_illisible():
         Gabarits.depuis_configuration(config)
 
 
+def test_gabarits_depuis_configuration_refuse_un_scalaire():
+    """#116-5 : `r1 = 5` donnait un `TypeError` obscur (dépaquetage), pas le
+    `ValueError` promis."""
+    with pytest.raises(ValueError):
+        Gabarits.depuis_configuration(_config("[renommage]\nr1 = 5\n"))
+
+
+def test_gabarits_depuis_configuration_refuse_une_chaine():
+    """#116-5, le cas vicieux : `r1 = 'abc'` était **accepté** (dépaqueté en
+    `('a', 'b', 'c')`) et cassait bien plus tard, sans rapport."""
+    with pytest.raises(ValueError):
+        Gabarits.depuis_configuration(_config("[renommage]\nr1 = 'abc'\n"))
+
+
+def test_gabarits_depuis_configuration_refuse_un_mauvais_arite():
+    """Une séquence qui n'a pas trois éléments est refusée aussi."""
+    with pytest.raises(ValueError):
+        Gabarits.depuis_configuration(_config("[renommage]\nr1 = ['a', 'b']\n"))
+
+
 def test_configuration_n_execute_pas_de_code():
     """`literal_eval`, pas `eval` : un fichier de conf décrit des données."""
     config = _config('[renommage]\nr1 = __import__("os").getcwd()\n')
