@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.21.0] - 2026-08-07
 
 ### Added
 
@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **Licence embarquée dans les distributions.** Le sdist ne contenait pas le
+  texte de la licence — non-conformité **LGPL-3.0-or-later**. `LICENSE` (LGPL) et
+  `GPL-3.0.txt` (dont la LGPL n'est que le jeu de permissions additionnelles) sont
+  désormais inclus dans le sdist et le wheel (`license-files`). Cf. #116.
 * **`MAX_INFOS` inutilisable sur une classe `attrs` à *slots*** (`attrs.define`,
   le style moderne) : le score lisait `obj.__dict__`, absent des slots ;
   l'`AttributeError` était avalée et ressortait en `DecompositionEchecTousPatrons`
