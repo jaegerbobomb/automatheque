@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Ce journal a été introduit a posteriori (cf. #34). Les entrées sont
 > reconstituées depuis l'historique git et peuvent donc être moins détaillées.
 
+## [Unreleased]
+
+### Fixed
+
+* **`courriel` : le constructeur court-circuitait la validation des adresses.**
+  Les champs privés `_emetteur`/`_destinataires` sont posés **en direct** par
+  attrs, sans passer par les setters qui valident et normalisent (`formataddr`) :
+  `Courriel(emetteur="pas-un-email")` **passait** là où `c.emetteur = "..."`
+  lève, et un tuple `("Bob", "bob@x")` restait brut au lieu d'être formaté en
+  `"Bob <bob@x>"` (un consommateur comme `factrice`, qui attend une chaîne
+  RFC 5322, recevait alors un tuple). Un `__attrs_post_init__` rejoue désormais
+  la même validation à la construction ; `emetteur=None` (le défaut, rempli plus
+  tard) reste permis.
+* **`courriel` : un destinataire passé en chaîne était éclaté caractère par
+  caractère.** `c.destinataires = "solo@x.com"` faisait `for d in "solo@x.com"` —
+  chaque lettre validée puis rejetée (`ValueError` sur `"s"`). Une chaîne unique
+  est désormais traitée comme **un** destinataire.
+* `courriel` : suppression d'un import commenté mort
+  (`# from automatheque.schema.medium import Medium`) — le module s'appelle
+  `media`, et `Medium` n'existe pas.
+
 ## [0.21.0] - 2026-08-07
 
 ### Added

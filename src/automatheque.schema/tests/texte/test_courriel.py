@@ -59,3 +59,36 @@ def test_date_envoi_datetime_naif_retrocompat():
     c._date_envoi = datetime(2020, 1, 2, 3, 4, 5)  # naïf
     rendu = c.date_envoi
     assert "02 Jan 2020" in rendu
+
+
+def test_constructeur_valide_l_emetteur_comme_le_setter():
+    """Le constructeur ne doit pas court-circuiter la validation des adresses."""
+    with pytest.raises(ValueError):
+        Courriel(sujet="s", emetteur="pas-un-email")
+
+
+def test_constructeur_formate_un_emetteur_tuple():
+    """Un tuple `(nom, adresse)` est normalisé en chaîne RFC 5322, comme via
+    le setter — pas laissé brut."""
+    c = Courriel(sujet="s", emetteur=("Bob", "bob@x.com"))
+    assert c.emetteur == "Bob <bob@x.com>"
+
+
+def test_constructeur_emetteur_none_reste_permis():
+    """`emetteur=None` (le défaut) n'est pas validé : il est rempli plus tard."""
+    assert Courriel(sujet="s").emetteur is None
+
+
+def test_constructeur_valide_les_destinataires():
+    """Les destinataires passés au constructeur sont validés/normalisés."""
+    c = Courriel(sujet="s", destinataires=["Bob <bob@x.com>", ("Ana", "ana@x.com")])
+    assert c.destinataires == ["Bob <bob@x.com>", "Ana <ana@x.com>"]
+    with pytest.raises(ValueError):
+        Courriel(sujet="s", destinataires=["pas-un-email"])
+
+
+def test_destinataire_chaine_unique_n_est_pas_eclatee_en_caracteres():
+    """Régression : `destinataires = "solo@x.com"` validait `s`, `o`, `l`…"""
+    c = Courriel(sujet="s")
+    c.destinataires = "solo@x.com"
+    assert c.destinataires == ["solo@x.com"]

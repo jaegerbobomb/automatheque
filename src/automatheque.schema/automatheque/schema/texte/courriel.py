@@ -7,8 +7,6 @@ from typing import Callable, List, Sequence, Tuple, Union
 
 import attr
 
-# from automatheque.schema.medium import Medium
-
 
 def maintenant() -> datetime:
     """Horodatage courant, **tz-aware** (UTC).
@@ -46,6 +44,24 @@ class Courriel:
     teste_adresse_valide: Callable[[str], Tuple[bool, str]] = attr.ib(
         init=False, default=lambda e: ("@" in e, ""), kw_only=True
     )
+
+    def __attrs_post_init__(self):
+        """Fait passer les valeurs du constructeur par la même validation que
+        les setters.
+
+        attrs affecte `_emetteur`/`_destinataires` **en direct**, sans passer
+        par `@emetteur.setter`/`@destinataires.setter` (validation +
+        normalisation `formataddr`). Sans ce post-init,
+        `Courriel(emetteur="pas-un-email")` passerait là où
+        `c.emetteur = "pas-un-email"` lève, et un tuple `("Bob", "bob@x")`
+        resterait brut au lieu d'être formaté. Un émetteur non fourni (`None`)
+        reste permis : il est souvent rempli plus tard (p. ex. par `factrice`).
+        """
+        if self._emetteur is not None:
+            self._emetteur = self._controle_format_email(self._emetteur, "emetteur")
+        if self._destinataires:
+            # Rejoue le setter (valide, normalise, gère la chaîne unique).
+            self.destinataires = self._destinataires
 
     def _controle_format_email(self, valeur: Union[tuple, str], champ: str):
         """Renvoie l'email contrôlé pour le champ indiqué.
@@ -90,8 +106,14 @@ class Courriel:
     @destinataires.setter
     def destinataires(self, valeur):
         """Ajoute les destinataires à la liste."""
+        # Une chaîne unique est **un** destinataire, pas une suite de
+        # caractères : `for d in "solo@x.com"` itérerait `s`, `o`, `l`… et
+        # `_controle_format_email` lèverait sur le premier. Toute autre séquence
+        # (liste, tuple de destinataires) est parcourue telle quelle.
+        if isinstance(valeur, str):
+            valeur = [valeur]
         self._destinataires = []  # Ràz destinataires
-        for d in [d for d in valeur or []]:
+        for d in valeur or []:
             self.ajouter_destinataire(d)
 
     def ajouter_piece_jointe(self, fichier: Path):
