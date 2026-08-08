@@ -153,3 +153,53 @@ def test_signale_appel_journalise_erreur_et_la_propage(caplog):
         r.levelno == logging.ERROR and "échec" in r.getMessage() for r in caplog.records
     )
     assert not any("fin appel" in r.getMessage() for r in caplog.records)
+
+
+# --- #13 : résolution par chaîne (importlib) + découverte par points d'entrée ---
+
+
+class GreffonParChemin(Greffon):
+    CAPACITES = []
+
+
+def test_charge_monteurs_resout_une_reference_chaine():
+    """Une référence `"module.Classe"` est résolue via importlib (ex-`pydoc.locate`)."""
+    fabrique_greffon.charge_monteurs([f"{__name__}.GreffonParChemin"])
+    assert "parchemin" in fabrique_greffon._monteurs
+    assert issubclass(fabrique_greffon._monteurs["parchemin"], GreffonParChemin)
+
+
+def test_charge_monteurs_reference_introuvable_leve_value_error():
+    """Un chemin invalide donne un `ValueError` clair, pas un `issubclass(None)`
+    obscur (`pydoc.locate` renvoyait `None` en silence)."""
+    with pytest.raises(ValueError):
+        fabrique_greffon.charge_monteurs(["paquet.inexistant.PasDeClasse"])
+    with pytest.raises(ValueError):
+        fabrique_greffon.charge_monteurs([f"{__name__}.PasDansCeModule"])
+
+
+class GreffonDecouvert(Greffon):
+    CAPACITES = []
+
+
+class _FauxPointEntree:
+    """Imite un `importlib.metadata.EntryPoint` : un `.load()` qui rend l'objet."""
+
+    def __init__(self, objet):
+        self._objet = objet
+
+    def load(self):
+        return self._objet
+
+
+def test_decouvre_monteurs_charge_les_points_entree(monkeypatch):
+    """Les monteurs déclarés en points d'entrée sont enregistrés sans liste
+    explicite — « installe le paquet, c'est découvert »."""
+    monkeypatch.setattr(
+        "automatheque.greffon._points_entree",
+        lambda groupe: [_FauxPointEntree(GreffonDecouvert)],
+    )
+    monteurs = fabrique_greffon.decouvre_monteurs()
+    assert "decouvert" in fabrique_greffon._monteurs
+    assert issubclass(fabrique_greffon._monteurs["decouvert"], GreffonDecouvert)
+    assert len(monteurs) == 1
