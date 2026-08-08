@@ -478,3 +478,70 @@ def test_copie_disparue_leve_transfert_incomplet(photo, tmp_path, monkeypatch):
     with pytest.raises(TransfertIncomplet):
         photo.renomme(str(tmp_path / "cible"))
     assert os.path.exists(photo.source)
+
+
+def _copie_partielle_puis_echoue(source, cible):
+    """Écrit une cible tronquée, puis échoue comme un disque plein (≠ ENOTSUP)."""
+    import errno as _errno
+
+    with open(cible, "wb") as f:
+        f.write(b"partiel")
+    raise OSError(_errno.ENOSPC, "disque plein")
+
+
+def test_echec_de_copie_efface_la_cible_partielle(photo, tmp_path, monkeypatch):
+    """Une copie qui échoue (hors ENOTSUP) après avoir écrit un reliquat ne doit
+    pas le laisser sur le disque : sinon la garde « fichier existe » du prochain
+    essai le prendrait pour un succès. L'original n'est jamais touché."""
+    monkeypatch.setattr("shutil.copy", _copie_partielle_puis_echoue)
+    with pytest.raises(OSError):
+        photo.renomme(str(tmp_path / "cible"))
+
+    corrompu = tmp_path / "cible" / "2013" / "Japon" / "DSC_0001.jpg"
+    assert not corrompu.exists()
+    assert os.path.exists(photo.source)
+
+
+def test_apres_echec_de_copie_le_second_essai_reussit(photo, tmp_path, monkeypatch):
+    """Régression : le reliquat tronqué faisait passer le 2e essai pour un succès."""
+    monkeypatch.setattr("shutil.copy", _copie_partielle_puis_echoue)
+    with pytest.raises(OSError):
+        photo.renomme(str(tmp_path / "cible"))
+
+    monkeypatch.undo()  # la copie remarche
+    cible = photo.renomme(str(tmp_path / "cible"))
+    assert open(cible, "rb").read() == b"des octets de photo"
+
+
+def test_teste_condition_ne_masque_pas_un_bug_du_consommateur():
+    """Une condition non évaluable est fausse ; un **bug** du `_liste_champs_dispo`
+    du consommateur (typo, `NotImplementedError`…) doit remonter, pas se déguiser
+    en « condition fausse »."""
+
+    class PhotoCassee(Photo):
+        def _liste_champs_dispo(self):
+            raise RuntimeError("bug dans la projection des champs")
+
+    gabarits = Gabarits([Gabarit(squelette="x", condition='"{album}"')])
+    with pytest.raises(RuntimeError):
+        gabarits.choisit_gabarit(PhotoCassee(album="Japon"))
+
+
+def test_champ_de_tete_vide_ne_rend_pas_le_chemin_absolu(photo, tmp_path):
+    """`{annee}/{album}/{nom}` avec `annee=""` donnait `/Japon/…`, absolu, qui
+    jetait rep_cible (`CibleHorsRepertoire`). Le champ manquant est un segment
+    sauté, pas une évasion — le fichier se range sous rep_cible."""
+    photo.annee = ""
+    gabarits = Gabarits([Gabarit(squelette="{annee}/{album}/{nom}")])
+    cible = photo.renomme(str(tmp_path / "range"), gabarits=gabarits)
+
+    assert cible.startswith(str(tmp_path / "range"))
+    assert cible.endswith(os.path.join("Japon", "DSC_0001.jpg"))
+    assert os.path.exists(cible)
+
+
+def test_gabarits_depuis_configuration_refuse_un_ordre_non_entier():
+    """`['{nom}', '', '9']` : arité bonne, mais un `ordre` chaîne explosait au
+    `sorted(key=ordre)`, loin de la config. Refusé à la source."""
+    with pytest.raises(ValueError):
+        Gabarits.depuis_configuration(_config("[renommage]\nr1 = ['{nom}', '', '9']\n"))
