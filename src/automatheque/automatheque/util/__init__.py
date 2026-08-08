@@ -3,6 +3,9 @@
 # Imports depuis fichier
 from .fichier import enleve_caracteres_invalides
 
+# Imports depuis parallele
+from .parallele import Resultat, parallelise
+
 # Imports depuis reessaye
 from .reessaye import reessaye
 
@@ -15,6 +18,9 @@ from .structures_python import dict_merge
 __all__ = [
     # .fichier
     "enleve_caracteres_invalides",
+    # .parallele
+    "parallelise",
+    "Resultat",
     # .reessaye
     "reessaye",
     # .repertoire

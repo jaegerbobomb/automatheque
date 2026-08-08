@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `util.parallele` : **exécution parallèle bornée** (#47). `parallelise(fonction,
+  elements, workers=…, debit=…, processus=…)` applique une fonction à chaque
+  élément sur un pool borné (threads par défaut, processus en option), en option
+  sous une **limite de débit** (appels/seconde). Les résultats reviennent **dans
+  l'ordre**, chacun dans un `Resultat` (valeur **ou** exception) : une tâche qui
+  échoue n'interrompt pas les autres (`r.reussi`, `r.valeur_ou_leve()`). Se
+  compose avec `reessaye` (#7) — décorer la fonction suffit.
 * `greffon` : **auto-découverte des greffons par points d'entrée** (#13).
   `FabriqueGreffon.decouvre_monteurs(groupe="automatheque.greffons")` scanne
   les paquets installés (`importlib.metadata.entry_points`) et enregistre leurs
