@@ -49,18 +49,8 @@ def _resout_reference(chemin: str):
 
 
 def _points_entree(groupe: str) -> List[Any]:
-    """Points d'entrée d'un groupe, quelle que soit la version de Python (3.9+).
-
-    Depuis 3.10, `entry_points()` renvoie un objet *sélectionnable*
-    (`.select(group=…)`) ; en 3.9, il renvoie un dictionnaire `{groupe: [...]}`.
-    On détecte la première forme et retombe sur la seconde — plutôt que
-    `entry_points(group=…)`, dont la signature n'existe pas en 3.9.
-    """
-    points = entry_points()
-    selection = getattr(points, "select", None)
-    if selection is not None:
-        return list(selection(group=groupe))  # Python 3.10+
-    return list(points.get(groupe, []))  # pragma: no cover - Python 3.9
+    """Points d'entrée d'un groupe (`entry_points(group=…)`, py3.10+)."""
+    return list(entry_points(group=groupe))
 
 
 class FabriqueGreffon(Fabrique):
