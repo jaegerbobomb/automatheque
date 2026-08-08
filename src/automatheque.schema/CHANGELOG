@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Ce journal a été introduit a posteriori (cf. #34). Les entrées sont
 > reconstituées depuis l'historique git et peuvent donc être moins détaillées.
 
-## [Unreleased]
+## [0.22.0] - 2026-08-08
 
 ### Fixed
 
