@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Ce journal a été introduit a posteriori (cf. #34). Les entrées sont
 > reconstituées depuis l'historique git et peuvent donc être moins détaillées.
 
-## [Unreleased]
+## [0.21.0] - 2026-08-07
 
 ### Added
 
@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **Licence embarquée dans les distributions.** Le sdist ne contenait pas le
+  texte de la licence — non-conformité **LGPL-3.0-or-later**. `LICENSE` (LGPL) et
+  `GPL-3.0.txt` (dont la LGPL n'est que le jeu de permissions additionnelles) sont
+  désormais inclus dans le sdist et le wheel (`license-files`). Cf. #116.
 * **`Media` explosait sur `source=None`** (le défaut) : `extension`, `mimetype`
   et `valide()` levaient `TypeError` là où `Photo.basename` gère le cas. Ils
   renvoient désormais `""` / `None` / `False`. Cf. #116.

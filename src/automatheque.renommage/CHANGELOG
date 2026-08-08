@@ -64,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **Licence embarquée dans les distributions.** Le sdist ne contenait pas le
+  texte de la licence — non-conformité **LGPL-3.0-or-later**. `LICENSE` (LGPL) et
+  `GPL-3.0.txt` (dont la LGPL n'est que le jeu de permissions additionnelles) sont
+  désormais inclus dans le sdist et le wheel (`license-files`). Cf. #116.
 * **Parsing des gabarits en configuration trop permissif.** `except (ValueError,
   SyntaxError)` ne couvrait pas le dépaquetage : `r1 = 5` donnait un `TypeError`
   obscur, et surtout `r1 = 'abc'` était **accepté** (dépaqueté en

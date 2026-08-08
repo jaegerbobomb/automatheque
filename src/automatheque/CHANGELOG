@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-07
+
+### Fixed
+
+* **Licence embarquée dans les distributions.** Le sdist ne contenait pas le
+  texte de la licence — non-conformité **LGPL-3.0-or-later**. `LICENSE` (LGPL) et
+  `GPL-3.0.txt` (dont la LGPL n'est que le jeu de permissions additionnelles) sont
+  désormais inclus dans le sdist et le wheel (`license-files`). Cf. #116.
+
 ## [0.20.0] - 2026-07-30
 
 ### Added
