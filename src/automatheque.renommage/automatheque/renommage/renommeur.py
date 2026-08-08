@@ -15,6 +15,7 @@ import ast
 import errno
 import logging
 import os
+import re
 import shutil
 from operator import attrgetter
 from pathlib import Path
@@ -28,6 +29,7 @@ from .condition import evalue_condition
 from .exceptions import (
     AucunGabaritApplicable,
     CibleHorsRepertoire,
+    ConditionInvalide,
     GabaritInapplicable,
     TransfertIncomplet,
 )
@@ -86,8 +88,35 @@ def _efface(chemin):
     """Supprime un fichier sans se plaindre s'il n'est pas là."""
     try:
         os.remove(chemin)
+    except FileNotFoundError:
+        pass  # rien à effacer : la copie n'a rien écrit
     except OSError:  # pragma: no cover - dépend du système de fichiers
         LOGGER.warning("Impossible de supprimer la cible incomplète %s", chemin)
+
+
+def _nom_relatif(nom_fichier: str, squelette_absolu: bool) -> str:
+    """Réduit le nom formaté à un chemin propre, sans segment vide.
+
+    Un champ de **tête** vide — `{annee}/{album}/{nom}` avec `annee=""` — laisse
+    un séparateur en tête (`"/Japon/x.jpg"`) qui rend le chemin **absolu** :
+    `os.path.join(rep_cible, …)` jette alors `rep_cible`, et le fichier
+    quitterait le répertoire cible (rattrapé plus loin par `CibleHorsRepertoire`,
+    mais pour rien — un champ manquant est bénin). On retire donc les segments
+    vides (tête, queue, séparateurs doublés) : le champ manquant devient un
+    segment sauté.
+
+    En revanche, un squelette **écrit** absolu (`"/etc/{nom}"`) est une erreur
+    d'auteur : on le laisse absolu pour que `_cible_contenue` le refuse. D'où le
+    drapeau `squelette_absolu`, décidé sur le squelette et non sur son rendu —
+    les deux sont indiscernables une fois formatés.
+    """
+    segments = [s for s in re.split(r"[/\\]+", nom_fichier) if s]
+    if not segments:
+        return nom_fichier
+    chemin = os.path.join(*segments)
+    if squelette_absolu:
+        chemin = os.sep + chemin
+    return chemin
 
 
 @attr.s
@@ -177,6 +206,19 @@ class Gabarits:
             if len(triplet) != 3:
                 raise ValueError(erreur)
             squelette, condition, ordre = triplet
+            # Arité bonne, mais les types comptent aussi : un `ordre` non entier
+            # (`['{nom}', '', '9']`) passe ici pour n'exploser qu'au
+            # `sorted(key=ordre)` de `gabarits_valides`, en `TypeError` sans
+            # rapport avec la configuration. On le refuse donc à la source.
+            if not (
+                isinstance(squelette, str)
+                and isinstance(condition, str)
+                and isinstance(ordre, int)
+                and not isinstance(ordre, bool)
+            ):
+                raise ValueError(
+                    erreur + " (squelette et condition en chaîne, ordre entier)"
+                )
             gabarits.append(
                 Gabarit(squelette=squelette, condition=condition, ordre=ordre)
             )
@@ -218,12 +260,25 @@ class Gabarits:
 
         Une condition qui ne s'évalue pas — champ absent, expression mal
         formée — est **fausse**, pas fatale : le gabarit suivant est essayé.
+
+        Le catch est **restreint** aux erreurs de *formatage* et d'*évaluation*
+        de la condition. Un bug réel du `_liste_champs_dispo()` du consommateur
+        (typo, `NotImplementedError`) doit remonter, pas se déguiser en
+        « condition fausse » ; on l'appelle donc **hors** du `try`.
         """
+        champs = obj._liste_champs_dispo()
         try:
-            formatee = condition.format(**obj._liste_champs_dispo())
+            formatee = condition.format(**champs)
             return bool(evalue_condition(formatee))
-        except Exception:
-            LOGGER.exception("Erreur durant le test de la condition.")
+        except (
+            KeyError,
+            IndexError,
+            AttributeError,
+            ValueError,
+            TypeError,
+            ConditionInvalide,
+        ):
+            LOGGER.debug("Condition écartée (non évaluable) : %s", condition)
             return False
 
 
@@ -304,9 +359,16 @@ class Renommeur:
         gabarit = self.gabarits.choisit_gabarit(self.obj)
         LOGGER.debug("Gabarit choisi : %s", gabarit)
         try:
-            return gabarit.squelette.format(**champs)
+            nom = gabarit.squelette.format(**champs)
         except (KeyError, IndexError, ValueError, AttributeError, TypeError) as exc:
             raise GabaritInapplicable(gabarit.squelette, str(exc)) from exc
+        # `squelette_absolu` est décidé sur le squelette, pas sur son rendu : un
+        # champ de tête vide (`{annee}/…` avec `annee=""`) rend `nom` absolu par
+        # accident et le ferait quitter rep_cible — on rabote alors les segments
+        # vides ; un squelette **écrit** absolu (`/etc/{nom}`) reste absolu pour
+        # que `_cible_contenue` le refuse.
+        squelette_absolu = gabarit.squelette.startswith(("/", os.sep))
+        return _nom_relatif(nom, squelette_absolu)
 
     def _renomme(self, rep_cible, nom_fichier, debug=False, force=False, copier=False):
         """Déplace le fichier vers `rep_cible/nom_fichier`.
@@ -347,6 +409,12 @@ class Renommeur:
             shutil.copy(fichier_orig, fichier_cible)
         except OSError as exc:
             if exc.errno != errno.ENOTSUP:
+                # La copie a pu écrire une cible **partielle** avant d'échouer
+                # (disque plein, E/S…). On l'efface avant de propager — comme la
+                # branche « taille » ci-dessous : sinon le prochain essai tombe
+                # sur la garde « fichier existe » et renvoie ce reliquat tronqué
+                # comme un succès. L'original, lui, n'a jamais été touché.
+                _efface(fichier_cible)
                 LOGGER.error(
                     "[E] Echec shutil.copy(%s, %s) : %s",
                     fichier_orig,

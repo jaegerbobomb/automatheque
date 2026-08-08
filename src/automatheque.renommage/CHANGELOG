@@ -7,6 +7,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+* **Une cible tronquée survivait à un échec de copie (hors `ENOTSUP`).** La
+  branche « la taille ne colle pas » effaçait bien le reliquat avant de lever,
+  mais pas celle où `shutil.copy` **lève** (disque plein, E/S…) : un fichier
+  partiel restait sur le disque, et l'essai suivant tombait sur la garde
+  « fichier existe », renvoyant le chemin **sans erreur** — l'appelant croyait
+  le fichier rangé alors qu'il était tronqué. La cible partielle est maintenant
+  effacée dans les deux cas ; l'original n'est jamais touché. (Même défaut que
+  celui déjà clos côté « taille » en 0.21.1, resté ouvert sur ce chemin.)
+* **`teste_condition` masquait les vrais bugs du consommateur.** Un
+  `except Exception` avalait aussi ce que levait le `_liste_champs_dispo()` de
+  l'appelant (typo, `NotImplementedError`), en le déguisant en « condition
+  fausse » — le développeur ne voyait jamais l'erreur. La projection des champs
+  est désormais appelée **hors** du `try`, et le `try` ne rattrape que les
+  erreurs de formatage/évaluation de la condition
+  (`KeyError`/`IndexError`/`AttributeError`/`ValueError`/`TypeError`/`ConditionInvalide`).
+* **Un champ de tête vide sortait le fichier du répertoire cible.** Un squelette
+  `{annee}/{album}/{nom}` avec `annee=""` se formatait en `/Japon/…`, un chemin
+  **absolu** : `os.path.join(rep_cible, …)` jetait alors `rep_cible`, et le
+  rangement échouait sur un `CibleHorsRepertoire` pour un simple champ manquant.
+  Les segments vides sont désormais rabotés (le champ manquant devient un
+  segment sauté). Un squelette **écrit** absolu (`/etc/{nom}`), lui, reste
+  refusé — c'est une erreur d'auteur, distinguée à la source et non sur le rendu.
+* `Gabarits.depuis_configuration` : un `ordre` non entier
+  (`['{nom}', '', '9']`) passait la validation d'arité pour n'exploser qu'au
+  `sorted(key=ordre)` de `gabarits_valides`, en `TypeError` sans rapport avec la
+  configuration. Les types du triplet (squelette/condition en chaîne, ordre
+  entier) sont désormais vérifiés à la lecture, avec le même `ValueError`
+  contextualisé. Suite de #116.
+* `_efface` : ne journalise plus un avertissement quand la cible **n'existait
+  pas** (`FileNotFoundError`) — conforme à sa docstring (« sans se plaindre s'il
+  n'est pas là »).
+
 ## [0.21.1] - 2026-08-08
 
 ### Added
