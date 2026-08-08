@@ -155,9 +155,16 @@ class Decomposable(object):
     décomposition :
 
     * ``basename`` — la chaîne analysée par défaut ;
-    * ``filename`` — le chemin complet, remonté niveau par niveau par les
+    * ``source`` — le chemin complet, remonté niveau par niveau par les
       options :data:`DECOMPOSE_ANALYSE_ARBO_COMPLETE` et
       :data:`DECOMPOSE_ANALYSE_ARBO_CONCATENE`.
+
+    C'est une **convention** — un nom d'attribut attendu — sans dépendance vers
+    `schema`. Le chemin est nommé ``source``, comme chez
+    `automatheque.schema.media.Media` et `automatheque.renommage.Renommable` :
+    un seul porteur de vérité du chemin pour tout le socle média, dont dérive
+    aussi ``basename``. (Auparavant ``filename``, qui divergeait de
+    ``Media.source`` ; cf. #117.)
 
     TODO : on pourrait donner le nom de la propriété à l'initialisation de
     Decomposable, si on veut en prendre une autre.
@@ -405,7 +412,7 @@ class Identificateur(object):
         if sortir is not _CONTINUER:
             return sortir
 
-        # TODO par défaut on prend self.obj.filename et basename comme valeurs
+        # TODO par défaut on prend self.obj.source et basename comme valeurs
         # on pourrait en prendre d'autres et/ou le rendre paramétrable
         #
         # `remonte_arborescence` lève `ValueError` si le fichier n'est pas sous
@@ -414,7 +421,7 @@ class Identificateur(object):
         # option » plutôt que de laisser l'exception interrompre la boucle. #116
         if DECOMPOSE_ANALYSE_ARBO_COMPLETE in options_analyse:
             try:
-                for parent in remonte_arborescence(self.obj.filename, racine):
+                for parent in remonte_arborescence(self.obj.source, racine):
                     succes_, sortir = self._exec_decomposition(
                         options_resultat=options_resultat, valeur=parent.name
                     )
@@ -426,7 +433,7 @@ class Identificateur(object):
         if DECOMPOSE_ANALYSE_ARBO_CONCATENE in options_analyse:
             valeur_orig = self.obj.basename
             try:
-                for parent in remonte_arborescence(self.obj.filename, racine):
+                for parent in remonte_arborescence(self.obj.source, racine):
                     valeur_orig = "{} {}".format(parent.name, valeur_orig)
                     succes_, sortir = self._exec_decomposition(
                         options_resultat=options_resultat, valeur=valeur_orig
