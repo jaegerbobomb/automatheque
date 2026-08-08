@@ -293,3 +293,45 @@ def test_decomposer_respecte_pos_zero_et_endpos_seul():
     obj = Episode(basename="")
     assert dec._decomposer(obj, pos=0, endpos=3) == ["a", "b", "c"]
     assert dec._decomposer(obj, endpos=2) == ["a", "b"]
+
+
+# --- Robustesse : ne pas masquer les vrais bugs ------------------------------
+
+
+def test_un_bug_du_callback_remonte_pas_maquille_en_aucun_patron():
+    """Le patron **matche**, mais l'`appel_en_retour` du consommateur a un bug
+    (ici un dépaquetage impossible). C'est une erreur de l'appelant : elle doit
+    remonter, pas être avalée en `DecompositionEchecTousPatrons` (« aucun patron
+    trouvé »), ce qui envoyait déboguer au mauvais endroit."""
+
+    def _callback_bogue(obj, resultats):
+        # `resultats` est une seule capture (chaîne) : ce dépaquetage lève.
+        a, b, c = resultats
+
+    decs = SerieDecomposeurs()
+    decs.decomposeurs = [Decomposeur(r"(.+)", _callback_bogue)]
+
+    ep = Episode(basename="peu importe")
+    with pytest.raises((ValueError, TypeError)):
+        ep.decompose(decomposeurs=decs)
+
+
+def test_un_patron_qui_ne_matche_pas_n_interrompt_pas_les_autres():
+    """Un décomposeur qui ne capture rien est sauté ; un suivant qui matche
+    l'emporte. (L'extraction reste tolérante, seul le callback ne l'est pas.)"""
+    decs = SerieDecomposeurs()
+    decs.decomposeurs = [
+        Decomposeur(r"^ZZZ(\d+)", _remplit_annee),  # ne matche pas
+        Decomposeur(r"(.+)[. ]S(\d{2})E(\d{2})", _remplit_serie, drapeaux=re.I),
+    ]
+    ep = Episode(basename="Ma.Serie.S01E02.avi")
+    ep.decompose(decomposeurs=decs)
+    assert (ep.serie, ep.saison, ep.episode) == ("Ma.Serie", "01", "02")
+
+
+def test_prepare_decomposition_respecte_une_valeur_vide_explicite():
+    """Une source `""` fournie explicitement est une valeur, pas une absence :
+    seule `None` retombe sur le basename (même piège *falsy* que #116)."""
+    ep = Episode(basename="defaut.avi")
+    assert ep._prepare_decomposition("") == ""
+    assert ep._prepare_decomposition(None) == "defaut.avi"

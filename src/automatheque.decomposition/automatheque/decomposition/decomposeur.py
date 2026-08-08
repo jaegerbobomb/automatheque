@@ -189,7 +189,11 @@ class Decomposable(object):
         :param valeur:  valeur à préparer si présente, sinon basename par
                         défaut
         """
-        if valeur:
+        # `is not None` et non `if valeur` : seule l'**absence** (`None`) retombe
+        # sur le basename. Une valeur `""` fournie explicitement est une valeur,
+        # pas une absence (même distinction *falsy* que `pos=0` et la capture
+        # vide corrigés en #116).
+        if valeur is not None:
             return valeur
         return self.basename
 
@@ -300,52 +304,61 @@ class Identificateur(object):
                     decomposeur.chaine, valeur or self.obj.basename
                 )
             )
+            # Le `try` ne couvre que l'**extraction** — propre à ce décomposeur
+            # (sa source, sa regex). Un patron qui ne capture rien, ou dont la
+            # source échoue, ne doit pas interrompre les autres : on journalise
+            # et on passe au suivant. En revanche `appel_en_retour` (reverser le
+            # résultat dans l'objet) est le **contrat de l'appelant** : une
+            # erreur dedans est un vrai bug, laissé remonter — pas maquillé en
+            # « aucun patron trouvé » comme le faisait le `except Exception`
+            # englobant d'origine.
             try:
                 resultats = decomposeur._decomposer(self.obj, valeur)
                 try:
                     resultats = resultats[0]
                 except IndexError:
                     raise DecompositionEchecPatron(decomposeur)
-                if options_resultat == DECOMPOSE_RESULTAT_PREMIER_NON_NUL:
-                    # Puis on appelle le callback pour remplir l'objet :
-                    decomposeur.appel_en_retour(self.obj, resultats)
-                    decomposition_reussie = True
-                    sortir = resultats
-                    # on s'arrête ici
-                    break
-                elif options_resultat == DECOMPOSE_RESULTAT_CUMULE:
-                    # Puis on appelle le callback pour remplir l'objet :
-                    decomposeur.appel_en_retour(self.obj, resultats)
-                    decomposition_reussie = True
-                    # mais on continue le traitement :
-                    continue
-                elif options_resultat == DECOMPOSE_RESULTAT_MAX_INFOS:
-                    obj_temoin = deepcopy(self.obj_temoin)
-                    decomposeur.appel_en_retour(obj_temoin, resultats)
-
-                    # On compare la taille des deux objets sérialisés, grosso
-                    # modo. On n'attribue un modificateur qu'à l'objet témoin
-                    # pour prendre en compte la « qualité » du décomposeur en
-                    # cours.
-                    temoin = self._score_max_infos(obj_temoin, decomposeur.poids)
-                    if temoin >= self._score_max_infos(self.obj):
-                        # Puis on appelle le callback pour remplir l'objet :
-                        decomposeur.appel_en_retour(self.obj, resultats)
-                        decomposition_reussie = True
-                    # mais on continue le traitement :
-                    continue
             except DecompositionEchecPatron:
                 LOGGER.debug(
                     "Echec de la décomposition: {} {}".format(
                         valeur, decomposeur.chaine
                     )
                 )
+                continue
             except Exception:
                 LOGGER.exception(
-                    "Echec durant la décomposition: {} {}".format(
+                    "Echec durant l'extraction: {} {}".format(
                         valeur, decomposeur.chaine
                     )
                 )
+                continue
+
+            if options_resultat == DECOMPOSE_RESULTAT_PREMIER_NON_NUL:
+                # Puis on appelle le callback pour remplir l'objet :
+                decomposeur.appel_en_retour(self.obj, resultats)
+                decomposition_reussie = True
+                sortir = resultats
+                # on s'arrête ici
+                break
+            elif options_resultat == DECOMPOSE_RESULTAT_CUMULE:
+                # Puis on appelle le callback pour remplir l'objet :
+                decomposeur.appel_en_retour(self.obj, resultats)
+                decomposition_reussie = True
+                # mais on continue le traitement :
+                continue
+            elif options_resultat == DECOMPOSE_RESULTAT_MAX_INFOS:
+                obj_temoin = deepcopy(self.obj_temoin)
+                decomposeur.appel_en_retour(obj_temoin, resultats)
+
+                # On compare la taille des deux objets sérialisés, grosso modo.
+                # On n'attribue un modificateur qu'à l'objet témoin pour prendre
+                # en compte la « qualité » du décomposeur en cours.
+                temoin = self._score_max_infos(obj_temoin, decomposeur.poids)
+                if temoin >= self._score_max_infos(self.obj):
+                    # Puis on appelle le callback pour remplir l'objet :
+                    decomposeur.appel_en_retour(self.obj, resultats)
+                    decomposition_reussie = True
+                # mais on continue le traitement :
                 continue
 
         LOGGER.debug("exec decomposition obj resultant : {}".format(self.obj))

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* **`_exec_decomposition` masquait les bugs de l'appelant en « aucun patron
+  trouvé ».** Un `except Exception` englobant attrapait aussi ce que levait
+  l'`appel_en_retour` du consommateur (le callback qui reverse le résultat dans
+  l'objet — dépaquetage impossible, `AttributeError`…) et le traduisait en
+  `DecompositionEchecTousPatrons`, envoyant déboguer au mauvais endroit. Le
+  `try` ne couvre désormais que l'**extraction** (source + regex, propre à un
+  décomposeur : un échec y est journalisé et on passe au suivant) ;
+  `appel_en_retour`, qui est le **contrat de l'appelant**, est joué **hors** du
+  `try` et ses erreurs remontent.
+* `Decomposable._prepare_decomposition` : `if valeur` retombait sur le
+  `basename` pour une source `""` fournie **explicitement**, alors que la
+  docstring ne vise que l'absence. Seul `None` retombe désormais sur le basename
+  (même piège *falsy* que `pos=0` et la capture vide corrigés en #116).
+
 ### Changed
 
 * **Le contrat `Decomposable` attend `source`, plus `filename`.** Le chemin
