@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `greffon` : **auto-découverte des greffons par points d'entrée** (#13).
+  `FabriqueGreffon.decouvre_monteurs(groupe="automatheque.greffons")` scanne
+  les paquets installés (`importlib.metadata.entry_points`) et enregistre leurs
+  monteurs, sans que l'application ait à les lister. Un paquet tiers déclare
+  simplement `[project.entry-points."automatheque.greffons"]` dans son
+  `pyproject.toml` : « installe le paquet, c'est découvert ».
+
+### Changed
+
+* **Plancher Python relevé à 3.10** (abandon de 3.9). `requires-python` passe à
+  `>=3.10` ; la CI teste 3.10 à 3.14, et `ruff`/`mypy` ciblent 3.10 (le
+  plancher). La découverte des greffons se réduit ainsi à
+  `entry_points(group=…)` (signature qui n'existe pas en 3.9), sans code de
+  compatibilité.
+* `greffon.FabriqueGreffon.charge_monteurs` : la résolution d'une référence
+  passée en **chaîne** (`"module.Classe"`) passe de `pydoc.locate` à
+  `importlib.import_module` + `getattr` (#13). `pydoc.locate` chargeait
+  n'importe quelle chaîne et renvoyait `None` en cas d'échec — d'où un
+  `issubclass(None, …)` obscur plus loin. La résolution sépare désormais module
+  et attribut et lève un `ValueError` explicite (module introuvable, attribut
+  absent, forme invalide).
+
 ## [0.21.0] - 2026-08-07
 
 ### Fixed

@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Ce journal a été introduit a posteriori (cf. #34). Les entrées sont
 > reconstituées depuis l'historique git et peuvent donc être moins détaillées.
 
+## [Unreleased]
+
+### Changed
+
+* **Plancher Python relevé à 3.10** (abandon de 3.9) : `requires-python` passe à
+  `>=3.10` ; la CI teste 3.10 à 3.14. Cf. #32.
+
 ## [0.22.0] - 2026-08-08
 
 ### Fixed

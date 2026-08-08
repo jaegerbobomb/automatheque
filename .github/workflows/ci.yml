@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
@@ -51,10 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Installe Python 3.9 (plus basse version supportée par la CI)
+      - name: Installe Python 3.10 (plus basse version supportée par la CI)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.10"
 
       - name: Installe les planchers déclarés par factrice (depuis PyPI)
         # Les planchers sont *dérivés* du pyproject de factrice (et non codés en

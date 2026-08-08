@@ -1,6 +1,8 @@
+import importlib
 import logging
 from abc import ABC, ABCMeta
 from copy import deepcopy
+from importlib.metadata import entry_points
 from typing import Any, List, Optional, Type, Union
 
 from automatheque.conception.structures import Fabrique, Monteur
@@ -11,6 +13,45 @@ from automatheque.greffon.registre import MetaInstancePersistanteRegistre
 
 LOGGER = logging.getLogger(__name__)
 
+# Groupe de points d'entrée où un paquet tiers déclare ses greffons.
+GROUPE_GREFFONS = "automatheque.greffons"
+
+
+def _resout_reference(chemin: str):
+    """Résout ``"module.sousmodule.Objet"`` en l'objet référencé.
+
+    Remplace `pydoc.locate`, qui chargeait n'importe quelle chaîne sans rien
+    valider et renvoyait `None` en cas d'échec — d'où, plus loin, un
+    `issubclass(None, …)` opaque. On sépare explicitement le module de
+    l'attribut, on importe le module, puis on lit l'attribut, avec une erreur
+    claire à chaque étape.
+
+    :raise ValueError: si la chaîne est mal formée, le module introuvable, ou
+                       l'attribut absent.
+    """
+    module_nom, _, attribut = chemin.rpartition(".")
+    if not module_nom or not attribut:
+        raise ValueError(
+            f"Référence de greffon invalide : {chemin!r} (attendu 'module.Classe')"
+        )
+    try:
+        module = importlib.import_module(module_nom)
+    except ImportError as exc:
+        raise ValueError(
+            f"Module introuvable pour le greffon {chemin!r} : {exc}"
+        ) from exc
+    try:
+        return getattr(module, attribut)
+    except AttributeError as exc:
+        raise ValueError(
+            f"{attribut!r} absent du module {module_nom!r} (greffon {chemin!r})"
+        ) from exc
+
+
+def _points_entree(groupe: str) -> List[Any]:
+    """Points d'entrée d'un groupe (`entry_points(group=…)`, py3.10+)."""
+    return list(entry_points(group=groupe))
+
 
 class FabriqueGreffon(Fabrique):
     """Classe qui permet d'instancier les Greffons dont les Monteur ont été enregistrés.
@@ -18,6 +59,8 @@ class FabriqueGreffon(Fabrique):
     Il faut :
 
     1. enregistrer les monteurs des greffons avec `fabrique_greffons.charge_monteurs()`
+       (liste explicite), ou `fabrique_greffons.decouvre_monteurs()` pour les
+       découvrir automatiquement parmi les paquets installés (points d'entrée)
     2. instancier le type de greffon demandé, via `fabrique_greffons.active()`,
        qui lance `monteur.cree()` avec les arguments donnés, pour instancier le
        Greffon.
@@ -89,14 +132,12 @@ class FabriqueGreffon(Fabrique):
         Dans tous les cas ensuite il faut les activer un par un dans la configuration.
         """
         monteurs = []
-        # `monteur` est résolu dynamiquement (via pydoc.locate) ou fourni par
-        # l'appelant : son type statique n'est pas connu.
+        # `monteur` est résolu dynamiquement (via `_resout_reference`, importlib)
+        # ou fourni par l'appelant : son type statique n'est pas connu.
         monteur: Any
         for elem in liste_monteurs:
             if isinstance(elem, str):
-                from pydoc import locate
-
-                monteur = locate(elem)  # ou importlib TODO ?
+                monteur = _resout_reference(elem)
             else:
                 monteur = elem
             if issubclass(monteur, Greffon):
@@ -109,6 +150,26 @@ class FabriqueGreffon(Fabrique):
                 )
             monteurs.append(self.enregistre_monteur(monteur.cle, monteur_concret))
         return monteurs
+
+    def decouvre_monteurs(self, groupe: str = GROUPE_GREFFONS) -> List[Monteur]:
+        """Découvre et enregistre les monteurs déclarés en *points d'entrée*.
+
+        Un paquet tiers déclare ses greffons dans ses métadonnées, sans que
+        l'application ait à les lister :
+
+        .. code-block:: toml
+            [project.entry-points."automatheque.greffons"]
+            kodi = "monpaquet.kodi:MonteurKodi"
+
+        C'est l'alternative « installe le paquet, c'est découvert » au
+        `charge_monteurs([...])` explicite — et le remplacement propre du
+        chargement d'une chaîne arbitraire par `pydoc.locate`.
+
+        :param groupe: groupe de points d'entrée à scanner.
+        :return: les monteurs enregistrés.
+        """
+        monteurs = [point.load() for point in _points_entree(groupe)]
+        return self.charge_monteurs(monteurs)
 
     def active_greffons_conf(
         self,
