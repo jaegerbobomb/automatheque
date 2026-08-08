@@ -1,6 +1,6 @@
 [project]
 name = "automatheque"
-version = "0.21.0"
+version = "0.23.0"
 description = "Bibliothèque pour se faciliter le scripting !"
 authors = [
     { name = "Marc", email = "githubmarc@maj44.com" },

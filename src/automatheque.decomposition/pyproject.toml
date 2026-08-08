@@ -1,6 +1,6 @@
 [project]
 name = "automatheque.decomposition"
-version = "0.22.0"
+version = "0.23.0"
 description = "Décomposition de chaînes et d'arborescences par patrons"
 authors = [{name = "Marc", email = "githubmarc@maj44.com"}]
 license = {text = "LGPL-3.0-or-later"}
