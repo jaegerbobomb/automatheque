@@ -155,9 +155,16 @@ class Decomposable(object):
     décomposition :
 
     * ``basename`` — la chaîne analysée par défaut ;
-    * ``filename`` — le chemin complet, remonté niveau par niveau par les
+    * ``source`` — le chemin complet, remonté niveau par niveau par les
       options :data:`DECOMPOSE_ANALYSE_ARBO_COMPLETE` et
       :data:`DECOMPOSE_ANALYSE_ARBO_CONCATENE`.
+
+    C'est une **convention** — un nom d'attribut attendu — sans dépendance vers
+    `schema`. Le chemin est nommé ``source``, comme chez
+    `automatheque.schema.media.Media` et `automatheque.renommage.Renommable` :
+    un seul porteur de vérité du chemin pour tout le socle média, dont dérive
+    aussi ``basename``. (Auparavant ``filename``, qui divergeait de
+    ``Media.source`` ; cf. #117.)
 
     TODO : on pourrait donner le nom de la propriété à l'initialisation de
     Decomposable, si on veut en prendre une autre.
@@ -182,7 +189,11 @@ class Decomposable(object):
         :param valeur:  valeur à préparer si présente, sinon basename par
                         défaut
         """
-        if valeur:
+        # `is not None` et non `if valeur` : seule l'**absence** (`None`) retombe
+        # sur le basename. Une valeur `""` fournie explicitement est une valeur,
+        # pas une absence (même distinction *falsy* que `pos=0` et la capture
+        # vide corrigés en #116).
+        if valeur is not None:
             return valeur
         return self.basename
 
@@ -293,52 +304,61 @@ class Identificateur(object):
                     decomposeur.chaine, valeur or self.obj.basename
                 )
             )
+            # Le `try` ne couvre que l'**extraction** — propre à ce décomposeur
+            # (sa source, sa regex). Un patron qui ne capture rien, ou dont la
+            # source échoue, ne doit pas interrompre les autres : on journalise
+            # et on passe au suivant. En revanche `appel_en_retour` (reverser le
+            # résultat dans l'objet) est le **contrat de l'appelant** : une
+            # erreur dedans est un vrai bug, laissé remonter — pas maquillé en
+            # « aucun patron trouvé » comme le faisait le `except Exception`
+            # englobant d'origine.
             try:
                 resultats = decomposeur._decomposer(self.obj, valeur)
                 try:
                     resultats = resultats[0]
                 except IndexError:
                     raise DecompositionEchecPatron(decomposeur)
-                if options_resultat == DECOMPOSE_RESULTAT_PREMIER_NON_NUL:
-                    # Puis on appelle le callback pour remplir l'objet :
-                    decomposeur.appel_en_retour(self.obj, resultats)
-                    decomposition_reussie = True
-                    sortir = resultats
-                    # on s'arrête ici
-                    break
-                elif options_resultat == DECOMPOSE_RESULTAT_CUMULE:
-                    # Puis on appelle le callback pour remplir l'objet :
-                    decomposeur.appel_en_retour(self.obj, resultats)
-                    decomposition_reussie = True
-                    # mais on continue le traitement :
-                    continue
-                elif options_resultat == DECOMPOSE_RESULTAT_MAX_INFOS:
-                    obj_temoin = deepcopy(self.obj_temoin)
-                    decomposeur.appel_en_retour(obj_temoin, resultats)
-
-                    # On compare la taille des deux objets sérialisés, grosso
-                    # modo. On n'attribue un modificateur qu'à l'objet témoin
-                    # pour prendre en compte la « qualité » du décomposeur en
-                    # cours.
-                    temoin = self._score_max_infos(obj_temoin, decomposeur.poids)
-                    if temoin >= self._score_max_infos(self.obj):
-                        # Puis on appelle le callback pour remplir l'objet :
-                        decomposeur.appel_en_retour(self.obj, resultats)
-                        decomposition_reussie = True
-                    # mais on continue le traitement :
-                    continue
             except DecompositionEchecPatron:
                 LOGGER.debug(
                     "Echec de la décomposition: {} {}".format(
                         valeur, decomposeur.chaine
                     )
                 )
+                continue
             except Exception:
                 LOGGER.exception(
-                    "Echec durant la décomposition: {} {}".format(
+                    "Echec durant l'extraction: {} {}".format(
                         valeur, decomposeur.chaine
                     )
                 )
+                continue
+
+            if options_resultat == DECOMPOSE_RESULTAT_PREMIER_NON_NUL:
+                # Puis on appelle le callback pour remplir l'objet :
+                decomposeur.appel_en_retour(self.obj, resultats)
+                decomposition_reussie = True
+                sortir = resultats
+                # on s'arrête ici
+                break
+            elif options_resultat == DECOMPOSE_RESULTAT_CUMULE:
+                # Puis on appelle le callback pour remplir l'objet :
+                decomposeur.appel_en_retour(self.obj, resultats)
+                decomposition_reussie = True
+                # mais on continue le traitement :
+                continue
+            elif options_resultat == DECOMPOSE_RESULTAT_MAX_INFOS:
+                obj_temoin = deepcopy(self.obj_temoin)
+                decomposeur.appel_en_retour(obj_temoin, resultats)
+
+                # On compare la taille des deux objets sérialisés, grosso modo.
+                # On n'attribue un modificateur qu'à l'objet témoin pour prendre
+                # en compte la « qualité » du décomposeur en cours.
+                temoin = self._score_max_infos(obj_temoin, decomposeur.poids)
+                if temoin >= self._score_max_infos(self.obj):
+                    # Puis on appelle le callback pour remplir l'objet :
+                    decomposeur.appel_en_retour(self.obj, resultats)
+                    decomposition_reussie = True
+                # mais on continue le traitement :
                 continue
 
         LOGGER.debug("exec decomposition obj resultant : {}".format(self.obj))
@@ -405,7 +425,7 @@ class Identificateur(object):
         if sortir is not _CONTINUER:
             return sortir
 
-        # TODO par défaut on prend self.obj.filename et basename comme valeurs
+        # TODO par défaut on prend self.obj.source et basename comme valeurs
         # on pourrait en prendre d'autres et/ou le rendre paramétrable
         #
         # `remonte_arborescence` lève `ValueError` si le fichier n'est pas sous
@@ -414,7 +434,7 @@ class Identificateur(object):
         # option » plutôt que de laisser l'exception interrompre la boucle. #116
         if DECOMPOSE_ANALYSE_ARBO_COMPLETE in options_analyse:
             try:
-                for parent in remonte_arborescence(self.obj.filename, racine):
+                for parent in remonte_arborescence(self.obj.source, racine):
                     succes_, sortir = self._exec_decomposition(
                         options_resultat=options_resultat, valeur=parent.name
                     )
@@ -426,7 +446,7 @@ class Identificateur(object):
         if DECOMPOSE_ANALYSE_ARBO_CONCATENE in options_analyse:
             valeur_orig = self.obj.basename
             try:
-                for parent in remonte_arborescence(self.obj.filename, racine):
+                for parent in remonte_arborescence(self.obj.source, racine):
                     valeur_orig = "{} {}".format(parent.name, valeur_orig)
                     succes_, sortir = self._exec_decomposition(
                         options_resultat=options_resultat, valeur=valeur_orig

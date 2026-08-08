@@ -7,6 +7,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+* **`_exec_decomposition` masquait les bugs de l'appelant en « aucun patron
+  trouvé ».** Un `except Exception` englobant attrapait aussi ce que levait
+  l'`appel_en_retour` du consommateur (le callback qui reverse le résultat dans
+  l'objet — dépaquetage impossible, `AttributeError`…) et le traduisait en
+  `DecompositionEchecTousPatrons`, envoyant déboguer au mauvais endroit. Le
+  `try` ne couvre désormais que l'**extraction** (source + regex, propre à un
+  décomposeur : un échec y est journalisé et on passe au suivant) ;
+  `appel_en_retour`, qui est le **contrat de l'appelant**, est joué **hors** du
+  `try` et ses erreurs remontent.
+* `Decomposable._prepare_decomposition` : `if valeur` retombait sur le
+  `basename` pour une source `""` fournie **explicitement**, alors que la
+  docstring ne vise que l'absence. Seul `None` retombe désormais sur le basename
+  (même piège *falsy* que `pos=0` et la capture vide corrigés en #116).
+
+### Changed
+
+* **Le contrat `Decomposable` attend `source`, plus `filename`.** Le chemin
+  complet lu par les analyses d'arborescence (`DECOMPOSE_ANALYSE_ARBO_*`) est
+  désormais l'attribut `source` — le même nom que chez
+  `automatheque.schema.media.Media` et `automatheque.renommage.Renommable`. Un
+  seul porteur de vérité du chemin pour tout le socle média : un objet composé
+  (`class Rangeable(Photo, Renommable, Decomposable)`) exposait `source` (via
+  `Media`) mais pas `filename`, si bien que `remonte_arborescence(self.obj.filename, …)`
+  levait un `AttributeError` dès qu'on demandait une analyse d'arborescence.
+  Cf. #117. *(Rupture — mais convention d'attribut ; l'analyse par défaut
+  `ARBO_UN_NIVEAU`, qui lit `basename`, n'est pas concernée.)*
+
 ## [0.21.0] - 2026-08-07
 
 ### Added

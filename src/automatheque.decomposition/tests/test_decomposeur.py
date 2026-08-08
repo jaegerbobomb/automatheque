@@ -48,7 +48,7 @@ class SerieDecomposeurs(Decomposeurs):
 class Episode(Decomposable):
     """Objet décomposable minimal."""
 
-    filename = attr.ib(default="")
+    source = attr.ib(default="")
     basename = attr.ib(default="")
     serie = attr.ib(default=None)
     saison = attr.ib(default=None)
@@ -72,14 +72,14 @@ class EpisodeSlots(Decomposable):
     sérialise l'objet)."""
 
     basename = attr.ib(default="")
-    filename = attr.ib(default="")
+    source = attr.ib(default="")
     serie = attr.ib(default=None)
     saison = attr.ib(default=None)
     episode = attr.ib(default=None)
 
 
 def test_decompose_le_basename():
-    ep = Episode(filename="/media/Ma.Serie.S01E02.avi", basename="Ma.Serie.S01E02.avi")
+    ep = Episode(source="/media/Ma.Serie.S01E02.avi", basename="Ma.Serie.S01E02.avi")
     ep.decompose(decomposeurs=SerieDecomposeurs())
     assert (ep.serie, ep.saison, ep.episode) == ("Ma.Serie", "01", "02")
 
@@ -139,9 +139,7 @@ def test_appel_source_explicite_est_utilise():
 
 def test_analyse_arborescence_complete_remonte_les_niveaux():
     """Le patron ne matche aucun niveau seul, mais matche un répertoire."""
-    ep = Episode(
-        filename="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi"
-    )
+    ep = Episode(source="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi")
     ep.decompose(
         racine="/media",
         decomposeurs=SerieDecomposeurs(),
@@ -152,7 +150,7 @@ def test_analyse_arborescence_complete_remonte_les_niveaux():
 
 def test_analyse_arborescence_concatenee():
     """Aucun niveau ne porte l'information complète, leur concaténation si."""
-    ep = Episode(filename="/media/series/Ma.Serie/S01E02.avi", basename="S01E02.avi")
+    ep = Episode(source="/media/series/Ma.Serie/S01E02.avi", basename="S01E02.avi")
     ep.decompose(
         racine="/media",
         decomposeurs=SerieDecomposeurs(),
@@ -162,9 +160,7 @@ def test_analyse_arborescence_concatenee():
 
 
 def test_options_analyse_acceptent_une_collection():
-    ep = Episode(
-        filename="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi"
-    )
+    ep = Episode(source="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi")
     ep.decompose(
         racine="/media",
         decomposeurs=SerieDecomposeurs(),
@@ -220,15 +216,13 @@ def test_resultat_max_infos_garde_la_decomposition_la_plus_riche():
 
 
 def test_auto_decompose_trouve_une_combinaison_qui_marche():
-    ep = Episode(
-        filename="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi"
-    )
+    ep = Episode(source="/media/series/Ma.Serie.S01E02/video.avi", basename="video.avi")
     ep.auto_decompose(racine="/media", decomposeurs=SerieDecomposeurs())
     assert ep.serie == "Ma.Serie"
 
 
 def test_auto_decompose_echoue_si_rien_ne_marche():
-    ep = Episode(filename="/media/series/rien/video.avi", basename="video.avi")
+    ep = Episode(source="/media/series/rien/video.avi", basename="video.avi")
     with pytest.raises(DecompositionEchecTousPatrons):
         ep.auto_decompose(racine="/media", decomposeurs=SerieDecomposeurs())
 
@@ -267,7 +261,7 @@ def test_racine_hors_chemin_donne_un_echec_d_analyse_pas_un_valueerror():
     """#116-2 : une racine qui ne contient pas le fichier levait un `ValueError`
     qui traversait `auto_decompose` au lieu d'un échec d'analyse propre."""
     ep = Episode(
-        filename="/media/x/Ma.Serie.S01E02/v.avi",
+        source="/media/x/Ma.Serie.S01E02/v.avi",
         basename="v.avi",  # ne matche pas le patron série
     )
     with pytest.raises(DecompositionEchecTousPatrons):
@@ -299,3 +293,45 @@ def test_decomposer_respecte_pos_zero_et_endpos_seul():
     obj = Episode(basename="")
     assert dec._decomposer(obj, pos=0, endpos=3) == ["a", "b", "c"]
     assert dec._decomposer(obj, endpos=2) == ["a", "b"]
+
+
+# --- Robustesse : ne pas masquer les vrais bugs ------------------------------
+
+
+def test_un_bug_du_callback_remonte_pas_maquille_en_aucun_patron():
+    """Le patron **matche**, mais l'`appel_en_retour` du consommateur a un bug
+    (ici un dépaquetage impossible). C'est une erreur de l'appelant : elle doit
+    remonter, pas être avalée en `DecompositionEchecTousPatrons` (« aucun patron
+    trouvé »), ce qui envoyait déboguer au mauvais endroit."""
+
+    def _callback_bogue(obj, resultats):
+        # `resultats` est une seule capture (chaîne) : ce dépaquetage lève.
+        a, b, c = resultats
+
+    decs = SerieDecomposeurs()
+    decs.decomposeurs = [Decomposeur(r"(.+)", _callback_bogue)]
+
+    ep = Episode(basename="peu importe")
+    with pytest.raises((ValueError, TypeError)):
+        ep.decompose(decomposeurs=decs)
+
+
+def test_un_patron_qui_ne_matche_pas_n_interrompt_pas_les_autres():
+    """Un décomposeur qui ne capture rien est sauté ; un suivant qui matche
+    l'emporte. (L'extraction reste tolérante, seul le callback ne l'est pas.)"""
+    decs = SerieDecomposeurs()
+    decs.decomposeurs = [
+        Decomposeur(r"^ZZZ(\d+)", _remplit_annee),  # ne matche pas
+        Decomposeur(r"(.+)[. ]S(\d{2})E(\d{2})", _remplit_serie, drapeaux=re.I),
+    ]
+    ep = Episode(basename="Ma.Serie.S01E02.avi")
+    ep.decompose(decomposeurs=decs)
+    assert (ep.serie, ep.saison, ep.episode) == ("Ma.Serie", "01", "02")
+
+
+def test_prepare_decomposition_respecte_une_valeur_vide_explicite():
+    """Une source `""` fournie explicitement est une valeur, pas une absence :
+    seule `None` retombe sur le basename (même piège *falsy* que #116)."""
+    ep = Episode(basename="defaut.avi")
+    assert ep._prepare_decomposition("") == ""
+    assert ep._prepare_decomposition(None) == "defaut.avi"

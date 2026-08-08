@@ -29,7 +29,7 @@ tirer les dépendances du renommage.
 * **`Decomposeurs`** — un jeu de patrons, itérable. À sous-classer pour
   décrire une famille de médias (séries, films, photos…).
 * **`Decomposable`** — mixin à faire hériter par l'objet à décomposer. Il doit
-  exposer `basename` (la chaîne analysée par défaut) et `filename` (le chemin
+  exposer `basename` (la chaîne analysée par défaut) et `source` (le chemin
   complet, remonté niveau par niveau).
 * **`Identificateur`** — l'algorithme : il joue les patrons sur l'objet selon
   les options demandées, et choisit la décomposition la plus pertinente.
@@ -78,14 +78,14 @@ class SerieDecomposeurs(Decomposeurs):
 
 @attr.s
 class Episode(Decomposable):
-    filename = attr.ib(default="")
+    source = attr.ib(default="")
     basename = attr.ib(default="")
     serie = attr.ib(default=None)
     saison = attr.ib(default=None)
     episode = attr.ib(default=None)
 
 
-ep = Episode(filename="/media/Ma.Serie.S01E02.avi", basename="Ma.Serie.S01E02.avi")
+ep = Episode(source="/media/Ma.Serie.S01E02.avi", basename="Ma.Serie.S01E02.avi")
 ep.decompose(decomposeurs=SerieDecomposeurs())
 # ep.serie == "Ma.Serie", ep.saison == "01", ep.episode == "02"
 ```
