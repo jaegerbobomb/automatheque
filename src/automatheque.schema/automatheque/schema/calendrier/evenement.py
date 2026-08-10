@@ -15,10 +15,12 @@ pip install "automatheque.schema[calendrier]"
 ```
 """
 
-from datetime import date, datetime, time, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import attr
+
+from automatheque.schema.temps import UTC, en_datetime
 
 # Champs iCalendar repris tels quels dans la structure. L'ordre est celui du
 # VEVENT, pour que la correspondance se lise d'un coup d'œil.
@@ -31,20 +33,17 @@ _CHAMPS_VEVENT = (
 
 
 def _en_datetime(valeur):
-    """Ramène une date iCalendar à un `datetime` tz-aware.
+    """Ramène une date iCalendar à une `datetime` tz-aware.
 
-    Un `VEVENT` « journée entière » porte une `date` nue : on la place à
-    minuit UTC pour qu'elle reste comparable aux événements horodatés. Une
-    `datetime` naïve est supposée UTC, faute de mieux — c'est déjà ce que
-    faisait le code d'origine.
+    Un `VEVENT` « journée entière » porte une `date` nue ; une `datetime` peut
+    arriver naïve. **Ici** — un calendrier iCalendar — la politique est de les
+    supposer UTC pour qu'elles restent comparables aux événements horodatés :
+    on l'explicite au point d'appel (`suppose=UTC`), la primitive partagée
+    `schema.temps.en_datetime` ne stampant, elle, jamais rien en douce. Cf. #48.
     """
     if valeur is None:
         return None
-    if not isinstance(valeur, datetime) and isinstance(valeur, date):
-        valeur = datetime.combine(valeur, time(0, 0, 0))
-    if valeur.tzinfo is None:
-        valeur = valeur.replace(tzinfo=timezone.utc)
-    return valeur
+    return en_datetime(valeur, suppose=UTC)
 
 
 @attr.s
