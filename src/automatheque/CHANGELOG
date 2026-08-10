@@ -7,6 +7,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+* **`pytz` retiré du cœur, au profit de la stdlib (`zoneinfo`) + `tzdata`.**
+  `util.structures_python` n'utilisait `pytz` que pour `datetimezone_depuis_code_pays`
+  (mapping pays→fuseau, `country_timezones`). Ce mapping vient désormais de
+  `zone1970.tab` — la table IANA fournie par **`tzdata`**, celle-là même dont
+  `pytz` le tirait — lue via `importlib.resources`, et le fuseau est attaché
+  avec `zoneinfo.ZoneInfo`. Dépendance `pytz` → `tzdata` (qui fournit aussi les
+  données `zoneinfo` sous Windows / image *slim*) ; `types-pytz` sort de la CI.
+  Cf. #48.
+
+### Fixed
+
+* `util.structures_python.date_en_datetime` : le fuseau par défaut passe à
+  `datetime.timezone.utc` (stdlib) et la branche `time_obj` naïf attache
+  réellement le fuseau — l'ancien `pytz.utc` passé au constructeur `time()`
+  (anti-pattern pytz) et le `tzinfo.localize(time_obj)` dont le résultat était
+  **jeté** sont corrigés.
+* `util.structures_python.date_est_naive` : passe par `date_src.utcoffset()`
+  (méthode de l'objet) au lieu de `date_src.tzinfo.utcoffset(date_src)` — la
+  première fonctionne pour un `time` comme pour un `datetime` ; la seconde levait
+  un `TypeError` sur un `time` avec un `timezone` stdlib (`pytz` l'ignorait).
+
 ## [0.23.0] - 2026-08-08
 
 ### Added

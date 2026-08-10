@@ -133,7 +133,7 @@ jobs:
           # la dernière (qui change les règles de lint/format d'un jour à l'autre)
           # et fait échouer des PR sans rapport. On bumpe délibérément.
           # types-* : stubs pour pyyaml/pytz (typage de log.py / structures_python.py).
-          pip install ruff==0.16.0 mypy==1.19.1 types-PyYAML types-pytz
+          pip install ruff==0.16.0 mypy==1.19.1 types-PyYAML
 
       # ruff et mypy sont désormais **bloquants** : le code a été nettoyé (#71).
       - name: Lint (ruff check)
