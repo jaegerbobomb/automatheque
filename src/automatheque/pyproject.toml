@@ -39,6 +39,14 @@ dependencies = [
 Home = "https://github.com/jaegerbobomb/automatheque/tree/main/src/automatheque/"
 Repository = "https://github.com/jaegerbobomb/automatheque.git"
 
+# Langues des durées (util.temps / util.langues, #136). Le cœur n'a PAS de
+# chemin privilégié : il déclare `fr`/`en` sur ce groupe, exactement comme le
+# ferait un paquet tiers. Le registre est l'union de ces points d'entrée — le
+# cœur est ainsi son propre premier consommateur du mécanisme.
+[project.entry-points."automatheque.langues"]
+fr = "automatheque.util.langues:FR"
+en = "automatheque.util.langues:EN"
+
 [build-system]
 requires = [
     "setuptools>=61",
