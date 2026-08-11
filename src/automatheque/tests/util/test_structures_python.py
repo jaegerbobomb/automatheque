@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests des utilitaires sur les structures python (util/structures_python.py)."""
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
-import pytz
 from automatheque.util.structures_python import (
     date_en_datetime,
     date_est_naive,
@@ -41,7 +40,7 @@ def test_date_est_naive_vrai_pour_date_sans_tz():
 
 def test_date_est_naive_faux_pour_date_avec_tz():
     """Une datetime avec timezone n'est pas naive."""
-    aware = pytz.utc.localize(datetime(2020, 1, 1, 12, 0))
+    aware = datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc)
     assert date_est_naive(aware) is False
 
 
@@ -62,7 +61,7 @@ def test_date_en_datetime_avec_heures_personnalisees():
 
 def test_date_en_datetime_avec_time_obj_fourni():
     """Un objet time "aware" fourni est combiné avec la date."""
-    time_obj = time(8, 15, 0, tzinfo=pytz.utc)
+    time_obj = time(8, 15, 0, tzinfo=timezone.utc)
     resultat = date_en_datetime(date(2021, 3, 2), time_obj=time_obj)
     assert resultat.hour == 8 and resultat.minute == 15
 
@@ -81,9 +80,24 @@ def test_datetimezone_depuis_code_pays_ajoute_la_tz():
     assert resultat.utcoffset().total_seconds() == 3600  # UTC+1 en hiver
 
 
+def test_datetimezone_depuis_code_pays_gere_l_heure_d_ete():
+    """`zoneinfo` applique la vraie règle DST : Paris en juillet = UTC+2."""
+    ete = datetimezone_depuis_code_pays(datetime(2020, 7, 1, 10, 0), "FR")
+    assert ete is not None
+    assert ete.utcoffset().total_seconds() == 7200
+
+
+def test_datetimezone_depuis_code_pays_autre_pays():
+    """Un second pays confirme la lecture correcte de la table pays→fuseau."""
+    resultat = datetimezone_depuis_code_pays(datetime(2020, 1, 1, 10, 0), "JP")
+    assert resultat is not None
+    assert resultat.tzinfo.key == "Asia/Tokyo"  # type: ignore[union-attr]
+    assert resultat.utcoffset().total_seconds() == 9 * 3600  # JST = UTC+9
+
+
 def test_datetimezone_depuis_code_pays_date_deja_aware_inchangee():
     """Une datetime déjà "aware" est renvoyée telle quelle."""
-    aware = pytz.utc.localize(datetime(2020, 1, 1, 10, 0))
+    aware = datetime(2020, 1, 1, 10, 0, tzinfo=timezone.utc)
     assert datetimezone_depuis_code_pays(aware, "FR") is aware
 
 
