@@ -101,6 +101,17 @@ def test_vers_vevent():
     assert "Voyage au Japon" in vevent.serialize()
 
 
+def test_vers_vevent_depuis_une_date_naive_serialise_en_z():
+    """#48 : une date naïve devient tz-aware avec un UTC **nommé**
+    (`ZoneInfo("UTC")`), que vobject sérialise directement en `Z` — sans passer
+    par le contournement `_pour_vobject` (réservé aux décalages fixes anonymes
+    comme `datetime.timezone.utc`)."""
+    ev = Evenement(
+        uid="x@exemple.org", titre="T", date_debut=datetime(2013, 3, 17, 1, 0)
+    )
+    assert "DTSTART:20130317T010000Z" in ev.vers_vevent().serialize()
+
+
 def test_vers_vevent_n_ecrit_pas_les_champs_vides():
     vevent = Evenement(titre="Sans lieu").vers_vevent()
     assert not hasattr(vevent, "location")
