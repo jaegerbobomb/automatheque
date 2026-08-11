@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `util.temps` : **durées humaines et humanisation relative** (#132).
+  `parse_duree("1h30")` → `timedelta` (fr/en tolérés en entrée, `m` = minute et
+  jamais mois — le mois est refusé explicitement plutôt qu'approximé) ;
+  `humanise_duree(timedelta)` → `"1j 2h 30m"`, inverse exact
+  (`parse_duree(humanise_duree(d)) == d`). `humanise_relatif(instant,
+  maintenant=…)` → « il y a 5 min » / « dans 2 j » : la fonction **reçoit** son
+  instant de référence (testable, découplée de l'horloge et de #48), avec seuils
+  et `Vocabulaire` paramétrables. `parse_date_floue` s'appuie sur `dateutil`,
+  importé paresseusement derrière l'extra `automatheque[dates]`. Nouvelle
+  exception `DureeInvalide` (hiérarchie `AutomathequeBaseException`, aussi
+  `ValueError`). Aucune dépendance obligatoire ajoutée au cœur.
+
 ### Changed
 
 * **`pytz` retiré du cœur, au profit de la stdlib (`zoneinfo`) + `tzdata`.**

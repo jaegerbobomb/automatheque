@@ -56,6 +56,12 @@ license-files = ["LICENSE", "GPL-3.0.txt"]
 automatheque = ["py.typed"]
 
 [project.optional-dependencies]
+# Parsing de dates « floues » écrites à la main (util.temps.parse_date_floue,
+# #132). Import paresseux : le cœur reste installable sans, seul cet appel le
+# réclame.
+dates = [
+    "python-dateutil",
+]
 dev = [
     "pytest",
 ]
