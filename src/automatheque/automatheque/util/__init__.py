@@ -3,6 +3,16 @@
 # Imports depuis fichier
 from .fichier import enleve_caracteres_invalides
 
+# Imports depuis langues
+from .langues import (
+    EN,
+    FR,
+    Langue,
+    Vocabulaire,
+    langues_disponibles,
+    resout_langue,
+)
+
 # Imports depuis parallele
 from .parallele import Resultat, parallelise
 
@@ -17,8 +27,6 @@ from .structures_python import dict_merge
 
 # Imports depuis temps
 from .temps import (
-    FR,
-    Vocabulaire,
     humanise_duree,
     humanise_relatif,
     parse_date_floue,
@@ -41,7 +49,12 @@ __all__ = [
     "parse_duree",
     "humanise_duree",
     "humanise_relatif",
+    "parse_date_floue",
+    # .langues
+    "Langue",
     "Vocabulaire",
     "FR",
-    "parse_date_floue",
+    "EN",
+    "langues_disponibles",
+    "resout_langue",
 ]
