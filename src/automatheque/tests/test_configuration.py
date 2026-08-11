@@ -4,12 +4,17 @@ import logging
 from configparser import ConfigParser, NoSectionError
 from unittest.mock import MagicMock
 
+import attr
 import pytest
 from automatheque.configuration import (
     _configure_logging,
     _dictconfig_depuis_ini,
+    booleen,
     charge_configuration,
+    charge_section,
+    liste,
 )
+from automatheque.exceptions import AutomathequeBaseException, ConfigurationInvalide
 
 from automatheque import constantes
 
@@ -232,3 +237,117 @@ def test_charge_configuration_en_couches(monkeypatch, tmp_path):
 
     assert cfg.get("demo", "cle") == "specifique"  # la couche script surcharge
     assert cfg.get("demo", "base") == "oui"  # la couche partagée reste la base
+
+
+# --- Validation d'une section typée (#12) -----------------------------------
+
+
+@attr.s
+class ConfigDemo:
+    """Section de config typée d'exemple pour les tests de `charge_section`."""
+
+    hote = attr.ib(validator=attr.validators.instance_of(str))
+    port = attr.ib(default=465, converter=int)
+    actif = attr.ib(default=False, converter=booleen)
+    tags = attr.ib(factory=list, converter=liste)
+    mode = attr.ib(default="a", validator=attr.validators.in_(["a", "b"]))
+
+
+def _cfg(texte):
+    config = ConfigParser()
+    config.read_string(texte)
+    return config
+
+
+def test_charge_section_peuple_et_convertit():
+    config = _cfg(
+        "[demo]\n"
+        "hote = smtp.exemple.org\n"
+        "port = 587\n"
+        "actif = yes\n"
+        "tags = x, y ,z\n"
+        "mode = b\n"
+    )
+    demo = charge_section(ConfigDemo, config, "demo")
+    assert demo == ConfigDemo(
+        hote="smtp.exemple.org", port=587, actif=True, tags=["x", "y", "z"], mode="b"
+    )
+    # Les conversions ont bien eu lieu (types, pas des chaînes).
+    assert demo.port == 587 and demo.actif is True and demo.tags == ["x", "y", "z"]
+
+
+def test_charge_section_applique_les_defauts():
+    demo = charge_section(ConfigDemo, _cfg("[demo]\nhote = h\n"), "demo")
+    assert demo.port == 465 and demo.actif is False and demo.tags == []
+
+
+def test_charge_section_cle_requise_manquante():
+    with pytest.raises(ConfigurationInvalide) as info:
+        charge_section(ConfigDemo, _cfg("[demo]\nport = 25\n"), "demo")
+    assert "hote" in str(info.value)
+    # Précoce et de la hiérarchie maison, tout en restant un ValueError.
+    assert isinstance(info.value, ValueError)
+    assert isinstance(info.value, AutomathequeBaseException)
+
+
+def test_charge_section_option_inconnue_est_une_erreur():
+    with pytest.raises(ConfigurationInvalide) as info:
+        charge_section(ConfigDemo, _cfg("[demo]\nhote = h\nbidon = 1\n"), "demo")
+    assert "bidon" in str(info.value)
+
+
+def test_charge_section_non_strict_ignore_les_inconnues():
+    demo = charge_section(
+        ConfigDemo, _cfg("[demo]\nhote = h\nbidon = 1\n"), "demo", strict=False
+    )
+    assert demo.hote == "h"
+
+
+def test_charge_section_mauvais_type_leve_configuration_invalide():
+    with pytest.raises(ConfigurationInvalide):
+        charge_section(ConfigDemo, _cfg("[demo]\nhote = h\nport = abc\n"), "demo")
+
+
+def test_charge_section_validateur_refuse():
+    with pytest.raises(ConfigurationInvalide):
+        charge_section(ConfigDemo, _cfg("[demo]\nhote = h\nmode = z\n"), "demo")
+
+
+def test_charge_section_absente():
+    with pytest.raises(ConfigurationInvalide) as info:
+        charge_section(ConfigDemo, _cfg("[autre]\nx = 1\n"), "demo")
+    assert "demo" in str(info.value)
+
+
+def test_charge_section_classe_non_attrs():
+    with pytest.raises(TypeError):
+        charge_section(dict, _cfg("[demo]\nhote = h\n"), "demo")
+
+
+@pytest.mark.parametrize(
+    "valeur, attendu",
+    [
+        ("yes", True), ("TRUE", True), ("On", True), ("1", True), ("oui", True),
+        ("no", False), ("false", False), ("off", False), ("0", False), ("non", False),
+        (True, True), (False, False),
+    ],
+)  # fmt: skip
+def test_booleen_graphies(valeur, attendu):
+    assert booleen(valeur) is attendu
+
+
+def test_booleen_invalide():
+    with pytest.raises(ValueError):
+        booleen("peut-être")
+
+
+def test_liste_decoupe_et_detoure():
+    assert liste("a, b ,c") == ["a", "b", "c"]
+    assert liste("a, ,b") == ["a", "b"]  # éléments vides ignorés
+    assert liste("") == []
+    assert liste(["deja", "liste"]) == ["deja", "liste"]  # séquence passe telle quelle
+
+
+def test_liste_invalide():
+    with pytest.raises(ValueError):
+        liste(42)
