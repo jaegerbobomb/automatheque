@@ -30,3 +30,18 @@ class ConfigurationInvalide(AutomathequeBaseException, ValueError):
     permettant désormais un filtrage spécifique via la hiérarchie
     ``AutomathequeBaseException``.
     """
+
+
+class DureeInvalide(AutomathequeBaseException, ValueError):
+    """Durée humaine impossible à interpréter (``util/temps.py``, #132).
+
+    Levée quand une chaîne de durée est vide, mal formée, ou porte une unité
+    inconnue — au premier rang desquelles le **mois** (``mo``, ``mois``), qu'un
+    :class:`~datetime.timedelta` ne peut pas représenter et qu'on refuse donc
+    plutôt que d'approximer.
+
+    Hérite aussi de :class:`ValueError` : une durée illisible est, dans l'esprit
+    de la stdlib, une valeur invalide ; le code qui attrape ``ValueError``
+    continue de fonctionner tout en permettant un filtrage spécifique via la
+    hiérarchie ``AutomathequeBaseException``.
+    """
