@@ -27,7 +27,10 @@ dependencies = [
     # >=1.0.0rc1 embarque volontairement la RC : automatheque sert de banc de
     # validation à la 1.0 de commandopt. <2 : garde-fou contre une 2.0.
     "commandopt>=1.0.0rc1,<2",
-    "pytz",
+    # tzdata : base de fuseaux IANA (données `zoneinfo` sous Windows / image
+    # slim) ET table pays→fuseau `zone1970.tab` lue par
+    # `util.structures_python`. Remplace `pytz` (dont on tirait la même table).
+    "tzdata",
     "pyyaml",
     "attrs>=19.2",
 ]
