@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, timezone
+from datetime import datetime
 from email.header import Header
 from email.utils import format_datetime, formataddr, formatdate, parseaddr
 from pathlib import Path
@@ -7,15 +7,10 @@ from typing import Callable, List, Sequence, Tuple, Union
 
 import attr
 
-
-def maintenant() -> datetime:
-    """Horodatage courant, **tz-aware** (UTC).
-
-    Renvoyer un ``datetime`` conscient du fuseau évite les ambiguïtés lors du
-    formatage RFC 5322 (l'offset est explicite) et les comparaisons avec
-    d'autres dates naïves. Cf. #25.
-    """
-    return datetime.now(timezone.utc)
+# `maintenant` vient désormais de la primitive partagée `schema.temps` (#48).
+# Ré-exportée ici pour rester importable depuis `courriel` (rétro-compat) et
+# servir de fabrique à `_date_envoi`.
+from automatheque.schema.temps import maintenant as maintenant
 
 
 @attr.s

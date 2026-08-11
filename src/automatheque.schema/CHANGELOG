@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Ce journal a été introduit a posteriori (cf. #34). Les entrées sont
 > reconstituées depuis l'historique git et peuvent donc être moins détaillées.
 
+## [Unreleased]
+
+### Added
+
+* **`schema.temps`** : primitives de temps en **stdlib pure** (`datetime`,
+  `zoneinfo`), atteignables par tous les paquets puisque `schema` est une
+  feuille du graphe (#48). `maintenant()` tz-aware, `en_datetime()`,
+  `est_naive()`, bornage (`debut_de_jour`/`_semaine`/`_mois`), `arrondi()`,
+  `intervalle()`. Deux partis pris :
+  * **UTC nommé** : `temps.UTC = ZoneInfo("UTC")`, pas `datetime.timezone.utc`.
+    Ce dernier est un décalage fixe **sans nom** dont un sérialiseur ne sait pas
+    tirer d'identifiant de fuseau (vobject lève `Unable to guess TZID`) ;
+    `ZoneInfo("UTC")` porte la clé « UTC » et se sérialise directement en `Z`.
+    Un `Evenement` construit depuis une date naïve se sérialise donc **sans**
+    recourir au contournement `_pour_vobject` (désormais réservé aux décalages
+    fixes anonymes qu'un appelant fournirait encore).
+  * **Politique naïve explicite** : `en_datetime()` ne stampe **jamais** un
+    fuseau en douce sur une entrée naïve — il exige un `suppose=` (une date EXIF
+    est locale, pas UTC : à l'appelant de trancher).
+
+### Changed
+
+* `texte.courriel.maintenant` et le convertisseur de `calendrier.Evenement`
+  (`_en_datetime`) s'appuient désormais sur `schema.temps` au lieu de helpers
+  locaux dupliqués. `courriel.maintenant` reste importable (ré-export) ;
+  `Evenement` explicite sa politique « date iCalendar → UTC » au point d'appel
+  (`en_datetime(v, suppose=temps.UTC)`). Cf. #48.
+
 ## [0.23.0] - 2026-08-08
 
 ### Changed
