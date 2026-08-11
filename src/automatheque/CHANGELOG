@@ -22,6 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   importé paresseusement derrière l'extra `automatheque[dates]`. Nouvelle
   exception `DureeInvalide` (hiérarchie `AutomathequeBaseException`, aussi
   `ValueError`). Aucune dépendance obligatoire ajoutée au cœur.
+* `util.temps` / `util.langues` : **langues des durées via points d'entrée**
+  (#136). Les trois fonctions prennent un paramètre `langue` — un code (`"fr"`
+  défaut, `"en"`) ou un objet `Langue` passé en direct :
+  `humanise_duree(d, langue="en")` → `"1d 2h"`, `humanise_relatif(…,
+  langue="en")` → « … ago ». Le nouveau contrat `Langue` rassemble alias
+  d'entrée, unités « mois » refusées, libellés de sortie et `Vocabulaire`
+  relatif. `fr` et `en` sont fournis par le cœur **par le même mécanisme que les
+  tiers** : il les déclare sur le groupe de points d'entrée
+  `automatheque.langues` (aucun chemin privilégié), et le registre est l'union
+  découverte paresseusement (`lru_cache`). Une langue de plus s'ajoute en
+  installant un paquet qui la déclare. Code inconnu → `LangueInconnue`
+  (hiérarchie `AutomathequeBaseException`, aussi `LookupError`) nommant quoi
+  installer. Extension **additive** de #132 : les appels sans `langue=` (et
+  `humanise_relatif(vocabulaire=…)`) sont inchangés. Réutilise le mécanisme de
+  #129.
 
 ### Changed
 
