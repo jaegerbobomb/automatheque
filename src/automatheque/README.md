@@ -172,6 +172,59 @@ from automatheque.log import installe_caviardage
 installe_caviardage()  # racine par défaut (couvre les loggers enfants)
 ```
 
+## Configuration : sections typées et validées
+
+`_script.config` (ou `charge_configuration()`) renvoie un `ConfigParser` **brut** :
+tout y est chaîne, rien n'est validé, et une clé absente ou mal typée n'explose
+que **tard**, au point d'accès. Pour valider **tôt** — et récupérer des valeurs
+déjà typées — décris une section comme une classe `attrs` et peuple-la avec
+`charge_section` :
+
+```python
+import attr
+from automatheque.configuration import charge_section, booleen, liste
+
+
+@attr.s
+class ConfigSmtp:
+    hote = attr.ib(validator=attr.validators.instance_of(str))
+    port = attr.ib(default=465, converter=int)
+    tls = attr.ib(default=True, converter=booleen)
+    relais = attr.ib(factory=list, converter=liste)
+
+
+smtp = charge_section(ConfigSmtp, _script.config, "smtp")
+smtp.port  # 587 : un int, pas "587"
+smtp.tls  # True : un bool
+```
+
+pour la section :
+
+```ini
+[smtp]
+hote   = smtp.exemple.org
+port   = 587
+tls    = yes
+relais = a.exemple.org, b.exemple.org
+```
+
+Les `converter`/`validator` des `attr.ib` font la conversion (chaîne → `int`,
+`booleen`, `liste`…) et le contrôle. L'erreur est **précoce et nommée** :
+
+- section absente, **option inconnue** (une faute de frappe est rattrapée),
+  **clé requise manquante**, ou valeur refusée par un converter/validator →
+  `ConfigurationInvalide` (qui hérite de `ValueError`), avec le nom de la section
+  et de la clé fautive.
+- `charge_section(..., strict=False)` **ignore** les options inconnues, quand une
+  même section sert à plusieurs consommateurs.
+
+Deux converteurs sont fournis, puisqu'un `.ini` ne rend que des chaînes :
+
+| Converteur | `.ini` → | reconnaît |
+| ---------- | -------- | --------- |
+| `booleen`  | `bool`      | `yes/no`, `true/false`, `on/off`, `oui/non`, `vrai/faux` |
+| `liste`    | `list[str]` | valeurs séparées par des virgules (éléments vides ignorés) |
+
 ## Configuration du logging
 
 Automathèque **ne configure rien à l'import** (une bibliothèque ne doit pas

@@ -207,12 +207,10 @@ def _dictconfig_depuis_ini(config):
 # --- Validation d'une section de configuration (#12) ------------------------
 #
 # `charge_configuration` renvoie un `ConfigParser` brut : tout est chaîne, rien
-# n'est validé, et une clé manquante ou mal typée n'explose que **tard**, au
-# point d'accès, loin de sa cause. On permet ici de décrire une section comme
-# une **classe attrs** typée et validée, et de la peupler en un appel — la
-# validation a lieu **une fois, tôt**, avec une erreur qui nomme la section et
-# la clé. Zéro nouvelle dépendance : `attrs` est déjà là (étape 1 de #12 ; cattrs
-# / pydantic restent des étapes ultérieures, si un cas concret les réclame).
+# n'est validé, et une clé manquante ou mal typée n'explose que tard, au point
+# d'accès, loin de sa cause. On décrit ici une section comme une classe attrs
+# typée et validée, peuplée en un appel — la validation a lieu une fois, tôt,
+# avec une erreur qui nomme la section et la clé.
 
 _BOOLEENS_VRAI = frozenset({"1", "yes", "true", "on", "oui", "vrai"})
 _BOOLEENS_FAUX = frozenset({"0", "no", "false", "off", "non", "faux"})
