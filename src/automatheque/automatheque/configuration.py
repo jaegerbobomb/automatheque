@@ -10,6 +10,8 @@ from configparser import (
 )
 from os import path
 
+import attr
+
 from automatheque import constantes
 from automatheque.exceptions import ConfigurationInvalide
 from automatheque.log import configure_logging
@@ -200,3 +202,151 @@ def _dictconfig_depuis_ini(config):
         conf["loggers"] = loggers
 
     return conf
+
+
+# --- Validation d'une section de configuration (#12) ------------------------
+#
+# `charge_configuration` renvoie un `ConfigParser` brut : tout est chaîne, rien
+# n'est validé, et une clé manquante ou mal typée n'explose que tard, au point
+# d'accès, loin de sa cause. On décrit ici une section comme une classe attrs
+# typée et validée, peuplée en un appel — la validation a lieu une fois, tôt,
+# avec une erreur qui nomme la section et la clé.
+
+_BOOLEENS_VRAI = frozenset({"1", "yes", "true", "on", "oui", "vrai"})
+_BOOLEENS_FAUX = frozenset({"0", "no", "false", "off", "non", "faux"})
+
+
+def booleen(valeur):
+    """Converteur ``.ini`` → ``bool`` pour un champ attrs.
+
+    Un ``ConfigParser`` ne rend que des chaînes ; ce converteur reconnaît les
+    graphies usuelles (``yes``/``no``, ``true``/``false``, ``on``/``off``,
+    ``1``/``0``, et ``oui``/``non``, ``vrai``/``faux``), casse et espaces
+    indifférents. Un booléen déjà typé passe tel quel (utile pour instancier la
+    classe hors configuration).
+
+    .. code-block:: python
+
+        actif = attr.ib(default=False, converter=booleen)
+
+    :raise ValueError: si la valeur n'est pas une graphie booléenne reconnue.
+        Levée à la construction, `charge_section` la retraduit en
+        `ConfigurationInvalide` contextualisée.
+    """
+    if isinstance(valeur, bool):
+        return valeur
+    if isinstance(valeur, str):
+        v = valeur.strip().lower()
+        if v in _BOOLEENS_VRAI:
+            return True
+        if v in _BOOLEENS_FAUX:
+            return False
+    raise ValueError("valeur booléenne non reconnue : {!r}".format(valeur))
+
+
+def liste(valeur, separateur=","):
+    """Converteur ``.ini`` → ``list[str]`` (valeurs séparées par des virgules).
+
+    Chaque élément est détouré ; les éléments vides sont ignorés (``"a, ,b"`` →
+    ``["a", "b"]``). Une liste/un tuple déjà typé passe tel quel. Rend explicite
+    le motif ``valeur.split(",")`` éparpillé dans le code de configuration.
+
+    .. code-block:: python
+
+        greffons = attr.ib(factory=list, converter=liste)
+
+    :raise ValueError: si la valeur n'est ni une chaîne, ni une séquence.
+    """
+    if isinstance(valeur, (list, tuple)):
+        return list(valeur)
+    if isinstance(valeur, str):
+        return [
+            element.strip() for element in valeur.split(separateur) if element.strip()
+        ]
+    raise ValueError("valeur de liste non reconnue : {!r}".format(valeur))
+
+
+def charge_section(cls, config, section, strict=True):
+    """Peuple et valide une classe attrs depuis une section de configuration.
+
+    Chaque option de ``[section]`` est passée à ``cls`` en argument nommé ; les
+    ``converter``/``validator`` des ``attr.ib`` font la conversion (chaîne →
+    ``int``, :func:`booleen`, :func:`liste`…) et le contrôle. Le résultat est
+    une instance **peuplée et validée**, ou une erreur **précoce** qui nomme la
+    section et la clé fautive.
+
+    .. code-block:: python
+
+        @attr.s
+        class ConfigSmtp:
+            hote = attr.ib(validator=attr.validators.instance_of(str))
+            port = attr.ib(default=465, converter=int)
+
+        smtp = charge_section(ConfigSmtp, charge_configuration(), "smtp")
+
+    Les noms d'options du ``.ini`` sont — convention ``ConfigParser`` — en
+    minuscules ; ils doivent correspondre aux champs de ``cls``.
+
+    :param cls: classe décorée ``attrs`` (``@attr.s`` / ``@define``).
+    :param config: le ``ConfigParser`` (ce que renvoie `charge_configuration`).
+    :param section: nom de la section ``[section]``.
+    :param strict: si ``True`` (défaut), une option **inconnue** de ``cls`` est
+        une erreur (elle rattrape les fautes de frappe) ; si ``False``, les
+        options inconnues sont ignorées (utile quand la section sert aussi à
+        d'autres consommateurs).
+    :raise ConfigurationInvalide: section absente, option inconnue (en mode
+        strict), champ requis manquant, ou valeur refusée par un
+        converter/validator. Hérite de ``ValueError``.
+    :raise TypeError: si ``cls`` n'est pas une classe attrs.
+    """
+    if not attr.has(cls):
+        raise TypeError(
+            "charge_section attend une classe attrs, pas {!r}".format(
+                getattr(cls, "__name__", cls)
+            )
+        )
+    if not config.has_section(section):
+        raise ConfigurationInvalide(
+            "section [{}] absente de la configuration".format(section)
+        )
+
+    options = dict(config.items(section))
+
+    # Nom d'initialisation de chaque champ (attrs retire les underscores de tête
+    # pour l'argument du constructeur ; `alias` le fixe explicitement au besoin).
+    champs = {}
+    requis = []
+    for champ in attr.fields(cls):
+        nom_init = getattr(champ, "alias", None) or champ.name.lstrip("_")
+        champs[nom_init] = champ
+        if champ.default is attr.NOTHING:
+            requis.append(nom_init)
+
+    if strict:
+        inconnues = sorted(set(options) - set(champs))
+        if inconnues:
+            raise ConfigurationInvalide(
+                "section [{}] : option(s) inconnue(s) : {} (attendu : {})".format(
+                    section, ", ".join(inconnues), ", ".join(sorted(champs))
+                )
+            )
+    else:
+        options = {nom: val for nom, val in options.items() if nom in champs}
+
+    manquantes = sorted(nom for nom in requis if nom not in options)
+    if manquantes:
+        raise ConfigurationInvalide(
+            "section [{}] : clé(s) requise(s) manquante(s) : {}".format(
+                section, ", ".join(manquantes)
+            )
+        )
+
+    try:
+        return cls(**options)
+    except (TypeError, ValueError) as exc:
+        # Un converter/validator a rejeté une valeur (`instance_of` lève un
+        # TypeError, `int("x")` un ValueError) : on la retraduit en erreur de
+        # configuration contextualisée plutôt que de laisser fuiter l'erreur brute.
+        raise ConfigurationInvalide(
+            "section [{}] : valeur invalide ({})".format(section, exc)
+        ) from exc
