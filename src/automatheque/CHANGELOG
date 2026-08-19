@@ -20,8 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `converter`/`validator` → `ConfigurationInvalide` **contextualisée** (section +
   clé ; hérite de `ValueError`). Deux converteurs `.ini`→type fournis :
   `booleen` (yes/no, true/false, oui/non…) et `liste` (valeurs séparées par des
-  virgules). Zéro nouvelle dépendance (`attrs` déjà présent) — étape 1 de #12,
-  `cattrs`/`pydantic` restant des étapes ultérieures.
+  virgules). Zéro nouvelle dépendance (`attrs` déjà présent). Cf. #12.
 * `util.temps` : **durées humaines et humanisation relative** (#132).
   `parse_duree("1h30")` → `timedelta` (fr/en tolérés en entrée, `m` = minute et
   jamais mois — le mois est refusé explicitement plutôt qu'approximé) ;
