@@ -29,3 +29,16 @@ qu'on ait à les redemander.
 - Ne mettre **aucune** mention du modèle ni de la session (liens `claude.ai`,
   identifiant de modèle) dans les artefacts poussés : commits, titres/corps de
   PR, code, commentaires. Cela reste dans le fil de discussion.
+
+## Commentaires de code et docstrings
+
+- Un commentaire (ou une docstring) explique **le quoi et le pourquoi** de ce
+  que fait le code, **brièvement**. Rien de plus.
+- **Pas de feuille de route dans le code** : « étape 1/2/3 », « on fera plus
+  tard », « cattrs/pydantic viendront ensuite », « pour l'instant »… n'ont pas
+  leur place. Ces choix et l'évolution d'une story vivent dans **l'issue** (et
+  les ADR liées) ; les dupliquer dans le code les fait diverger.
+- Une **référence** suffit pour renvoyer au contexte : `Cf. #12`. Le lecteur
+  suit le numéro pour la genèse, la roadmap, les alternatives écartées.
+- Même principe pour le `CHANGELOG` : il décrit ce qui **a changé**, pas ce qui
+  reste à faire.
