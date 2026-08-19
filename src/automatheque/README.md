@@ -225,6 +225,61 @@ Deux converteurs sont fournis, puisqu'un `.ini` ne rend que des chaînes :
 | `booleen`  | `bool`      | `yes/no`, `true/false`, `on/off`, `oui/non`, `vrai/faux` |
 | `liste`    | `list[str]` | valeurs séparées par des virgules (éléments vides ignorés) |
 
+### Valider la configuration d'un greffon
+
+Un greffon peut **exiger** une configuration (`config_requise = True`). Plutôt
+que de se fier au contrôle générique « une config existe-t-elle ? »
+(`Greffon.actif`), décris la config attendue **par une classe** et valide-la avec
+`charge_section` au moment de monter le greffon : on sait alors **tôt**, et
+précisément, si la config requise est réellement présente et bien typée.
+
+C'est le rôle naturel d'un **Monteur** — il lit la configuration et s'en sert
+pour instancier le greffon :
+
+```python
+import attr
+from automatheque.configuration import charge_configuration, charge_section
+from automatheque.conception.structures import Monteur
+from automatheque.greffon import Greffon
+
+
+@attr.s
+class ConfigMeteo:
+    """Config attendue par le greffon météo (section [meteo])."""
+
+    cle_api = attr.ib(validator=attr.validators.instance_of(str))
+    hote = attr.ib(default="api.exemple.org", converter=str)
+
+
+@attr.s(eq=False)
+class GreffonMeteo(Greffon):
+    config_requise = attr.ib(default=True, init=False, kw_only=True)
+    reglages = attr.ib(default=None, kw_only=True)  # ConfigMeteo validée
+
+
+class MonteurMeteo(Monteur):
+    """Lit la config et ne monte le greffon que si sa section est valide."""
+
+    def construit(self, *, identifiant=None, **kwargs):
+        # charge_section lève ConfigurationInvalide — tôt, nommée — si la
+        # section [meteo] est absente, incomplète ou mal typée.
+        reglages = charge_section(ConfigMeteo, charge_configuration(), "meteo")
+        return GreffonMeteo(identifiant=identifiant, reglages=reglages, **kwargs)
+```
+
+Le paquet déclare le monteur en point d'entrée (auto-découverte, cf.
+`decouvre_monteurs`) :
+
+```toml
+[project.entry-points."automatheque.greffons"]
+meteo = "mon_paquet.meteo:MonteurMeteo"
+```
+
+Ainsi `config_requise` cesse d'être un simple booléen « il y a une config » : la
+présence **réelle** des clés dont ce greffon a besoin est prouvée à l'instanciation,
+et une config manquante ou fautive échoue avec un message qui nomme la section et
+la clé.
+
 ## Configuration du logging
 
 Automathèque **ne configure rien à l'import** (une bibliothèque ne doit pas
