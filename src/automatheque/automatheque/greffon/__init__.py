@@ -104,6 +104,15 @@ class FabriqueGreffon(Fabrique):
         instancie un nouveau.
         En l'absence d'identifiant, un nouveau Greffon est instancié et on lui
         attribue un identifiant unique auto-généré.
+
+        .. note::
+            L'identifiant auto-généré est un uuid : il garantit l'absence de
+            collision, car les greffons sont pensés pour être retrouvés par
+            **capacité** (``Greffon.greffons_par_capacite``), pas par leur
+            nom — un greffon à l'identifiant auto-généré reste d'ailleurs
+            découvrable dans la liste. Ne passez un ``identifiant=`` explicite
+            que pour le cas particulier d'un greffon à rappeler ensuite par
+            ``Greffon.greffon_par_identifiant`` (affichages, rapports…).
         """
         if not identifiant or identifiant not in Greffon.greffons_identifiants():
             try:
