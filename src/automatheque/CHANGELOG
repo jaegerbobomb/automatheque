@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* `FabriqueGreffon.active` : docstring — clarifie le rôle de l'identifiant
+  auto-généré (uuid anti-collision : les greffons se retrouvent par
+  **capacité**, pas par nom) et le cas particulier où passer un `identifiant=`
+  explicite (greffon à rappeler ensuite par `greffon_par_identifiant`).
 * **`pytz` retiré du cœur, au profit de la stdlib (`zoneinfo`) + `tzdata`.**
   `util.structures_python` n'utilisait `pytz` que pour `datetimezone_depuis_code_pays`
   (mapping pays→fuseau, `country_timezones`). Ce mapping vient désormais de
