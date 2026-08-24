@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `schema.monnaie` : **value object `Montant`** — valeur exacte (`Decimal`, le
+  `float` est refusé) + devise, arithmétique sûre (opérer entre devises
+  différentes lève `DevisesIncompatibles`). Présentation/saisie **découplées**
+  du modèle via un `FormatMonetaire` paramétrable (préréglages `FR`/`US`, pas de
+  locale figée) : `depuis_texte` absorbe les écritures des relevés sans format,
+  ou lit de façon déterministe avec `fmt=` (lève l'ambiguïté d'un `"1,234"`) ;
+  `texte()` formate selon le format donné. `convertit(devise, taux)` change de
+  devise à un **taux reçu** (schema ne connaît aucune source de cours) et
+  `arrondi()` cale au centime. Stdlib pure, aucune dépendance ajoutée. Cf. #140.
 * **`schema.temps`** : primitives de temps en **stdlib pure** (`datetime`,
   `zoneinfo`), atteignables par tous les paquets puisque `schema` est une
   feuille du graphe (#48). `maintenant()` tz-aware, `en_datetime()`,
