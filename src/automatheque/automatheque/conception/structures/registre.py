@@ -111,13 +111,54 @@ class MetaInstanceRegistre(type):
         Si inclure_enfants=True, on renvoie aussi les instances des sous-classes.
         L'ordre d'insertion (ordre de création) est **préservé**.
         """
+        if not inclure_enfants:
+            # Aucun doublon possible au sein du registre d'une seule classe :
+            # pas de dédoublonnage, donc aucun re-hachage des instances
+            # (coûteux pour des objets gelés profonds, hachés à chaque appel).
+            return list(cls.__instances)
+
         instances = list(cls.__instances)
-        if inclure_enfants:
-            for child in cls.__subclasses__():
-                instances += child._instances(inclure_enfants=inclure_enfants)
+        for child in cls.__subclasses__():
+            instances += child._instances(inclure_enfants=inclure_enfants)
 
         # Dédoublonne (héritage multiple) EN préservant l'ordre d'insertion.
         return list(dict.fromkeys(instances))
+
+    def nombre_instances(cls, inclure_enfants=True):
+        """Le nombre d'instances au registre, sans les matérialiser.
+
+        Contrairement à ``len(cls._instances(...))``, ne construit ni ne
+        re-hache aucune instance : O(1) par classe. Sert d'étalon
+        d'invalidation de cache : le nombre bouge dès qu'une instance est créée
+        (registre persistant) — ou libérée au ramasse-miettes (registre faible).
+
+        NB : en cas d'héritage en losange, les doublons entre registres
+        d'enfants rendent ce nombre majorant (il reste stable tant que rien
+        n'est créé, donc valable comme étalon) ;
+        ``len(cls._instances(inclure_enfants=True))`` fait foi pour un
+        dénombrement exact.
+        """
+        total = len(cls.__instances)
+        if inclure_enfants:
+            for child in cls.__subclasses__():
+                total += child.nombre_instances(inclure_enfants=True)
+        return total
+
+    def purge_instances(cls, inclure_enfants=True):
+        """Vide le registre : l'API publique de remise à zéro.
+
+        Cas d'usage : l'isolation des tests et les rechargements — les
+        consommateurs n'ont plus à toucher au conteneur interne via son nom
+        manglé, qui reste un détail d'implémentation (``set`` jusqu'en 0.18,
+        dict-ensemble-ordonné depuis 0.19 : chaque changement les cassait).
+
+        Vide **en place** : les références déjà prises sur le conteneur
+        restent valides.
+        """
+        cls.__instances.clear()
+        if inclure_enfants:
+            for child in cls.__subclasses__():
+                child.purge_instances(inclure_enfants=True)
 
 
 class MetaInstancePersistanteRegistre(type):
@@ -175,10 +216,51 @@ class MetaInstancePersistanteRegistre(type):
         Si inclure_enfants=True, on renvoie aussi les instances des sous-classes.
         L'ordre d'insertion (ordre de création) est **préservé**.
         """
+        if not inclure_enfants:
+            # Aucun doublon possible au sein du registre d'une seule classe :
+            # pas de dédoublonnage, donc aucun re-hachage des instances
+            # (coûteux pour des objets gelés profonds, hachés à chaque appel).
+            return list(cls.__instances)
+
         instances = list(cls.__instances)
-        if inclure_enfants:
-            for child in cls.__subclasses__():
-                instances += child._instances(inclure_enfants=inclure_enfants)
+        for child in cls.__subclasses__():
+            instances += child._instances(inclure_enfants=inclure_enfants)
 
         # Dédoublonne (héritage multiple) EN préservant l'ordre d'insertion.
         return list(dict.fromkeys(instances))
+
+    def nombre_instances(cls, inclure_enfants=True):
+        """Le nombre d'instances au registre, sans les matérialiser.
+
+        Contrairement à ``len(cls._instances(...))``, ne construit ni ne
+        re-hache aucune instance : O(1) par classe. Sert d'étalon
+        d'invalidation de cache : le nombre bouge dès qu'une instance est créée
+        (registre persistant) — ou libérée au ramasse-miettes (registre faible).
+
+        NB : en cas d'héritage en losange, les doublons entre registres
+        d'enfants rendent ce nombre majorant (il reste stable tant que rien
+        n'est créé, donc valable comme étalon) ;
+        ``len(cls._instances(inclure_enfants=True))`` fait foi pour un
+        dénombrement exact.
+        """
+        total = len(cls.__instances)
+        if inclure_enfants:
+            for child in cls.__subclasses__():
+                total += child.nombre_instances(inclure_enfants=True)
+        return total
+
+    def purge_instances(cls, inclure_enfants=True):
+        """Vide le registre : l'API publique de remise à zéro.
+
+        Cas d'usage : l'isolation des tests et les rechargements — les
+        consommateurs n'ont plus à toucher au conteneur interne via son nom
+        manglé, qui reste un détail d'implémentation (``set`` jusqu'en 0.18,
+        dict-ensemble-ordonné depuis 0.19 : chaque changement les cassait).
+
+        Vide **en place** : les références déjà prises sur le conteneur
+        restent valides.
+        """
+        cls.__instances.clear()
+        if inclure_enfants:
+            for child in cls.__subclasses__():
+                child.purge_instances(inclure_enfants=True)

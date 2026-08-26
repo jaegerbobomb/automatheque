@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `conception.structures` : **API publique du registre d'instances** —
+  `nombre_instances(inclure_enfants=True)` (comptage sans matérialiser ni
+  re-hacher, O(1) par classe) et `purge_instances(inclure_enfants=True)`
+  (remise à zéro en place : isolation des tests, rechargements), sur
+  `MetaInstanceRegistre` **et** `MetaInstancePersistanteRegistre`. Les
+  consommateurs n'ont plus à toucher le conteneur interne via son nom manglé —
+  détail d'implémentation qui a déjà changé (`set` jusqu'en 0.18,
+  dict-ensemble ordonné depuis 0.19) en cassant ceux qui s'y accrochaient.
 * `configuration` : **validation d'une section de config par classe attrs**
   (#12). `charge_section(ConfigSmtp, config, "smtp")` peuple et
   **valide** une classe `attrs` depuis une section `.ini` — la validation a lieu
@@ -54,6 +62,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   auto-généré (uuid anti-collision : les greffons se retrouvent par
   **capacité**, pas par nom) et le cas particulier où passer un `identifiant=`
   explicite (greffon à rappeler ensuite par `greffon_par_identifiant`).
+* `MetaInstancePersistanteRegistre._instances()` sans `inclure_enfants` ne
+  dédoublonne plus (aucun doublon possible dans le registre d'une seule
+  classe) : plus aucun re-hachage des instances sur ce chemin — sensible
+  pour des objets gelés profonds hachés à chaque appel.
+
 * **`pytz` retiré du cœur, au profit de la stdlib (`zoneinfo`) + `tzdata`.**
   `util.structures_python` n'utilisait `pytz` que pour `datetimezone_depuis_code_pays`
   (mapping pays→fuseau, `country_timezones`). Ce mapping vient désormais de
