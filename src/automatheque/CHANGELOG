@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* `FabriqueGreffon.active` : docstring — clarifie le rôle de l'identifiant
+  auto-généré (uuid anti-collision : les greffons se retrouvent par
+  **capacité**, pas par nom) et le cas particulier où passer un `identifiant=`
+  explicite (greffon à rappeler ensuite par `greffon_par_identifiant`).
 * `MetaInstancePersistanteRegistre._instances()` sans `inclure_enfants` ne
   dédoublonne plus (aucun doublon possible dans le registre d'une seule
   classe) : plus aucun re-hachage des instances sur ce chemin — sensible
