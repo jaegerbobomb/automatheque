@@ -1,0 +1,17 @@
+#!/bin/sh
+# Garde-fou d'attribution (cf. CLAUDE.md).
+#
+# Aucun message de commit ne doit porter de lien de chat/session : l'intégration
+# qui pilote un agent peut injecter d'office un « Claude-Session: https://… ».
+# On le retire ici, à la source. `Co-Authored-By: Claude …` est en revanche
+# toléré (attribution honnête d'un binôme) et n'est pas touché.
+#
+# Activation (une fois par clone) : git config core.hooksPath .githooks
+#
+# Le filet de sécurité côté dépôt reste le job CI « attribution », qui bloque
+# une PR même si ce hook local n'est pas activé, et vérifie aussi l'identité
+# (auteur/committer) et le corps de la PR.
+
+msg="$1"
+tmp="$(mktemp)"
+grep -vE 'claude\.ai/code/session_|^Claude-Session:' "$msg" >"$tmp" && mv "$tmp" "$msg"
