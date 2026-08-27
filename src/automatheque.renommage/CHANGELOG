@@ -7,6 +7,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2026-08-27
+
+### Fixed
+
+* **Course entre deux rangements vers le même nom cible (perte silencieuse de
+  fichier).** `_renomme` testait `os.path.exists(cible)` puis copiait : entre
+  les deux, un autre processus visant le **même** nom passait le même test, les
+  deux copiaient vers le même chemin, vérifiaient une taille correcte et
+  supprimaient leur original — deux fichiers entraient, un seul ressortait, sans
+  erreur. Le test d'existence est remplacé par une **réservation atomique**
+  (`os.open(O_CREAT | O_EXCL)`, `_reserve`) : le noyau garantit qu'un seul
+  appelant crée la cible ; le perdant obtient exactement ce qu'il obtenait déjà
+  (« fichier existe », chemin rendu, original intact). Seule la réservation est
+  sérialisée (un appel système), les copies restent simultanées. La cible est
+  désormais reprise (`_efface`) sur **tout** échec survenu après la réservation,
+  et le répertoire parent est créé avant celle-ci (`O_CREAT` l'exige). `force`
+  inchangé.
+
 ## [0.23.0] - 2026-08-08
 
 ### Changed

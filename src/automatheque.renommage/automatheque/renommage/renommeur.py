@@ -84,6 +84,31 @@ def _cible_contenue(rep_cible, nom_fichier):
     return cible
 
 
+def _reserve(chemin, force=False):
+    """Prend le nom cible, atomiquement, et dit si on l'a obtenu.
+
+    ``os.open(..., O_CREAT | O_EXCL)`` est **la** primitive de mutuelle exclusion
+    d'un système de fichiers : le noyau garantit qu'un seul appelant crée le
+    fichier, tous les autres reçoivent ``EEXIST``. Le fichier est créé **vide** ;
+    c'est lui qui tient la place jusqu'à ce que la copie le remplisse.
+
+    Le ``os.path.exists()`` qu'elle remplace ne garantissait rien : entre le test
+    et la copie, deux appelants concurrents se croyaient tous deux les premiers,
+    écrivaient vers le même chemin, et **supprimaient tous deux leur original**
+    — un fichier perdu, sans la moindre erreur journalisée.
+
+    :param force: écraser une cible existante est déjà permis ; il n'y a alors
+        rien à réserver, le nom est pris et on a l'autorisation de l'écraser
+    :returns: ``True`` si le nom est à nous, ``False`` s'il était déjà pris
+    """
+    try:
+        descripteur = os.open(chemin, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+    except FileExistsError:
+        return bool(force)
+    os.close(descripteur)
+    return True
+
+
 def _efface(chemin):
     """Supprime un fichier sans se plaindre s'il n'est pas là."""
     try:
@@ -377,6 +402,11 @@ class Renommeur:
         la suppression de l'original — `shutil.move` ne dirait pas si la copie
         s'est mal passée entre deux systèmes de fichiers.
 
+        Le nom cible est **réservé** avant la copie (`_reserve`) : c'est ce qui
+        rend l'opération sûre quand plusieurs processus rangent en parallèle.
+        Seule la réservation est sérialisée — un appel système ; les copies,
+        elles, restent simultanées.
+
         :raise CibleHorsRepertoire: si le chemin construit sort de `rep_cible`
         :returns: le chemin cible, qu'il ait été atteint ou non
         """
@@ -392,50 +422,49 @@ class Renommeur:
                 "exposer le chemin du fichier dans son attribut `source`."
             )
 
-        if debug or (os.path.exists(fichier_cible) and not force):
-            LOGGER.warning(
-                "Pas de deplacement : %s", "debug" if debug else "fichier existe"
-            )
+        if debug:
+            LOGGER.warning("Pas de deplacement : debug")
             return fichier_cible
 
-        # Creation du répertoire parent si besoin :
+        # Creation du répertoire parent si besoin (avant la réservation :
+        # `O_CREAT` a besoin d'un répertoire qui existe pour aboutir).
         Path(os.path.dirname(fichier_cible)).mkdir(parents=True, exist_ok=True)
 
-        LOGGER.debug("Déplacement vers cible : %s", fichier_cible)
-        try:
-            # Attention, si le fichier cible existe il est écrasé.
-            # Pour changer ce fonctionnement voir ici :
-            # https://gist.github.com/alexwlchan/c2adbb8ee782f460e5ec
-            shutil.copy(fichier_orig, fichier_cible)
-        except OSError as exc:
-            if exc.errno != errno.ENOTSUP:
-                # La copie a pu écrire une cible **partielle** avant d'échouer
-                # (disque plein, E/S…). On l'efface avant de propager — comme la
-                # branche « taille » ci-dessous : sinon le prochain essai tombe
-                # sur la garde « fichier existe » et renvoie ce reliquat tronqué
-                # comme un succès. L'original, lui, n'a jamais été touché.
-                _efface(fichier_cible)
-                LOGGER.error(
-                    "[E] Echec shutil.copy(%s, %s) : %s",
-                    fichier_orig,
-                    fichier_cible,
-                    exc,
-                )
-                raise
-            # ENOTSUP remonte lorsque l'on ne peut pas changer les droits ou
-            # les attributs d'un fichier. Le transfert s'est peut-être bien
-            # passé malgré tout : on le vérifie juste après.
+        if not _reserve(fichier_cible, force):
+            LOGGER.warning("Pas de deplacement : fichier existe")
+            return fichier_cible
 
-        if not os.path.exists(fichier_cible) or os.path.getsize(
-            fichier_cible
-        ) != os.path.getsize(fichier_orig):
-            # La cible ne vaut rien : on l'efface avant de lever. La laisser
-            # ferait passer le prochain essai par la garde « fichier existe »,
-            # qui rendrait le chemin sans erreur — l'appelant croirait le
-            # fichier rangé alors qu'il est tronqué. L'original, lui, n'a
-            # jamais été touché.
+        LOGGER.debug("Déplacement vers cible : %s", fichier_cible)
+        # Tout ce qui suit écrit dans une cible dont **on** est responsable : le
+        # moindre échec la reprend (`_efface`), sans quoi la place resterait
+        # tenue par un fichier vide ou tronqué que le prochain essai prendrait
+        # pour un succès. L'original, lui, n'est jamais touché avant la
+        # vérification de taille.
+        try:
+            try:
+                # La cible est à nous : elle est vide, `shutil.copy` la remplit
+                # (ou écrase la cible existante quand `force`).
+                shutil.copy(fichier_orig, fichier_cible)
+            except OSError as exc:
+                if exc.errno != errno.ENOTSUP:
+                    LOGGER.error(
+                        "[E] Echec shutil.copy(%s, %s) : %s",
+                        fichier_orig,
+                        fichier_cible,
+                        exc,
+                    )
+                    raise
+                # ENOTSUP remonte lorsque l'on ne peut pas changer les droits ou
+                # les attributs d'un fichier. Le transfert s'est peut-être bien
+                # passé malgré tout : on le vérifie juste après.
+
+            if not os.path.exists(fichier_cible) or os.path.getsize(
+                fichier_cible
+            ) != os.path.getsize(fichier_orig):
+                raise TransfertIncomplet(fichier_orig, fichier_cible)
+        except BaseException:
             _efface(fichier_cible)
-            raise TransfertIncomplet(fichier_orig, fichier_cible)
+            raise
 
         # La cible est bonne : c'est seulement maintenant que l'objet déménage.
         # On écrit dans `source` — le seul porteur de vérité du chemin : nom de
