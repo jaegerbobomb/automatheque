@@ -26,9 +26,18 @@ qu'on ait à les redemander.
   `create_pull_request` **et** après chaque `update_pull_request` (l'ajout est
   ré-appliqué à chaque écriture du corps) : relire le corps, réécrire sans la
   ligne.
-- Ne mettre **aucune** mention du modèle ni de la session (liens `claude.ai`,
-  identifiant de modèle) dans les artefacts poussés : commits, titres/corps de
-  PR, code, commentaires. Cela reste dans le fil de discussion.
+- **Aucun lien de chat/session** (`claude.ai/code/session`, en-tête
+  `Claude-Session:`) dans les artefacts poussés : commits, titres/corps de PR,
+  code, commentaires. C'est ce lien qui divulgue une session privée.
+- En revanche, `Co-Authored-By: Claude …` dans un message de commit est
+  **toléré** (attribution d'un binôme) : il ne fuit aucune session.
+- Les commits sont **rédigés et signés par le mainteneur** : l'identité git
+  (auteur **et** committer) doit être la sienne, jamais « Claude » / une adresse
+  d'agent. Un commit signé par la clé du mainteneur mais dont le committer est
+  « Claude » apparaît *Unverified* sur GitHub (e-mail ≠ clé de signature).
+- Ces trois règles sont tenues **mécaniquement** : hook `.githooks/commit-msg`
+  (retire le lien de session) + job CI « Attribution propre » (message, identité,
+  corps de PR). Cf. le README racine pour l'activation du hook.
 
 ## Commentaires de code et docstrings
 
