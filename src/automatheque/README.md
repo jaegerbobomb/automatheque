@@ -172,6 +172,49 @@ from automatheque.log import installe_caviardage
 installe_caviardage()  # racine par défaut (couvre les loggers enfants)
 ```
 
+### Un secret dans une section de configuration
+
+Une section de configuration porte souvent la valeur la plus sensible de
+l'application (mot de passe SMTP, clé d'API, jeton). Dans une classe de section
+(cf. [`charge_section`](#configuration--sections-typées-et-validées)), on la
+déclare avec `Secret` en **converteur** : la valeur est enveloppée dès le
+chargement, donc caviardée partout où la classe est affichée.
+
+```python
+import attr
+from automatheque.configuration import charge_section
+from automatheque.secret import Secret
+
+
+@attr.s
+class ConfigSmtp:
+    hote = attr.ib()
+    mdp = attr.ib(converter=Secret)
+    jeton = attr.ib(default=None, converter=attr.converters.optional(Secret))
+
+
+smtp = charge_section(ConfigSmtp, _script.config, "smtp")
+smtp  # ConfigSmtp(hote='smtp.exemple.org', mdp=Secret(***), jeton=None)
+serveur.login(smtp.hote, smtp.mdp.reveler())  # .reveler() au point d'usage
+```
+
+Sans cela l'option reste une **chaîne nue** : elle ressort telle quelle dans le
+`repr` de la classe — donc dans une traceback ou un `LOGGER.debug("config=%s",
+reglages)` — et le filtre de caviardage ne la rattrape pas, puisqu'il ne connaît
+que les `Secret` vivants.
+
+`Secret` et `recup_secret` répondent à deux questions différentes ; ils se
+composent, ils ne se remplacent pas :
+
+| | Question | Quand |
+| - | -------- | ----- |
+| `converter=Secret` | « cette option est-elle sensible ? » | la valeur vit dans le `.ini` |
+| `recup_secret`     | « d'où vient la valeur ? »           | env d'abord, puis config, trousseau… |
+
+Une option secrète écrite dans le `.ini` doit de toute façon être **déclarée**
+dans la classe : en mode strict (le défaut), `charge_section` refuse une option
+inconnue. Autant la déclarer avec `converter=Secret`.
+
 ## Configuration : sections typées et validées
 
 `_script.config` (ou `charge_configuration()`) renvoie un `ConfigParser` **brut** :
@@ -207,6 +250,11 @@ port   = 587
 tls    = yes
 relais = a.exemple.org, b.exemple.org
 ```
+
+Une option **sensible** (mot de passe, jeton, clé d'API) se déclare avec `Secret`
+en converteur, pour qu'elle ne fuite ni par le `repr` de la classe ni par une
+traceback : cf. [Un secret dans une section de
+configuration](#un-secret-dans-une-section-de-configuration).
 
 Les `converter`/`validator` des `attr.ib` font la conversion (chaîne → `int`,
 `booleen`, `liste`…) et le contrôle. L'erreur est **précoce et nommée** :

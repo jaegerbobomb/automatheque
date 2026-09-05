@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `configuration` + `secret` : une option **sensible** d'une section typée se
+  déclare `mdp = attr.ib(converter=Secret)` — la valeur est enveloppée dès
+  `charge_section`, donc caviardée dans le `repr` de la classe, une traceback ou
+  un log de la configuration (#148). Le patron marchait déjà ; il est désormais
+  **documenté** (README du socle) et **verrouillé par des tests**. Aucun
+  changement de comportement.
+
 ## [0.24.0] - 2026-08-26
 
 ### Added

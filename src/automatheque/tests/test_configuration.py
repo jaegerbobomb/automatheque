@@ -15,6 +15,7 @@ from automatheque.configuration import (
     liste,
 )
 from automatheque.exceptions import AutomathequeBaseException, ConfigurationInvalide
+from automatheque.secret import CAVIARDAGE, Secret
 
 from automatheque import constantes
 
@@ -322,6 +323,47 @@ def test_charge_section_absente():
 def test_charge_section_classe_non_attrs():
     with pytest.raises(TypeError):
         charge_section(dict, _cfg("[demo]\nhote = h\n"), "demo")
+
+
+# --- Options sensibles : `Secret` en converteur (#148) ----------------------
+
+
+@attr.s
+class ConfigAvecSecret:
+    """Section dont les options sensibles sont enveloppées dès le chargement."""
+
+    hote = attr.ib()
+    mdp = attr.ib(converter=Secret)
+    jeton = attr.ib(default=None, converter=attr.converters.optional(Secret))
+
+
+def test_charge_section_enveloppe_une_option_dans_secret():
+    conf = charge_section(
+        ConfigAvecSecret, _cfg("[demo]\nhote = h\nmdp = s3cr3t\n"), "demo"
+    )
+    assert isinstance(conf.mdp, Secret)
+    assert conf.mdp.reveler() == "s3cr3t"
+    # Option absente : le converteur `optional` laisse passer None.
+    assert conf.jeton is None
+
+
+def test_le_repr_de_la_section_ne_fuite_pas():
+    """La raison d'être du patron : traceback et `LOGGER.debug(config)`."""
+    conf = charge_section(
+        ConfigAvecSecret, _cfg("[demo]\nhote = h\nmdp = s3cr3t\njeton = jjj\n"), "demo"
+    )
+    rendu = repr(conf)
+    assert "s3cr3t" not in rendu and "jjj" not in rendu
+    assert CAVIARDAGE in rendu
+    assert "h" in rendu  # le reste de la section reste lisible
+
+
+def test_option_secrete_non_declaree_est_refusee_en_strict():
+    """Corollaire : en strict, l'option doit être déclarée — autant l'envelopper."""
+    with pytest.raises(ConfigurationInvalide) as info:
+        charge_section(ConfigDemo, _cfg("[demo]\nhote = h\nmdp = s3cr3t\n"), "demo")
+    assert "mdp" in str(info.value)
+    assert "s3cr3t" not in str(info.value)
 
 
 @pytest.mark.parametrize(
