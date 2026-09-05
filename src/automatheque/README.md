@@ -275,19 +275,13 @@ Deux converteurs sont fournis, puisqu'un `.ini` ne rend que des chaînes :
 
 ### Valider la configuration d'un greffon
 
-Un greffon peut **exiger** une configuration (`config_requise = True`). Plutôt
-que de se fier au contrôle générique « une config existe-t-elle ? »
-(`Greffon.actif`), décris la config attendue **par une classe** et valide-la avec
-`charge_section` au moment de monter le greffon : on sait alors **tôt**, et
-précisément, si la config requise est réellement présente et bien typée.
-
-C'est le rôle naturel d'un **Monteur** — il lit la configuration et s'en sert
-pour instancier le greffon :
+Un greffon qui a besoin d'une configuration déclare **la classe** qui la décrit
+via `CONFIG` : sa validité devient alors celle de **sa** section, clé par clé —
+et non plus le vague « une configuration existe-t-elle ? ».
 
 ```python
 import attr
-from automatheque.configuration import charge_configuration, charge_section
-from automatheque.conception.structures import Monteur
+from automatheque.configuration import booleen
 from automatheque.greffon import Greffon
 
 
@@ -297,36 +291,29 @@ class ConfigMeteo:
 
     cle_api = attr.ib(validator=attr.validators.instance_of(str))
     hote = attr.ib(default="api.exemple.org", converter=str)
+    actif = attr.ib(default=True, converter=booleen)
 
 
 @attr.s(eq=False)
 class GreffonMeteo(Greffon):
-    config_requise = attr.ib(default=True, init=False, kw_only=True)
-    reglages = attr.ib(default=None, kw_only=True)  # ConfigMeteo validée
-
-
-class MonteurMeteo(Monteur):
-    """Lit la config et ne monte le greffon que si sa section est valide."""
-
-    def construit(self, *, identifiant=None, **kwargs):
-        # charge_section lève ConfigurationInvalide — tôt, nommée — si la
-        # section [meteo] est absente, incomplète ou mal typée.
-        reglages = charge_section(ConfigMeteo, charge_configuration(), "meteo")
-        return GreffonMeteo(identifiant=identifiant, reglages=reglages, **kwargs)
+    CONFIG = ConfigMeteo
+    SECTION_CONFIG = "meteo"  # facultatif : par défaut, la `cle` du greffon
 ```
 
-Le paquet déclare le monteur en point d'entrée (auto-découverte, cf.
-`decouvre_monteurs`) :
+Ce que ça donne :
 
-```toml
-[project.entry-points."automatheque.greffons"]
-meteo = "mon_paquet.meteo:MonteurMeteo"
-```
+| Appel | Comportement |
+| ----- | ------------ |
+| `greffon.actif` | `True` si la section est présente **et** valide ; sinon `False` **et** un `WARNING` journalisé — ne lève jamais |
+| `greffon.reglages` | l'instance de `ConfigMeteo` **peuplée et typée** (`reglages.actif` est un `bool`), mémoïsée |
+| `greffon.valide_config()` | la version **qui lève** : `ConfigurationInvalide` nommant la section et la clé fautive |
 
-Ainsi `config_requise` cesse d'être un simple booléen « il y a une config » : la
-présence **réelle** des clés dont ce greffon a besoin est prouvée à l'instanciation,
-et une config manquante ou fautive échoue avec un message qui nomme la section et
-la clé.
+`FabriqueGreffon.active()` s'appuie sur `actif` : un greffon dont la section est
+absente, incomplète ou mal typée n'est **pas** activé, et la raison est
+journalisée au lieu de ressurgir plus tard au point d'usage.
+
+Sans `CONFIG` (le défaut), rien ne change : le comportement historique
+(`config_requise` + présence d'une configuration) est conservé.
 
 ## Configuration du logging
 

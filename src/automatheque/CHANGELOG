@@ -11,12 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `greffon` : un greffon déclare **la classe** de sa configuration via `CONFIG`
+  (et `SECTION_CONFIG`, par défaut sa `cle`), et sa validité devient celle de
+  **sa** section — clé par clé (#139). `Greffon.reglages` expose la
+  configuration **validée et typée** (mémoïsée), `valide_config()` en est la
+  version qui **lève** (`ConfigurationInvalide` nommant section et clé). Repose
+  sur `configuration.charge_section` (#12).
 * `configuration` + `secret` : une option **sensible** d'une section typée se
   déclare `mdp = attr.ib(converter=Secret)` — la valeur est enveloppée dès
   `charge_section`, donc caviardée dans le `repr` de la classe, une traceback ou
   un log de la configuration (#148). Le patron marchait déjà ; il est désormais
   **documenté** (README du socle) et **verrouillé par des tests**. Aucun
   changement de comportement.
+
+### Changed
+
+* `Greffon.actif` : pour un greffon qui déclare une `CONFIG`, répond désormais
+  « **ma** section est-elle présente et valide ? » au lieu de « une
+  configuration existe-t-elle ? » — l'ancien test était toujours vrai dès qu'une
+  configuration était chargée, si bien qu'un greffon `config_requise` mal
+  configuré se déclarait actif et échouait plus tard, au point d'usage. L'échec
+  est journalisé (`WARNING`) ; `actif` ne lève jamais. Sans `CONFIG`, le
+  comportement historique est **inchangé**.
 
 ## [0.24.0] - 2026-08-26
 
