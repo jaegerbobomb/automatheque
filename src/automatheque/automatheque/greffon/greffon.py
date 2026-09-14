@@ -5,16 +5,21 @@ import functools
 import logging
 import time
 import uuid
-from typing import List, Type
+from typing import List, Optional, Type
 
 import attr
 
-from automatheque.configuration import charge_configuration
+from automatheque.configuration import charge_configuration, charge_section
+from automatheque.exceptions import ConfigurationInvalide
 from automatheque.greffon.capacite import Capacite
 from automatheque.greffon.registre import RegistreGreffons
 from automatheque.util.classe import classproperty
 
 LOGGER = logging.getLogger(__name__)
+
+#: Marqueur « pas encore validée » de `Greffon.reglages` : `None` est une valeur
+#: légitime (greffon sans `CONFIG`), il ne peut donc pas servir de sentinelle.
+_NON_VALIDEE = object()
 
 
 def signale_appel(methode):
@@ -101,10 +106,22 @@ class Greffon(RegistreGreffons):
     identifiant = attr.ib(factory=lambda: str(uuid.uuid4()), kw_only=True)
     config_requise = attr.ib(default=False, init=False, kw_only=True)
     config = attr.ib(init=False, factory=charge_configuration, kw_only=True)
+    # Cache de `reglages` : validé au premier accès, pas à la construction (un
+    # greffon doit pouvoir s'instancier pour qu'on l'interroge sur son état).
+    _reglages = attr.ib(default=_NON_VALIDEE, init=False, kw_only=True, repr=False)
 
     # Liste des capacités du greffon, surchargée par chaque sous-classe
     # (cf. greffon/capacite.py) ; vide par défaut.
     CAPACITES: List[Capacite] = []
+
+    #: Classe `attrs` décrivant la section de configuration attendue par ce
+    #: greffon (cf. `configuration.charge_section`). La déclarer implique
+    #: `config_requise` : la validité du greffon devient celle de sa section,
+    #: clé par clé. `None` (défaut) conserve le comportement historique.
+    CONFIG: Optional[type] = None
+
+    #: Nom de la section à lire pour `CONFIG` ; par défaut la `cle` du greffon.
+    SECTION_CONFIG: Optional[str] = None
 
     @classproperty
     def cle(cls: Type["Greffon"]) -> str:
@@ -116,11 +133,61 @@ class Greffon(RegistreGreffons):
         return self.CAPACITES
 
     @property
-    def actif(self) -> bool:
-        """Renvoie True si le Greffon peut fonctionner sans configuration
+    def section_config(self) -> str:
+        """Nom de la section de configuration lue par ce greffon."""
+        return self.SECTION_CONFIG or self.cle
 
-        ou s'il nécessite une configuration mais que celle ci est bien chargée.
+    def valide_config(self):
+        """Valide la section de configuration du greffon et renvoie l'objet peuplé.
+
+        Version **qui lève** de `actif` : à appeler quand on veut l'erreur
+        précise (section absente, clé requise manquante, valeur refusée), par
+        exemple depuis un `Monteur` qui refuse de monter un greffon mal
+        configuré.
+
+        :raise ConfigurationInvalide: si la section ne satisfait pas `CONFIG`.
+        :returns: l'instance de `CONFIG` peuplée, ou `None` si le greffon n'en
+            déclare pas.
         """
+        if self.CONFIG is None:
+            return None
+        return charge_section(self.CONFIG, self.config, self.section_config)
+
+    @property
+    def reglages(self):
+        """La configuration **validée** du greffon (instance de `CONFIG`).
+
+        Mémoïsée : la validation a lieu une fois, au premier accès. `None` si le
+        greffon ne déclare pas de `CONFIG`.
+
+        :raise ConfigurationInvalide: comme `valide_config`.
+        """
+        if self._reglages is _NON_VALIDEE:
+            self._reglages = self.valide_config()
+        return self._reglages
+
+    @property
+    def actif(self) -> bool:
+        """Renvoie True si le Greffon peut fonctionner.
+
+        Un greffon qui déclare une `CONFIG` est actif si **sa** section est
+        réellement présente et valide — pas seulement si « une configuration
+        existe » : c'est la différence entre annoncer une exigence et la
+        vérifier. L'échec est journalisé (`WARNING`) et ne lève pas ; utiliser
+        `valide_config()` pour obtenir l'erreur.
+
+        Sans `CONFIG`, on retombe sur le comportement historique
+        (`config_requise` + présence d'une configuration).
+        """
+        if self.CONFIG is not None:
+            try:
+                self.reglages
+            except ConfigurationInvalide as exc:
+                LOGGER.warning(
+                    "Greffon %s inactif : configuration invalide (%s)", self.cle, exc
+                )
+                return False
+            return True
         if not self.config_requise or self.config:
             return True
         return False
