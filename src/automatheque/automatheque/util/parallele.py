@@ -21,6 +21,13 @@ Exemple ::
         LOGGER.warning("%s : %s", echec.element, echec.erreur)
 
 Se compose naturellement avec `reessaye` (#7) : décorer la fonction suffit.
+
+Pour **rendre compte pendant** le travail — barre de progression, décompte
+« 1843/40000 » — on passe `a_chaque_resultat` : la valeur de retour n'arrive
+qu'à la fin, alors que l'achèvement de chaque tâche est connu au fil de l'eau ::
+
+    parallelise(telecharge, urls, workers=8,
+                a_chaque_resultat=lambda r: barre.avance(r.reussi))
 """
 
 import logging
@@ -92,6 +99,7 @@ def parallelise(
     workers: Optional[int] = None,
     debit: Optional[float] = None,
     processus: bool = False,
+    a_chaque_resultat: Optional[Callable[[Resultat], Any]] = None,
 ) -> List[Resultat]:
     """Applique `fonction` à chaque élément, en parallèle et borné.
 
@@ -108,6 +116,14 @@ def parallelise(
     :param processus: `True` pour un pool de **processus** (tâches gourmandes en
         CPU) au lieu de threads (défaut, adapté aux entrées/sorties). En mode
         processus, `fonction` et les éléments doivent être *picklables*.
+    :param a_chaque_resultat: appelée avec chaque :class:`Resultat` **dès que sa
+        tâche s'achève**, donc dans l'ordre d'**achèvement** — et non dans celui
+        des éléments, qui est celui de la valeur de retour. Elle s'exécute dans
+        le thread appelant : ni verrou à prévoir, ni contrainte de picklabilité,
+        même en mode processus. Ce qu'elle lève est journalisé (`WARNING`) sans
+        interrompre les tâches restantes. Avec `debit`, les départs sont espacés
+        dans ce même thread : les premiers comptes rendus n'arrivent donc qu'une
+        fois toutes les tâches soumises (cf. #151).
     :return: la liste des :class:`Resultat`, dans l'ordre des éléments.
     :raise ValueError: si `workers` < 1, ou si `debit` <= 0.
     """
@@ -138,9 +154,21 @@ def parallelise(
             index = futur_vers_index[futur]
             element = elements[index]
             try:
-                par_index[index] = Resultat(element, valeur=futur.result())
+                resultat = Resultat(element, valeur=futur.result())
             except Exception as exc:
                 LOGGER.debug("Tâche %r a échoué : %s", element, exc)
-                par_index[index] = Resultat(element, erreur=exc)
+                resultat = Resultat(element, erreur=exc)
+            par_index[index] = resultat
+            if a_chaque_resultat is not None:
+                # Un compte rendu qui casse ne doit pas emporter le travail :
+                # c'est l'accessoire, pas la tâche.
+                try:
+                    a_chaque_resultat(resultat)
+                except Exception:
+                    LOGGER.warning(
+                        "`a_chaque_resultat` a échoué sur %r ; on continue.",
+                        element,
+                        exc_info=True,
+                    )
 
     return [par_index[i] for i in range(len(elements))]
