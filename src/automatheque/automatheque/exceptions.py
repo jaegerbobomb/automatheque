@@ -47,6 +47,34 @@ class DureeInvalide(AutomathequeBaseException, ValueError):
     """
 
 
+class CapaciteNonRendue(AutomathequeBaseException, TypeError):
+    """Un greffon déclare une capacité qu'il n'implémente pas (``greffon``, #1).
+
+    Levée à la **définition de la classe** : déclarer une capacité engage à en
+    fournir les membres, sans quoi l'appelant qui obtient le greffon par
+    :meth:`~automatheque.greffon.registre.RegistreGreffons.greffons_par_capacite`
+    se heurte à un ``AttributeError`` opaque, loin de la cause.
+
+    Hérite aussi de :class:`TypeError` : une classe qui ne satisfait pas
+    l'interface annoncée est, dans l'esprit de la stdlib (méthodes abstraites
+    non implémentées), une erreur de type.
+    """
+
+    def __init__(self, greffon, capacite, membres=()):
+        """:param greffon: la classe fautive. :param capacite: capacité
+        déclarée. :param membres: les membres exigés qui manquent."""
+        self.greffon = getattr(greffon, "__name__", greffon)
+        self.capacite = getattr(capacite, "__name__", capacite)
+        self.membres = tuple(membres)
+        self.msg = (
+            "{} déclare la capacité {} mais n'implémente pas : {}. Retirez-la "
+            "de CAPACITES ou fournissez le(s) membre(s) manquant(s).".format(
+                self.greffon, self.capacite, ", ".join(self.membres)
+            )
+        )
+        super().__init__(self.msg)
+
+
 class LangueInconnue(AutomathequeBaseException, LookupError):
     """Code de langue non résolu par le registre (``util/langues.py``, #136).
 

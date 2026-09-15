@@ -23,9 +23,14 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
 
     @classmethod
     def greffons_par_capacite(
-        cls, capacite: Type[T] | Callable[[], T]
+        cls, capacite: Union[Type[T], Callable[[], T], str]
     ) -> List[Union[T, Greffon]]:
-        """Les Greffons renvoyés sont censés respecter le Protocol "capacite" donné.
+        """Les Greffons renvoyés respectent le Protocol "capacite" donné.
+
+        L'appariement porte sur l'**objet** capacité — identité de la classe, ou
+        égalité pour une capacité-étiquette déclarée en chaîne — et non sur son
+        nom, que deux protocoles de modules différents peuvent partager. Les
+        capacités héritées comptent (cf. `capacite.capacites_declarees`, #1).
 
         TODO https://github.com/python/mypy/issues/4717 mypy ne gère pas correctement
              les Protocol ou classes abstraites passées en paramètre, donc `Type[T]`
@@ -36,13 +41,12 @@ class RegistreGreffons(metaclass=MetaInstancePersistanteRegistre):
              `greffons: CapaciteDemandeeProtocol =
              rg.greffons_par_capacite(CapaciteDemandeeProtocol)`
 
-        :param capacite: Protocol que doit respecter le Greffon recherché
+        :param capacite: Protocol que doit respecter le Greffon recherché, ou
+            la chaîne d'une capacité-étiquette
         :return: Type _Union_, mais devrait être _Intersect_ (TODO https://github.com/python/typing/issues/213)
         """
         return [
-            p
-            for p in cls._instances(inclure_enfants=True)
-            if capacite.__name__ in [c.__name__ for c in p.capacites]
+            p for p in cls._instances(inclure_enfants=True) if capacite in p.capacites
         ]
 
     @classmethod

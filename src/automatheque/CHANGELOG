@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `greffon.capacite` : **une capacité déclarée est une capacité rendue** (#1).
+  Une classe de greffon est vérifiée à sa **définition** : annoncer une capacité
+  sans en implémenter les membres lève `CapaciteNonRendue` (nouvelle exception,
+  hérite de `TypeError`) en nommant greffon, capacité et membre manquant — au
+  lieu d'un `AttributeError` opaque plus tard, chez l'appelant. Le membre peut
+  être hérité. Fonctions publiques : `capacites_declarees`, `membres_capacite`,
+  `verifie_capacites`.
 * `greffon` : un greffon déclare **la classe** de sa configuration via `CONFIG`
   (et `SECTION_CONFIG`, par défaut sa `cle`), et sa validité devient celle de
   **sa** section — clé par clé (#139). `Greffon.reglages` expose la
@@ -26,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* `Greffon.capacites` **cumule l'héritage** (#1) : une sous-classe qui déclare
+  ses propres `CAPACITES` ajoute au lieu de masquer celles de ses mères — elle
+  reste donc trouvable par les capacités héritées.
+* `greffons_par_capacite` s'apparie sur l'**objet** capacité et non sur son
+  `__name__` (#1) : deux protocoles homonymes de modules différents ne sont plus
+  confondus, et une capacité déclarée par une **chaîne** (étiquette, appariée
+  par égalité) ne fait plus échouer la recherche des autres par `AttributeError`.
 * `Greffon.actif` : pour un greffon qui déclare une `CONFIG`, répond désormais
   « **ma** section est-elle présente et valide ? » au lieu de « une
   configuration existe-t-elle ? » — l'ancien test était toujours vrai dès qu'une
