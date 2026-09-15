@@ -215,6 +215,56 @@ Une option secrète écrite dans le `.ini` doit de toute façon être **déclar�
 dans la classe : en mode strict (le défaut), `charge_section` refuse une option
 inconnue. Autant la déclarer avec `converter=Secret`.
 
+## Greffons : annoncer et rendre une capacité
+
+Un greffon déclare ce qu'il sait faire dans `CAPACITES`, et c'est par là qu'on le
+retrouve — jamais par son nom :
+
+```python
+from typing import Protocol
+
+from automatheque.greffon import Greffon
+from automatheque.greffon.capacite import Capacite
+
+
+class Lire(Capacite, Protocol):
+    def lire(self) -> bool: ...
+
+
+class GreffonLecteur(Greffon):
+    CAPACITES = [Lire]
+
+    def lire(self) -> bool: ...
+
+
+lecteurs = Greffon.greffons_par_capacite(Lire)
+```
+
+Déclarer **engage** : la classe est vérifiée à sa **définition**. Un greffon qui
+annonce `Lire` sans fournir `lire()` ne se définit pas — `CapaciteNonRendue`
+nomme le greffon, la capacité et le membre manquant, à l'import du greffon
+fautif, au lieu d'un `AttributeError` obscur chez l'appelant. Le membre peut
+être **hérité** : seul compte le fait de le fournir.
+
+Une sous-classe **ajoute** ses capacités à celles de ses mères :
+
+```python
+class GreffonLecteurEcrivain(GreffonLecteur):
+    CAPACITES = [Ecrire]  # rend Ecrire *et* Lire
+
+
+greffon.capacites  # [Ecrire, Lire]
+```
+
+L'appariement porte sur l'**objet** capacité, pas sur son nom : deux protocoles
+homonymes définis dans des modules différents restent distincts. Une capacité
+peut aussi être une simple **chaîne** — une étiquette, appariée par égalité, qui
+n'achète évidemment aucune vérification (un `Protocol` sans membre rend le même
+service avec la rigueur en plus).
+
+Une capacité vit dans le module qui possède le domaine — `ResoudreSecret` est
+définie dans `automatheque.secret`, aux côtés des greffons qui la rendent.
+
 ## Configuration : sections typées et validées
 
 `_script.config` (ou `charge_configuration()`) renvoie un `ConfigParser` **brut** :

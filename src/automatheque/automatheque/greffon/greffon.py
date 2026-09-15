@@ -11,7 +11,11 @@ import attr
 
 from automatheque.configuration import charge_configuration, charge_section
 from automatheque.exceptions import ConfigurationInvalide
-from automatheque.greffon.capacite import Capacite
+from automatheque.greffon.capacite import (
+    TypeCapacite,
+    capacites_declarees,
+    verifie_capacites,
+)
 from automatheque.greffon.registre import RegistreGreffons
 from automatheque.util.classe import classproperty
 
@@ -110,9 +114,10 @@ class Greffon(RegistreGreffons):
     # greffon doit pouvoir s'instancier pour qu'on l'interroge sur son état).
     _reglages = attr.ib(default=_NON_VALIDEE, init=False, kw_only=True, repr=False)
 
-    # Liste des capacités du greffon, surchargée par chaque sous-classe
-    # (cf. greffon/capacite.py) ; vide par défaut.
-    CAPACITES: List[Capacite] = []
+    # Capacités **propres** à cette classe (cf. greffon/capacite.py) ; vide par
+    # défaut. Une sous-classe ajoute les siennes : `capacites` cumule tout
+    # l'héritage, et la classe est vérifiée à sa définition.
+    CAPACITES: List[TypeCapacite] = []
 
     #: Classe `attrs` décrivant la section de configuration attendue par ce
     #: greffon (cf. `configuration.charge_section`). La déclarer implique
@@ -123,14 +128,23 @@ class Greffon(RegistreGreffons):
     #: Nom de la section à lire pour `CONFIG` ; par défaut la `cle` du greffon.
     SECTION_CONFIG: Optional[str] = None
 
+    def __init_subclass__(cls, **kwargs):
+        """Vérifie, dès la définition de la classe, qu'elle rend ce qu'elle annonce.
+
+        :raise CapaciteNonRendue: cf. `capacite.verifie_capacites`.
+        """
+        super().__init_subclass__(**kwargs)
+        verifie_capacites(cls)
+
     @classproperty
     def cle(cls: Type["Greffon"]) -> str:
         """Retourne le nom de la classe sans "Greffon" s'il existe, en minuscule"""
         return cls.__name__.lower().replace("greffon", "")
 
     @property
-    def capacites(self) -> List[Capacite]:
-        return self.CAPACITES
+    def capacites(self) -> List[TypeCapacite]:
+        """Les capacités du greffon, **héritage compris**."""
+        return capacites_declarees(type(self))
 
     @property
     def section_config(self) -> str:

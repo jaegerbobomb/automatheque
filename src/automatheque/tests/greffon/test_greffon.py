@@ -68,12 +68,14 @@ def test_greffon_identifiant():
 
     fabrique_greffon.charge_monteurs([GreffonTestSTR])
     assert "teststr" in list(fabrique_greffon._monteurs.keys())
-    fabrique_greffon.active(GreffonTestSTR.cle)
+    str1 = fabrique_greffon.active(GreffonTestSTR.cle)
     fabrique_greffon.charge_monteurs([GreffonTestSTR2])
-    fabrique_greffon.active(GreffonTestSTR.cle)
+    fabrique_greffon.active(GreffonTestSTR2.cle)
 
-    with pytest.raises(AttributeError):
-        assert len(Greffon.greffons_par_capacite("TEST_CAPACITE")) == 1
+    # Une capacité-étiquette (chaîne) s'apparie par égalité (#1).
+    assert Greffon.greffons_par_capacite("TEST_CAPACITE") == [str1]
+    # Et sa présence dans le registre laisse intacte la recherche par classe.
+    assert Greffon.greffons_par_capacite(CapaciteTest) == [tt]
 
 
 class GreffonInactif(Greffon):
