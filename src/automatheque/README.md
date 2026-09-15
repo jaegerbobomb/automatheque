@@ -252,6 +252,7 @@ Une sous-classe **ajoute** ses capacités à celles de ses mères :
 class GreffonLecteurEcrivain(GreffonLecteur):
     CAPACITES = [Ecrire]  # rend Ecrire *et* Lire
 
+
 greffon.capacites  # [Ecrire, Lire]
 ```
 
