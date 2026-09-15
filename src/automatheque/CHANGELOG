@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* `util.parallele` : `parallelise(..., a_chaque_resultat=…)` **rend compte
+  pendant** le travail. Le crochet reçoit chaque `Resultat` dès l'achèvement de
+  sa tâche (ordre d'achèvement, quand la valeur de retour suit l'ordre des
+  éléments), s'exécute dans le thread appelant — ni verrou, ni contrainte de
+  picklabilité, même en mode processus — et ce qu'il lève est journalisé sans
+  interrompre les tâches restantes. Avec `debit`, les comptes rendus n'arrivent
+  qu'une fois les tâches soumises (cf. #151).
 * `greffon.capacite` : **une capacité déclarée est une capacité rendue** (#1).
   Une classe de greffon est vérifiée à sa **définition** : annoncer une capacité
   sans en implémenter les membres lève `CapaciteNonRendue` (nouvelle exception,

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests de l'exécution parallèle bornée (#47)."""
 
+import logging
 import threading
 import time
 
@@ -83,3 +84,94 @@ def test_parametres_invalides():
         parallelise(lambda x: x, [1], workers=0)
     with pytest.raises(ValueError):
         parallelise(lambda x: x, [1], debit=0)
+
+
+# --- Compte rendu au fil de l'eau : `a_chaque_resultat` ---------------------
+
+
+def test_le_crochet_est_appele_une_fois_par_element():
+    vus = []
+
+    res = parallelise(
+        lambda x: x * 2, [1, 2, 3], workers=2, a_chaque_resultat=vus.append
+    )
+
+    assert sorted(r.valeur for r in vus) == [2, 4, 6]
+    assert [r.valeur for r in res] == [2, 4, 6]
+
+
+def test_le_crochet_voit_aussi_les_echecs():
+    def peut_echouer(x):
+        if x == 3:
+            raise ValueError("trois interdit")
+        return x
+
+    vus = []
+    parallelise(peut_echouer, [1, 3], workers=2, a_chaque_resultat=vus.append)
+
+    echecs = [r for r in vus if not r.reussi]
+    assert len(echecs) == 1
+    assert isinstance(echecs[0].erreur, ValueError)
+
+
+def test_le_crochet_suit_l_achevement_pas_l_ordre_des_elements():
+    """Tout l'intérêt du crochet : ne pas attendre le premier élément.
+
+    Le premier élément n'est libéré qu'une fois les deux autres passés par le
+    crochet — sans temporisation, donc sans dépendre des vitesses relatives.
+    """
+    vus = []
+    libere = threading.Event()
+
+    def attend_les_autres(x):
+        if x == 0:
+            libere.wait(timeout=5)
+        return x
+
+    def note(resultat):
+        vus.append(resultat)
+        if len(vus) == 2:
+            libere.set()
+
+    res = parallelise(attend_les_autres, [0, 1, 2], workers=3, a_chaque_resultat=note)
+
+    # La valeur de retour garde l'ordre des éléments…
+    assert [r.valeur for r in res] == [0, 1, 2]
+    # …le crochet, lui, suit l'achèvement.
+    assert vus[-1].element == 0
+
+
+def test_le_crochet_s_execute_dans_le_thread_appelant():
+    """Donc l'appelant n'a pas de verrou à prévoir autour de son compteur."""
+    threads = set()
+
+    parallelise(
+        lambda x: x,
+        [1, 2, 3],
+        workers=3,
+        a_chaque_resultat=lambda _: threads.add(threading.current_thread().ident),
+    )
+
+    assert threads == {threading.current_thread().ident}
+
+
+def test_le_crochet_marche_aussi_en_mode_processus():
+    """Un compteur incrémenté dans `fonction` resterait dans le sous-processus ;
+    le crochet, lui, s'exécute côté parent — et n'a pas à être picklable."""
+    vus = []
+
+    res = parallelise(abs, [-1, -2, 3], processus=True, a_chaque_resultat=vus.append)
+
+    assert sorted(r.valeur for r in vus) == [1, 2, 3]
+    assert [r.valeur for r in res] == [1, 2, 3]
+
+
+def test_un_crochet_qui_leve_n_interrompt_pas_les_taches(caplog):
+    def rate(_resultat):
+        raise RuntimeError("compte rendu cassé")
+
+    with caplog.at_level(logging.WARNING, logger="automatheque.util.parallele"):
+        res = parallelise(lambda x: x * 2, [1, 2, 3], workers=2, a_chaque_resultat=rate)
+
+    assert [r.valeur for r in res] == [2, 4, 6]
+    assert sum("a_chaque_resultat" in r.getMessage() for r in caplog.records) == 3
