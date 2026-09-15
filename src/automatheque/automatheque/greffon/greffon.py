@@ -12,7 +12,7 @@ import attr
 from automatheque.configuration import charge_configuration, charge_section
 from automatheque.exceptions import ConfigurationInvalide
 from automatheque.greffon.capacite import (
-    Capacite,
+    TypeCapacite,
     capacites_declarees,
     verifie_capacites,
 )
@@ -117,7 +117,7 @@ class Greffon(RegistreGreffons):
     # Capacités **propres** à cette classe (cf. greffon/capacite.py) ; vide par
     # défaut. Une sous-classe ajoute les siennes : `capacites` cumule tout
     # l'héritage, et la classe est vérifiée à sa définition.
-    CAPACITES: List[Capacite] = []
+    CAPACITES: List[TypeCapacite] = []
 
     #: Classe `attrs` décrivant la section de configuration attendue par ce
     #: greffon (cf. `configuration.charge_section`). La déclarer implique
@@ -142,7 +142,7 @@ class Greffon(RegistreGreffons):
         return cls.__name__.lower().replace("greffon", "")
 
     @property
-    def capacites(self) -> List[Capacite]:
+    def capacites(self) -> List[TypeCapacite]:
         """Les capacités du greffon, **héritage compris**."""
         return capacites_declarees(type(self))
 

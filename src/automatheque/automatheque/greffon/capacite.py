@@ -1,4 +1,4 @@
-from typing import Any, List, Protocol
+from typing import List, Protocol, Type, Union
 
 from automatheque.exceptions import CapaciteNonRendue
 
@@ -33,12 +33,16 @@ class Capacite(Protocol):
     pass
 
 
+#: Ce qu'un greffon peut déclarer dans ``CAPACITES`` : le **Protocol** d'une
+#: capacité — la classe, pas une instance — ou la chaîne d'une étiquette.
+TypeCapacite = Union[Type[Capacite], str]
+
 #: Bases de la machinerie `typing` à ignorer quand on relève les membres d'une
 #: capacité : elles n'appartiennent pas au contrat.
 _BASES_TECHNIQUES = frozenset({"Protocol", "Generic", "object", "Capacite"})
 
 
-def membres_capacite(capacite: Any) -> List[str]:
+def membres_capacite(capacite: TypeCapacite) -> List[str]:
     """Les membres publics qu'un greffon doit fournir pour rendre ``capacite``.
 
     Une capacité déclarée par une chaîne (étiquette) n'en exige aucun.
@@ -57,14 +61,14 @@ def membres_capacite(capacite: Any) -> List[str]:
     return membres
 
 
-def capacites_declarees(classe: type) -> List[Any]:
+def capacites_declarees(classe: type) -> List[TypeCapacite]:
     """Les capacités de ``classe``, **cumulées** sur tout son héritage.
 
     Une sous-classe **ajoute** ses capacités à celles de ses mères, au lieu de
     les masquer : ses propres déclarations viennent d'abord, puis celles
     héritées, sans doublon.
     """
-    capacites: List[Any] = []
+    capacites: List[TypeCapacite] = []
     for base in classe.__mro__:
         for capacite in vars(base).get("CAPACITES", ()):
             if capacite not in capacites:
