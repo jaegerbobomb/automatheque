@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-09-15
+
 ### Added
 
 * `util.parallele` : `parallelise(..., a_chaque_resultat=…)` **rend compte
@@ -24,7 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hérite de `TypeError`) en nommant greffon, capacité et membre manquant — au
   lieu d'un `AttributeError` opaque plus tard, chez l'appelant. Le membre peut
   être hérité. Fonctions publiques : `capacites_declarees`, `membres_capacite`,
-  `verifie_capacites`.
+  `verifie_capacites`. **Rupture** : un greffon qui annonçait une capacité sans
+  l'implémenter ne s'importe plus — l'erreur existait déjà, elle frappait plus
+  tard et ailleurs.
 * `greffon` : un greffon déclare **la classe** de sa configuration via `CONFIG`
   (et `SECTION_CONFIG`, par défaut sa `cle`), et sa validité devient celle de
   **sa** section — clé par clé (#139). `Greffon.reglages` expose la
