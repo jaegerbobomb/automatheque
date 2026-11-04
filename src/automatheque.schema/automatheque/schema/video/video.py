@@ -49,7 +49,9 @@ class Serie:
 
     Ce n'est pas un `Media` : une série n'est pas un fichier.
 
-    :param ids: identifiants chez des services externes, `{"tvdb": "81189"}`
+    :param ids: identifiants chez des services externes, `{"tvdb": "81189"}` ;
+                se remplace (`serie.ids = {...}`) plutôt que de se muter : seule
+                l'affectation est convertie
     """
 
     titre: Optional[str] = attr.ib(default=None, kw_only=True)
@@ -62,7 +64,9 @@ class Video(Media):
     """Socle des vidéos : un fichier vidéo et ses identifiants externes.
 
     :param source: chemin complet vers le fichier
-    :param ids: identifiants chez des services externes, `{"imdb": "tt…"}`
+    :param ids: identifiants chez des services externes, `{"imdb": "tt…"}` ;
+                se remplace (`video.ids = {...}`) plutôt que de se muter : seule
+                l'affectation est convertie
     """
 
     extensions = ("avi", "m4v", "mkv", "mov", "mp4", "mpeg", "mpg", "ts", "webm", "wmv")
