@@ -18,8 +18,9 @@ Le paquet est découpé par famille de média, comme l'était l'ancien `modele/`
 | `schema.image` | `BaseTags` (les étiquettes d'une image), `Photo` |
 | `schema.geolocalisation` | `Emplacement` — une position GPS et/ou une adresse |
 | `schema.calendrier` | `Evenement` — ce qui a eu lieu, quand, et où |
+| `schema.video` | `Video`, `Film`, `Serie`, `Episode` |
 
-`schema.video` et `schema.audio` viendront s'y ajouter. `schema.media` est
+`schema.audio` viendra s'y ajouter. `schema.media` est
 réservé à ce qui est **commun** aux familles.
 
 ## Ce qui entre ici, et ce qui n'y entre pas

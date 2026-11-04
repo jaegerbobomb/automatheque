@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* **`schema.video`** : `Video` (socle des fichiers vidéo, extensions
+  reconnues, ids externes), `Film`, `Serie` et `Episode`. Vocabulaire pur,
+  comme `schema.image` : ni regex, ni I/O, ni renommage ni décomposition —
+  la normalisation des titres et l'arborescence de rangement restent à
+  l'application (`EpisodeRangeable(Episode, Renommable, Decomposable)`).
+  Les numéros d'un épisode forment un ensemble rendu trié (fichiers
+  `S01E01E02`) ; les ids externes `{service: id}` sont normalisés en chaînes.
+  Les conversions valent aussi à la réassignation. Au-delà de `source`, les
+  champs sont nommés uniquement. Cf. #154.
+
 ## [0.24.0] - 2026-08-26
 
 ### Added
