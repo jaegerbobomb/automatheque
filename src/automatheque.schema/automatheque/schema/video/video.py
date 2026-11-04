@@ -38,7 +38,12 @@ def _numeros(valeurs: Iterable[Union[int, str]]) -> Tuple[int, ...]:
     return tuple(sorted({int(v) for v in valeurs}))
 
 
-@attr.s
+# Les converteurs s'appliquent aussi à la réassignation (`e.numeros = {2, 1}`),
+# pas seulement à la construction.
+_convertit = attr.setters.convert
+
+
+@attr.s(on_setattr=_convertit)
 class Serie:
     """Une série : ce qui est commun à ses épisodes.
 
@@ -52,7 +57,7 @@ class Serie:
     ids: Dict[str, str] = attr.ib(factory=dict, converter=_ids, kw_only=True)
 
 
-@attr.s
+@attr.s(on_setattr=_convertit)
 class Video(Media):
     """Socle des vidéos : un fichier vidéo et ses identifiants externes.
 
@@ -72,7 +77,7 @@ class Video(Media):
         return os.path.basename(self.source)
 
 
-@attr.s
+@attr.s(on_setattr=_convertit)
 class Film(Video):
     """Un film."""
 
@@ -80,7 +85,7 @@ class Film(Video):
     annee: Optional[int] = attr.ib(default=None, kw_only=True)
 
 
-@attr.s
+@attr.s(on_setattr=_convertit)
 class Episode(Video):
     """Un ou plusieurs épisodes d'une série, contenus dans un même fichier.
 

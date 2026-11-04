@@ -95,3 +95,18 @@ def test_aucune_normalisation_du_titre():
     l'affaire de l'application (décomposition, gabarits)."""
     assert Serie(titre="[team] mr.robot").titre == "[team] mr.robot"
     assert Film(titre="the.matrix").titre == "the.matrix"
+
+
+def test_numeros_convertis_aussi_a_la_reassignation():
+    episode = Episode(numeros={1})
+    episode.numeros = {3, 2}  # type: ignore[assignment]
+    assert episode.numeros == (2, 3)
+
+
+def test_ids_convertis_aussi_a_la_reassignation():
+    film = Film()
+    film.ids = {"tmdb": 42}
+    assert film.ids == {"tmdb": "42"}
+    serie = Episode().serie
+    serie.ids = {"tvdb": 7}
+    assert serie.ids == {"tvdb": "7"}

@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   l'application (`EpisodeRangeable(Episode, Renommable, Decomposable)`).
   Les numéros d'un épisode forment un ensemble rendu trié (fichiers
   `S01E01E02`) ; les ids externes `{service: id}` sont normalisés en chaînes.
-  Au-delà de `source`, les champs sont nommés uniquement. Cf. #154.
+  Les conversions valent aussi à la réassignation. Au-delà de `source`, les
+  champs sont nommés uniquement. Cf. #154.
 
 ## [0.24.0] - 2026-08-26
 
