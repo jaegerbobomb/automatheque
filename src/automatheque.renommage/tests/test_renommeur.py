@@ -176,6 +176,29 @@ def test_evalue_condition_refuse_une_expression_mal_formee():
         evalue_condition('"Osaka" and and')
 
 
+def test_evalue_condition_accepte_les_fonctions_sures():
+    """`len` et `int` sur des littéraux : compter des épisodes ou des disques."""
+    assert evalue_condition("len([1, 2]) == 2")
+    assert not evalue_condition("len([1]) == 2")
+    assert evalue_condition('int("2") > 1')
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "len",  # nom nu
+        'len("a", "b")',  # plusieurs arguments
+        'int("10", base=2)',  # mot-clé
+        "abs(-1)",  # fonction hors liste
+        'len(open("x"))',  # nom hors liste en argument
+        '"".join([])',  # méthode
+    ],
+)
+def test_evalue_condition_refuse_le_reste(condition):
+    with pytest.raises(ConditionInvalide):
+        evalue_condition(condition)
+
+
 def test_injection_par_les_metadonnees_ne_s_execute_pas():
     """Bout en bout : un album malveillant ne fait qu'invalider la condition."""
     photo = Photo(source="/a/b.jpg", album='" and __import__("os").getcwd() and "')
