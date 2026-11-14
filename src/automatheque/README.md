@@ -265,6 +265,33 @@ service avec la rigueur en plus).
 Une capacité vit dans le module qui possède le domaine — `ResoudreSecret` est
 définie dans `automatheque.secret`, aux côtés des greffons qui la rendent.
 
+### Découvrir les greffons installés
+
+Un paquet tiers déclare ses greffons dans ses métadonnées ; l'application n'a
+pas à les lister (« installe le paquet, c'est découvert ») :
+
+```toml
+[project.entry-points."automatheque.greffons"]
+kodi = "monpaquet.kodi:MonteurKodi"
+```
+
+```python
+from automatheque.greffon import fabrique_greffon, points_entree
+
+fabrique_greffon.decouvre_monteurs()  # enregistre ce qui est installé
+points_entree("automatheque.greffons")  # liste sans rien charger
+```
+
+Chaque point d'entrée est chargé **puis enregistré isolément** : un paquet dont
+une dépendance optionnelle manque, ou qui désigne autre chose qu'un `Greffon` /
+`Monteur`, est **ignoré avec un `WARNING`** (nom du point d'entrée, valeur,
+cause) et les autres greffons s'enregistrent quand même — un greffon cassé ne
+doit pas éteindre les autres. Une application qui préfère échouer au démarrage
+plutôt que tourner diminuée passe `decouvre_monteurs(tolerant=False)`.
+
+Deux paquets indépendants peuvent déclarer la même `cle` : le dernier découvert
+l'emporte, et c'est journalisé en `WARNING` plutôt que subi en silence.
+
 ## Configuration : sections typées et validées
 
 `_script.config` (ou `charge_configuration()`) renvoie un `ConfigParser` **brut** :

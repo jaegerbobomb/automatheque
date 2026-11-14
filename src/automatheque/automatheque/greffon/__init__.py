@@ -48,8 +48,13 @@ def _resout_reference(chemin: str):
         ) from exc
 
 
-def _points_entree(groupe: str) -> List[Any]:
-    """Points d'entrée d'un groupe (`entry_points(group=…)`, py3.10+)."""
+def points_entree(groupe: str = GROUPE_GREFFONS) -> List[Any]:
+    """Les points d'entrée déclarés dans ``groupe``, **sans rien charger**.
+
+    Utile pour diagnostiquer ce qu'un environnement propose (« quels greffons
+    sont installés ? ») sans risquer l'import d'un paquet défaillant : lister ne
+    charge pas. Cf. #160.
+    """
     return list(entry_points(group=groupe))
 
 
@@ -160,7 +165,9 @@ class FabriqueGreffon(Fabrique):
             monteurs.append(self.enregistre_monteur(monteur.cle, monteur_concret))
         return monteurs
 
-    def decouvre_monteurs(self, groupe: str = GROUPE_GREFFONS) -> List[Monteur]:
+    def decouvre_monteurs(
+        self, groupe: str = GROUPE_GREFFONS, *, tolerant: bool = True
+    ) -> List[Monteur]:
         """Découvre et enregistre les monteurs déclarés en *points d'entrée*.
 
         Un paquet tiers déclare ses greffons dans ses métadonnées, sans que
@@ -174,11 +181,51 @@ class FabriqueGreffon(Fabrique):
         `charge_monteurs([...])` explicite — et le remplacement propre du
         chargement d'une chaîne arbitraire par `pydoc.locate`.
 
+        Chaque point d'entrée est chargé **puis enregistré isolément** : un
+        paquet tiers dont la dépendance manque, ou qui désigne autre chose qu'un
+        `Greffon`/`Monteur`, n'empêche pas les autres de s'enregistrer. Son échec
+        est journalisé (`WARNING`) avec le nom du point d'entrée, sa valeur et la
+        cause. Cf. #160.
+
         :param groupe: groupe de points d'entrée à scanner.
+        :param tolerant: `False` propage la première exception au lieu de la
+            journaliser — pour une application qui veut échouer au démarrage
+            plutôt que tourner diminuée.
         :return: les monteurs enregistrés.
         """
-        monteurs = [point.load() for point in _points_entree(groupe)]
-        return self.charge_monteurs(monteurs)
+        monteurs: List[Monteur] = []
+        for point in points_entree(groupe):
+            try:
+                monteur = point.load()
+                self._signale_cle_deja_prise(point, monteur)
+                monteurs.extend(self.charge_monteurs([monteur]))
+            except Exception as exc:
+                if not tolerant:
+                    raise
+                LOGGER.warning(
+                    "Point d'entrée %s = %r ignoré (%s : %s)",
+                    getattr(point, "name", "?"),
+                    getattr(point, "value", "?"),
+                    type(exc).__name__,
+                    exc,
+                )
+        return monteurs
+
+    def _signale_cle_deja_prise(self, point: Any, monteur: Any) -> None:
+        """Journalise qu'un point d'entrée écrase un monteur déjà enregistré.
+
+        `enregistre_monteur` écrase sans bruit : entre deux paquets tiers
+        indépendants qui déclarent la même `cle`, le dernier découvert gagne
+        silencieusement. On le dit (`WARNING`) plutôt que de le subir.
+        """
+        cle = getattr(monteur, "cle", None)
+        if cle is not None and cle in self.recup_monteurs():
+            LOGGER.warning(
+                "Point d'entrée %s : la clé %r est déjà enregistrée ; "
+                "le monteur précédent est remplacé.",
+                getattr(point, "name", "?"),
+                cle,
+            )
 
     def active_greffons_conf(
         self,

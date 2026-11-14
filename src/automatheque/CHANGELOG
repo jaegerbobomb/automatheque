@@ -9,8 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `greffon.points_entree(groupe)` : **lister** les points d'entrée d'un groupe
+  sans rien charger — diagnostic (« quels greffons sont installés ? ») sans
+  risquer l'import d'un paquet défaillant (#160). Remplace le privé
+  `_points_entree`.
+* `decouvre_monteurs(..., tolerant=False)` propage la première exception, pour
+  une application qui préfère échouer au démarrage que tourner diminuée (#160).
+
 ### Fixed
 
+* `greffon.decouvre_monteurs` **isole** les points d'entrée : ils sont chargés
+  **et enregistrés** un par un (#160). Un seul paquet tiers défaillant —
+  dépendance absente, module cassé, ou point d'entrée qui ne désigne ni un
+  `Greffon` ni un `Monteur` — n'empêche plus l'enregistrement de **tous** les
+  autres greffons du groupe ; son échec devient un `WARNING` nommant le point
+  d'entrée, sa valeur et la cause.
+* `decouvre_monteurs` signale (`WARNING`) qu'un point d'entrée **écrase** un
+  monteur déjà enregistré sous la même `cle` : `enregistre_monteur` remplace
+  sans bruit, et entre deux paquets tiers indépendants le dernier découvert
+  gagnait en silence.
 * `util.repertoire.iter_fichiers` renvoie un fichier unique tel quel au lieu
   de le chercher par motif : un nom à crochets (`…[rarbg].mkv`) ou à `*` ne se
   retrouvait pas lui-même et la fonction renvoyait `[]` (#159).
