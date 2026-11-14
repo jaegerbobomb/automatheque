@@ -3,7 +3,13 @@ from typing import Protocol
 
 import pytest
 from automatheque.conception.structures import Monteur
-from automatheque.greffon import Greffon, fabrique_greffon, signale_appel
+from automatheque.greffon import (
+    FabriqueGreffon,
+    Greffon,
+    fabrique_greffon,
+    points_entree,
+    signale_appel,
+)
 from automatheque.greffon.capacite import Capacite
 
 
@@ -185,12 +191,21 @@ class GreffonDecouvert(Greffon):
 
 
 class _FauxPointEntree:
-    """Imite un `importlib.metadata.EntryPoint` : un `.load()` qui rend l'objet."""
+    """Imite un `importlib.metadata.EntryPoint` : `.name`, `.value`, `.load()`.
 
-    def __init__(self, objet):
+    `casse=True` imite le paquet installé dont une dépendance manque : son
+    `load()` lève.
+    """
+
+    def __init__(self, objet=None, nom="faux", casse=False):
         self._objet = objet
+        self.name = nom
+        self.value = f"module.{nom}:Objet"
+        self._casse = casse
 
     def load(self):
+        if self._casse:
+            raise ImportError("dépendance absente")
         return self._objet
 
 
@@ -198,10 +213,110 @@ def test_decouvre_monteurs_charge_les_points_entree(monkeypatch):
     """Les monteurs déclarés en points d'entrée sont enregistrés sans liste
     explicite — « installe le paquet, c'est découvert »."""
     monkeypatch.setattr(
-        "automatheque.greffon._points_entree",
+        "automatheque.greffon.points_entree",
         lambda groupe: [_FauxPointEntree(GreffonDecouvert)],
     )
     monteurs = fabrique_greffon.decouvre_monteurs()
     assert "decouvert" in fabrique_greffon._monteurs
     assert issubclass(fabrique_greffon._monteurs["decouvert"], GreffonDecouvert)
     assert len(monteurs) == 1
+
+
+# --- #160 : un greffon défaillant n'éteint pas les autres --------------------
+
+
+class GreffonSain(Greffon):
+    CAPACITES = []
+
+
+def _fabrique_avec(monkeypatch, points):
+    """Une fabrique neuve (pas le singleton partagé) qui découvrira `points`."""
+    monkeypatch.setattr(
+        "automatheque.greffon.points_entree", lambda groupe: list(points)
+    )
+    return FabriqueGreffon()
+
+
+def test_un_point_entree_qui_leve_laisse_passer_les_autres(monkeypatch, caplog):
+    """Le cas d'usage même de la découverte : des paquets tiers indépendants,
+    aux dépendances optionnelles."""
+    fabrique = _fabrique_avec(
+        monkeypatch,
+        [_FauxPointEntree(nom="casse", casse=True), _FauxPointEntree(GreffonSain)],
+    )
+
+    with caplog.at_level(logging.WARNING, logger="automatheque.greffon"):
+        monteurs = fabrique.decouvre_monteurs("un.groupe")
+
+    assert len(monteurs) == 1
+    assert "sain" in fabrique.recup_monteurs()
+    # L'échec est localisé **et** nommé : point d'entrée, valeur, cause.
+    assert any(
+        "casse" in r.getMessage()
+        and "module.casse:Objet" in r.getMessage()
+        and "dépendance absente" in r.getMessage()
+        for r in caplog.records
+    )
+
+
+def test_un_point_entree_qui_ne_designe_pas_un_greffon_est_isole_aussi(
+    monkeypatch, caplog
+):
+    """L'enregistrement lève lui aussi (ni `Greffon`, ni `Monteur`) : l'isoler
+    seulement au `load()` laisserait la panne globale."""
+    fabrique = _fabrique_avec(
+        monkeypatch,
+        [_FauxPointEntree(dict, nom="bidon"), _FauxPointEntree(GreffonSain)],
+    )
+
+    with caplog.at_level(logging.WARNING, logger="automatheque.greffon"):
+        monteurs = fabrique.decouvre_monteurs("un.groupe")
+
+    assert len(monteurs) == 1
+    assert "sain" in fabrique.recup_monteurs()
+    assert any("bidon" in r.getMessage() for r in caplog.records)
+
+
+def test_tolerant_false_propage_l_exception(monkeypatch):
+    """Pour une application qui préfère échouer au démarrage que tourner
+    diminuée."""
+    fabrique = _fabrique_avec(
+        monkeypatch,
+        [_FauxPointEntree(nom="casse", casse=True), _FauxPointEntree(GreffonSain)],
+    )
+
+    with pytest.raises(ImportError):
+        fabrique.decouvre_monteurs("un.groupe", tolerant=False)
+
+
+def test_deux_points_entree_sur_la_meme_cle_sont_signales(monkeypatch, caplog):
+    """`enregistre_monteur` écrase sans bruit : entre deux paquets tiers
+    déclarant la même `cle`, le dernier gagne — autant le dire."""
+
+    class GreffonSain2(GreffonSain):
+        pass
+
+    GreffonSain2.__name__ = "GreffonSain"  # même `cle` que l'autre paquet
+    fabrique = _fabrique_avec(
+        monkeypatch,
+        [
+            _FauxPointEntree(GreffonSain, nom="paquet_a"),
+            _FauxPointEntree(GreffonSain2, nom="paquet_b"),
+        ],
+    )
+
+    with caplog.at_level(logging.WARNING, logger="automatheque.greffon"):
+        fabrique.decouvre_monteurs("un.groupe")
+
+    assert fabrique.recup_monteurs()["sain"] is GreffonSain2  # le dernier gagne
+    assert any(
+        "paquet_b" in r.getMessage() and "déjà enregistrée" in r.getMessage()
+        for r in caplog.records
+    )
+
+
+def test_points_entree_liste_sans_charger():
+    """Lister est public et sans risque : aucun `load()` n'est déclenché."""
+    assert points_entree("groupe.qui.n.existe.pas") == []
+    # Le groupe des langues du socle est déclaré par automatheque lui-même.
+    assert {p.name for p in points_entree("automatheque.langues")} >= {"fr", "en"}
