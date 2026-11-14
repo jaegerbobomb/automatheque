@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests des utilitaires de manipulation des répertoires (util/repertoire.py)."""
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -91,3 +92,21 @@ def test_iter_fichiers_sur_fichier_unique(tmp_path):
     f = tmp_path / "seul.txt"
     f.write_text("x")
     assert iter_fichiers(f) == [f]
+
+
+@pytest.mark.parametrize(
+    "nom", ["Film.2010.1080p[eztv].mkv", "Quoi?.mkv", "Etoile*.mkv"]
+)
+def test_iter_fichiers_nom_avec_caracteres_de_motif(tmp_path, nom):
+    """#159 : le nom d'un fichier unique n'est pas lu comme un motif glob."""
+    f = tmp_path / nom
+    f.write_text("x")
+    (tmp_path / "Etoile.mkv").write_text("leurre")
+    assert iter_fichiers(f) == [f]
+
+
+def test_iter_fichiers_source_absente_le_signale(tmp_path, caplog):
+    """#159 : une source absente donne toujours `[]`, mais plus en silence."""
+    with caplog.at_level(logging.WARNING):
+        assert iter_fichiers(tmp_path / "absent.mkv") == []
+    assert "absent.mkv" in caplog.text

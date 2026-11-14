@@ -69,17 +69,19 @@ def remonte_arborescence(fichier, racine=None):
 
 
 def iter_fichiers(source):
-    """Itérateur de la liste des fichiers d'une source Path.
+    """Liste des fichiers d'une source Path : le fichier lui-même, ou tous les
+    fichiers d'un répertoire, récursivement.
 
-    On crée un itérateur que l'on ait reçu un fichier ou un rep en entrée !
+    Un fichier est renvoyé tel quel, jamais cherché par motif : un nom à
+    crochets (`[rarbg]`) ou à `*` ne se retrouvait pas lui-même (#159).
 
     :param source: Source des fichiers : 1 rep ou 1 fichier
     :type source: Path
+    :return: liste vide si la source n'existe pas (journalisé)
     """
+    if source.is_file():
+        return [source]
     if source.is_dir():
-        # On récupère tous les fichiers récursivement :
-        fichiers = source.rglob("*")
-    else:
-        # On ne récupère que le fichier d'entrée :
-        fichiers = source.parent.glob(source.name)
-    return [f for f in fichiers if not f.is_dir()]
+        return [f for f in source.rglob("*") if not f.is_dir()]
+    LOGGER.warning("Source introuvable : %s", source)
+    return []

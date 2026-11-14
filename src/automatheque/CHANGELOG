@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `util.repertoire.iter_fichiers` renvoie un fichier unique tel quel au lieu
+  de le chercher par motif : un nom à crochets (`…[rarbg].mkv`) ou à `*` ne se
+  retrouvait pas lui-même et la fonction renvoyait `[]` (#159).
+* Une source absente donne toujours `[]`, mais avec un avertissement
+  journalisé au lieu du silence (#159).
+
 ## [0.25.0] - 2026-09-15
 
 ### Added
