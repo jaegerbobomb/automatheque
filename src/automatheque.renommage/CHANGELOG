@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+* Une condition de gabarit peut appeler **`len`** et **`int`** — compter des
+  épisodes (`len({episodes}) == 2`), comparer un numéro de disque
+  (`int({disque}) > 1`). Seulement par leur nom, avec un seul argument et sans
+  mot-clé ; tout autre appel ou nom reste refusé (`FONCTIONS_AUTORISEES`). Les
+  conditions de ce genre, valides du temps de `eval()`, étaient depuis
+  écartées en silence. Cf. #157.
+
 ## [0.24.1] - 2026-08-27
 
 ### Fixed
